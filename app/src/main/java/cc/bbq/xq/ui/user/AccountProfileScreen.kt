@@ -1,11 +1,3 @@
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.user
 
 import android.app.Activity
@@ -41,10 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
+
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -269,29 +258,29 @@ fun saveChanges(context: Context, nickname: String, qqNumber: String, onDeviceNa
     CoroutineScope(Dispatchers.IO).launch {
         try {
             if (nickname.isNotEmpty()) {
-                val nicknameResponse = RetrofitClient.instance.modifyUserInfo(
+                val nicknameResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
                     token = token,
                     nickname = nickname
                 )
                 withContext(Dispatchers.Main) {
-                    if (nicknameResponse.isSuccessful && nicknameResponse.body()?.code == 1) {
+                    if (nicknameResponse.isSuccessful && nicknameResponse.getOrNull()?.code == 1) {
                         Toast.makeText(context, "昵称修改成功", Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(context, "昵称修改失败: ${nicknameResponse.body()?.msg}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "昵称修改失败: ${nicknameResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
 
             if (qqNumber.isNotEmpty()) {
-                val qqResponse = RetrofitClient.instance.modifyUserInfo(
+                val qqResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
                     token = token,
                     qq = qqNumber
                 )
                 withContext(Dispatchers.Main) {
-                    if (qqResponse.isSuccessful && qqResponse.body()?.code == 1) {
+                    if (qqResponse.isSuccessful && qqResponse.getOrNull()?.code == 1) {
                         Toast.makeText(context, "QQ号修改成功", Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(context, "QQ号修改失败: ${qqResponse.body()?.msg}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "QQ号修改失败: ${qqResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }

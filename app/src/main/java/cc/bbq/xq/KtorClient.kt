@@ -10,11 +10,16 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.*
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import java.io.IOException
+import io.ktor.utils.io.*
+import io.ktor.http.content.*
 
 object KtorClient {
     private const val BASE_URL = "http://apk.xiaoqu.online/"
@@ -864,8 +869,8 @@ object KtorClient {
 
         suspend fun getRankingList(
             appid: Int = 1,
-            sort: String = "money",
-            sortOrder: String = "desc",
+            sort: String,
+            sortOrder: String,
             limit: Int = 15,
             page: Int
         ): Result<RankingListResponse>
@@ -877,11 +882,11 @@ object KtorClient {
         ): Result<BaseResponse>
 
         suspend fun uploadAvatar(
-        appid: Int,
-        token: String,
-        file: ByteArray,
-        filename: String
-    ): Result<BaseResponse>
+            appid: Int,
+            token: String,
+            file: ByteArray,
+            filename: String
+        ): Result<BaseResponse>
 
         //suspend fun getImageVerificationCode(
         //    appid: Int = 1,
@@ -977,425 +982,425 @@ object KtorClient {
         }
 
         override suspend fun getUserInfo(
-    appid: Int,
-    token: String
-): Result<UserInfoResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-    }
-    return request(GET_USER_INFO_URL, parameters = parameters)
-}
+            appid: Int,
+            token: String
+        ): Result<UserInfoResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+            }
+            return request(GET_USER_INFO_URL, parameters = parameters)
+        }
 
-override suspend fun getPostDetail(
-    appid: Int,
-    token: String,
-    postId: Long
-): Result<PostDetailResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("postid", postId.toString())
-    }
-    return request(GET_POST_DETAIL_URL, parameters = parameters)
-}
+        override suspend fun getPostDetail(
+            appid: Int,
+            token: String,
+            postId: Long
+        ): Result<PostDetailResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("postid", postId.toString())
+            }
+            return request(GET_POST_DETAIL_URL, parameters = parameters)
+        }
 
-override suspend fun getPostComments(
-    appid: Int,
-    postId: Long,
-    limit: Int,
-    page: Int,
-    sort: String,
-    sortOrder: String
-): Result<CommentListResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("postid", postId.toString())
-        append("limit", limit.toString())
-        append("page", page.toString())
-        append("sort", sort)
-        append("sortOrder", sortOrder)
-    }
-    return request(GET_POST_COMMENTS_URL, parameters = parameters)
-}
+        override suspend fun getPostComments(
+            appid: Int,
+            postId: Long,
+            limit: Int,
+            page: Int,
+            sort: String,
+            sortOrder: String
+        ): Result<CommentListResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("postid", postId.toString())
+                append("limit", limit.toString())
+                append("page", page.toString())
+                append("sort", sort)
+                append("sortOrder", sortOrder)
+            }
+            return request(GET_POST_COMMENTS_URL, parameters = parameters)
+        }
 
-override suspend fun createPost(
-    appid: Int,
-    token: String,
-    title: String,
-    content: String,
-    sectionId: Int,
-    imageUrls: String?,
-    paidReading: Int,
-    downloadMethod: Int
-): Result<BaseResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("title", title)
-        append("content", content)
-        append("subsectionid", sectionId.toString())
-        imageUrls?.let { append("network_picture", it) }
-        append("paid_reading", paidReading.toString())
-        append("file_download_method", downloadMethod.toString())
-    }
-    return request(CREATE_POST_URL, parameters = parameters)
-}
+        override suspend fun createPost(
+            appid: Int,
+            token: String,
+            title: String,
+            content: String,
+            sectionId: Int,
+            imageUrls: String?,
+            paidReading: Int,
+            downloadMethod: Int
+        ): Result<BaseResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("title", title)
+                append("content", content)
+                append("subsectionid", sectionId.toString())
+                imageUrls?.let { append("network_picture", it) }
+                           append("paid_reading", paidReading.toString())
+                append("file_download_method", downloadMethod.toString())
+            }
+            return request(CREATE_POST_URL, parameters = parameters)
+        }
 
-override suspend fun getAppsList(
-    appid: Int,
-    limit: Int,
-    page: Int,
-    sort: String,
-    sortOrder: String,
-    categoryId: Int?,
-    subCategoryId: Int?,
-    appName: String?,
-    userId: Long?
-): Result<AppListResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("limit", limit.toString())
-        append("page", page.toString())
-        append("sort", sort)
-        append("sortOrder", sortOrder)
-        categoryId?.let { append("category_id", it.toString()) }
-        subCategoryId?.let { append("sub_category_id", it.toString()) }
-        appName?.let { append("appname", it) }
-        userId?.let { append("userid", it.toString()) }
-    }
-    return request(GET_APPS_LIST_URL, parameters = parameters)
-}
+        override suspend fun getAppsList(
+            appid: Int,
+            limit: Int,
+            page: Int,
+            sort: String,
+            sortOrder: String,
+            categoryId: Int?,
+            subCategoryId: Int?,
+            appName: String?,
+            userId: Long?
+        ): Result<AppListResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("limit", limit.toString())
+                append("page", page.toString())
+                append("sort", sort)
+                append("sortOrder", sortOrder)
+                categoryId?.let { append("category_id", it.toString()) }
+                subCategoryId?.let { append("sub_category_id", it.toString()) }
+                appName?.let { append("appname", it) }
+                userId?.let { append("userid", it.toString()) }
+            }
+            return request(GET_APPS_LIST_URL, parameters = parameters)
+        }
 
-override suspend fun getAppsInformation(
-    appid: Int,
-    token: String,
-    appsId: Long,
-    appsVersionId: Long
-): Result<AppDetailResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("apps_id", appsId.toString())
-        append("apps_version_id", appsVersionId.toString())
-    }
-    return request(GET_APPS_INFORMATION_URL, parameters = parameters)
-}
+        override suspend fun getAppsInformation(
+            appid: Int,
+            token: String,
+            appsId: Long,
+            appsVersionId: Long
+        ): Result<AppDetailResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("apps_id", appsId.toString())
+                append("apps_version_id", appsVersionId.toString())
+            }
+            return request(GET_APPS_INFORMATION_URL, parameters = parameters)
+        }
 
-override suspend fun getAppsCommentList(
-    appid: Int,
-    appsId: Long,
-    appsVersionId: Long,
-    limit: Int,
-    page: Int,
-    sortOrder: String
-): Result<AppCommentListResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("apps_id", appsId.toString())
-        append("apps_version_id", appsVersionId.toString())
-        append("limit", limit.toString())
-        append("page", page.toString())
-        append("sortOrder", sortOrder)
-    }
-    return request(GET_APPS_COMMENT_LIST_URL, parameters = parameters)
-}
+        override suspend fun getAppsCommentList(
+            appid: Int,
+            appsId: Long,
+            appsVersionId: Long,
+            limit: Int,
+            page: Int,
+            sortOrder: String
+        ): Result<AppCommentListResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("apps_id", appsId.toString())
+                append("apps_version_id", appsVersionId.toString())
+                append("limit", limit.toString())
+                append("page", page.toString())
+                append("sortOrder", sortOrder)
+            }
+            return request(GET_APPS_COMMENT_LIST_URL, parameters = parameters)
+        }
 
-override suspend fun postComment(
-    appid: Int,
-    token: String,
-    content: String,
-    postId: Long?,
-    parentId: Long?,
-    imageUrl: String?
-): Result<BaseResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("content", content)
-        postId?.let { append("postid", it.toString()) }
-        parentId?.let { append("parentid", it.toString()) }
-        imageUrl?.let { append("img", it) }
-    }
-    return request(POST_COMMENT_URL, parameters = parameters)
-}
+        override suspend fun postComment(
+            appid: Int,
+            token: String,
+            content: String,
+            postId: Long?,
+            parentId: Long?,
+            imageUrl: String?
+        ): Result<BaseResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("content", content)
+                postId?.let { append("postid", it.toString()) }
+                parentId?.let { append("parentid", it.toString()) }
+                imageUrl?.let { append("img", it) }
+            }
+            return request(POST_COMMENT_URL, parameters = parameters)
+        }
 
-override suspend fun getMessageNotifications(
-    appid: Int,
-    token: String,
-    limit: Int,
-    page: Int
-): Result<MessageNotificationResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("limit", limit.toString())
-        append("page", page.toString())
-    }
-    return request(GET_MESSAGE_NOTIFICATIONS_URL, parameters = parameters)
-}
+        override suspend fun getMessageNotifications(
+            appid: Int,
+            token: String,
+            limit: Int,
+            page: Int
+        ): Result<MessageNotificationResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("limit", limit.toString())
+                append("page", page.toString())
+            }
+            return request(GET_MESSAGE_NOTIFICATIONS_URL, parameters = parameters)
+        }
 
-override suspend fun getBrowseHistory(
-    appid: Int,
-    token: String,
-    limit: Int,
-    page: Int
-): Result<BrowseHistoryResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("limit", limit.toString())
-        append("page", page.toString())
-    }
-    return request(GET_BROWSE_HISTORY_URL, parameters = parameters)
-}
+        override suspend fun getBrowseHistory(
+            appid: Int,
+            token: String,
+            limit: Int,
+            page: Int
+        ): Result<BrowseHistoryResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("limit", limit.toString())
+                append("page", page.toString())
+            }
+            return request(GET_BROWSE_HISTORY_URL, parameters = parameters)
+        }
 
-override suspend fun getLikesRecords(
-    appid: Int,
-    token: String,
-    limit: Int,
-    page: Int
-): Result<PostListResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("limit", limit.toString())
-        append("page", page.toString())
-    }
-    return request(GET_LIKES_RECORDS_URL, parameters = parameters)
-}
+        override suspend fun getLikesRecords(
+            appid: Int,
+            token: String,
+            limit: Int,
+            page: Int
+        ): Result<PostListResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("limit", limit.toString())
+                append("page", page.toString())
+            }
+            return request(GET_LIKES_RECORDS_URL, parameters = parameters)
+        }
 
-override suspend fun searchPosts(
-    appid: Int,
-    query: String,
-    limit: Int,
-    page: Int
-): Result<PostListResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("keyword", query)
-        append("limit", limit.toString())
-        append("page", page.toString())
-    }
-    return request(SEARCH_POSTS_URL, parameters = parameters)
-}
+        override suspend fun searchPosts(
+            appid: Int,
+            query: String,
+            limit: Int,
+            page: Int
+        ): Result<PostListResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("keyword", query)
+                append("limit", limit.toString())
+                append("page", page.toString())
+            }
+            return request(SEARCH_POSTS_URL, parameters = parameters)
+        }
 
-override suspend fun getHotPostsList(
-    appid: Int,
-    limit: Int,
-    page: Int,
-    sortOrder: String,
-    sort: String
-): Result<PostListResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("limit", limit.toString())
-        append("page", page.toString())
-        append("sortOrder", sortOrder)
-        append("sort", sort)
-    }
-    return request(GET_HOT_POSTS_LIST_URL, parameters = parameters)
-}
+        override suspend fun getHotPostsList(
+            appid: Int,
+            limit: Int,
+            page: Int,
+            sortOrder: String,
+            sort: String
+        ): Result<PostListResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("limit", limit.toString())
+                append("page", page.toString())
+                append("sortOrder", sortOrder)
+                append("sort", sort)
+            }
+            return request(GET_HOT_POSTS_LIST_URL, parameters = parameters)
+        }
 
-override suspend fun getMyFollowingPosts(
-    appid: Int,
-    token: String,
-    limit: Int,
-    page: Int
-): Result<PostListResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("limit", limit.toString())
-        append("page", page.toString())
-    }
-    return request(GET_MY_FOLLOWING_POSTS_URL, parameters = parameters)
-}
+        override suspend fun getMyFollowingPosts(
+            appid: Int,
+            token: String,
+            limit: Int,
+            page: Int
+        ): Result<PostListResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("limit", limit.toString())
+                append("page", page.toString())
+            }
+            return request(GET_MY_FOLLOWING_POSTS_URL, parameters = parameters)
+        }
 
-override suspend fun likePost(
-    appid: Int,
-    token: String,
-    postId: Long
-): Result<BaseResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("postid", postId.toString())
-    }
-    return request(LIKE_POST_URL, parameters = parameters)
-}
+        override suspend fun likePost(
+            appid: Int,
+            token: String,
+            postId: Long
+        ): Result<BaseResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("postid", postId.toString())
+            }
+            return request(LIKE_POST_URL, parameters = parameters)
+        }
 
-override suspend fun deletePost(
-    appid: Int,
-    token: String,
-    postId: Long
-): Result<BaseResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("postid", postId.toString())
-    }
-    return request(DELETE_POST_URL, parameters = parameters)
-}
+        override suspend fun deletePost(
+            appid: Int,
+            token: String,
+            postId: Long
+        ): Result<BaseResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("postid", postId.toString())
+            }
+            return request(DELETE_POST_URL, parameters = parameters)
+        }
 
-override suspend fun getFanList(
-    appid: Int,
-    token: String,
-    limit: Int,
-    page: Int
-): Result<UserListResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("limit", limit.toString())
-        append("page", page.toString())
-    }
-    return request(GET_FAN_LIST_URL, parameters = parameters)
-}
+        override suspend fun getFanList(
+            appid: Int,
+            token: String,
+            limit: Int,
+            page: Int
+        ): Result<UserListResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("limit", limit.toString())
+                append("page", page.toString())
+            }
+            return request(GET_FAN_LIST_URL, parameters = parameters)
+        }
 
-override suspend fun getFollowList(
-    appid: Int,
-    token: String,
-    limit: Int,
-    page: Int
-): Result<UserListResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("limit", limit.toString())
-        append("page", page.toString())
-    }
-    return request(GET_FOLLOW_LIST_URL, parameters = parameters)
-}
+        override suspend fun getFollowList(
+            appid: Int,
+            token: String,
+            limit: Int,
+            page: Int
+        ): Result<UserListResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("limit", limit.toString())
+                append("page", page.toString())
+            }
+            return request(GET_FOLLOW_LIST_URL, parameters = parameters)
+        }
 
-override suspend fun getUserInformation(
-    appid: Int,
-    userId: Long,
-    token: String
-): Result<UserInformationResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("userid", userId.toString())
-        append("usertoken", token)
-    }
-    return request(GET_USER_INFORMATION_URL, parameters = parameters)
-}
+        override suspend fun getUserInformation(
+            appid: Int,
+            userId: Long,
+            token: String
+        ): Result<UserInformationResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("userid", userId.toString())
+                append("usertoken", token)
+            }
+            return request(GET_USER_INFORMATION_URL, parameters = parameters)
+        }
 
-override suspend fun deleteComment(
-    appid: Int,
-    token: String,
-    commentId: Long
-): Result<BaseResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("commentid", commentId.toString())
-    }
-    return request(DELETE_COMMENT_URL, parameters = parameters)
-}
+        override suspend fun deleteComment(
+            appid: Int,
+            token: String,
+            commentId: Long
+        ): Result<BaseResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("commentid", commentId.toString())
+            }
+            return request(DELETE_COMMENT_URL, parameters = parameters)
+        }
 
-override suspend fun getUserBilling(
-    appid: Int,
-    token: String,
-    limit: Int,
-    page: Int
-): Result<BillingResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("limit", limit.toString())
-        append("page", page.toString())
-    }
-    return request(GET_USER_BILLING_URL, parameters = parameters)
-}
+        override suspend fun getUserBilling(
+            appid: Int,
+            token: String,
+            limit: Int,
+            page: Int
+        ): Result<BillingResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("limit", limit.toString())
+                append("page", page.toString())
+            }
+            return request(GET_USER_BILLING_URL, parameters = parameters)
+        }
 
-override suspend fun payForApp(
-    appid: Int,
-    token: String,
-    appsId: Long,
-    appsVersionId: Long,
-    money: Int,
-    type: Int
-): Result<BaseResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("apps_id", appsId.toString())
-        append("apps_version_id", appsVersionId.toString())
-        append("money", money.toString())
-        append("type", type.toString())
-    }
-    return request(PAY_FOR_APP_URL, parameters = parameters)
-}
+        override suspend fun payForApp(
+            appid: Int,
+            token: String,
+            appsId: Long,
+            appsVersionId: Long,
+            money: Int,
+            type: Int
+        ): Result<BaseResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("apps_id", appsId.toString())
+                append("apps_version_id", appsVersionId.toString())
+                append("money", money.toString())
+                append("type", type.toString())
+            }
+            return request(PAY_FOR_APP_URL, parameters = parameters)
+        }
 
-override suspend fun rewardPost(
-    appid: Int,
-    token: String,
-    postId: Long,
-    money: Int,
-    payment: Int
-): Result<BaseResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("postid", postId.toString())
-        append("money", money.toString())
-        append("payment", payment.toString())
-    }
-    return request(REWARD_POST_URL, parameters = parameters)
-}
+        override suspend fun rewardPost(
+            appid: Int,
+            token: String,
+            postId: Long,
+            money: Int,
+            payment: Int
+        ): Result<BaseResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("postid", postId.toString())
+                append("money", money.toString())
+                append("payment", payment.toString())
+            }
+            return request(REWARD_POST_URL, parameters = parameters)
+        }
 
-override suspend fun postAppComment(
-    appid: Int,
-    token: String,
-    content: String,
-    appsId: Long,
-    appsVersionId: Long,
-    parentId: Long?,
-    imageUrl: String?
-): Result<BaseResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("content", content)
-        append("apps_id", appsId.toString())
-        append("apps_version_id", appsVersionId.toString())
-        parentId?.let { append("parentid", it.toString()) }
-        imageUrl?.let { append("img", it) }
-    }
-    return request(POST_APP_COMMENT_URL, parameters = parameters)
-}
+        override suspend fun postAppComment(
+            appid: Int,
+            token: String,
+            content: String,
+            appsId: Long,
+            appsVersionId: Long,
+            parentId: Long?,
+            imageUrl: String?
+        ): Result<BaseResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("content", content)
+                append("apps_id", appsId.toString())
+                append("apps_version_id", appsVersionId.toString())
+                parentId?.let { append("parentid", it.toString()) }
+                imageUrl?.let { append("img", it) }
+            }
+            return request(POST_APP_COMMENT_URL, parameters = parameters)
+        }
 
-override suspend fun deleteAppComment(
-    appid: Int,
-    token: String,
-    commentId: Long
-): Result<BaseResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-        append("comment_id", commentId.toString())
-    }
-    return request(DELETE_APP_COMMENT_URL, parameters = parameters)
-}
+        override suspend fun deleteAppComment(
+            appid: Int,
+            token: String,
+            commentId: Long
+        ): Result<BaseResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("comment_id", commentId.toString())
+            }
+            return request(DELETE_APP_COMMENT_URL, parameters = parameters)
+        }
 
-override suspend fun userSignIn(
-    appid: Int,
-    token: String
-): Result<BaseResponse> {
-    val parameters = Parameters.build {
-        append("appid", appid.toString())
-        append("usertoken", token)
-    }
-    return request(USER_SIGN_IN_URL, parameters = parameters)
-}
+        override suspend fun userSignIn(
+            appid: Int,
+            token: String
+        ): Result<BaseResponse> {
+            val parameters = Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+            }
+            return request(USER_SIGN_IN_URL, parameters = parameters)
+        }
 
-override suspend fun register(
-    appid: Int,
-    username: String,
-    password: String,
-    email: String,
-                device: String,
+        override suspend fun register(
+            appid: Int,
+            username: String,
+            password: String,
+            email: String,
+            device: String,
             captcha: String
         ): Result<BaseResponse> {
             val parameters = Parameters.build {
@@ -1515,7 +1520,7 @@ override suspend fun register(
             appid: Int,
             sort: String,
             sortOrder: String,
-            limit: Int,
+            limit: Int = 15,
             page: Int
         ): Result<RankingListResponse> {
             val parameters = Parameters.build {
@@ -1542,34 +1547,37 @@ override suspend fun register(
         }
 
         override suspend fun uploadAvatar(
-        appid: Int,
-        token: String,
-        file: ByteArray,
-        filename: String
-    ): Result<BaseResponse> {
-        return try {
-            val response: HttpResponse = httpClient.post(UPLOAD_AVATAR_URL) {
-                body = MultiPartFormDataContent(
-                    formData = formData {
+            appid: Int,
+            token: String,
+            file: ByteArray,
+            filename: String
+        ): Result<BaseResponse> {
+            try {
+                val response: HttpResponse = httpClient.post(UPLOAD_AVATAR_URL) {
+                    val multipartData = formData {
                         append("appid", appid.toString())
                         append("usertoken", token)
                         append("file", file, Headers.build {
                             append(HttpHeaders.ContentType, "image/jpeg")
                             append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
                         })
-                    },
-                    boundary = "5c1f4c34-2506-4631-8162-dfffc6af3b2d" // Use the same boundary as your request
-                )
+                    }
+                    
+                    // Convert FormData to a List<PartData>
+                    val parts = multipartData.build()
+
+                    // Set the body as a MultiPartFormDataContent
+                    body = MultiPartFormDataContent(parts, multipartData.boundary)
+                }
+                return Result.success(response.body())
+            } catch (e: Exception) {
+                return Result.failure(e)
             }
-            Result.success(response.body())
-        } catch (e: Exception) {
-            Result.failure(e)
         }
-    }
 
         //override suspend fun getImageVerificationCode(
-        //    appid: Int,
-        //    type: Int
+        //    appid: Int = 1,
+        //    type: Int = 2
         //): Result<ResponseBody> {
         //    TODO("Not yet implemented")
         //}
