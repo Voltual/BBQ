@@ -1547,26 +1547,48 @@ object KtorClient {
         }
 
         override suspend fun uploadAvatar(
-            appid: Int,
-            token: String,
-            file: ByteArray,
-            filename: String
-        ): Result<BaseResponse> {
-            try {
-                val response: HttpResponse = httpClient.post(UPLOAD_AVATAR_URL) {
-                    val multipartData = FormDataContent(Parameters.build {
-                        append("appid", appid.toString())
-                        append("usertoken", token)
-
-                        append("file", filename)
-                    })
-                    this.body = multipartData
-                }
-                return Result.success(response.body())
-            } catch (e: Exception) {
-                return Result.failure(e)
-            }
+    appid: Int,
+    token: String,
+    file: ByteArray,
+    filename: String
+): Result<BaseResponse> {
+    try {
+        val response: HttpResponse = httpClient.post(UPLOAD_AVATAR_URL) {
+            val multipartData = MultiPartFormDataContent(
+                listOf(
+                    PartData.FormItem(
+                        value = appid.toString(),
+                        partHeaders = Headers.build {
+                            append(HttpHeaders.ContentDisposition, "form-data; name=\"appid\"")
+                        }
+                    ),
+                    PartData.FormItem(
+                        value = token,
+                        partHeaders = Headers.build {
+                            append(HttpHeaders.ContentDisposition, "form-data; name=\"usertoken\"")
+                        }
+                    ),
+                    PartData.FileItem(
+                        provider = { ByteReadChannel(file) },
+                        partHeaders = Headers.build {
+                            append(
+                                HttpHeaders.ContentDisposition,
+                                "form-data; name=\"file\"; filename=\"$filename\""
+                            )
+                            append(HttpHeaders.ContentType, "image/jpeg")
+                        },
+                        contentType = ContentType.Image.JPEG
+                    )
+                ),
+                boundary = "5c1f4c34-2506-4631-8162-dfffc6af3b2d"
+            )
+            this.body = multipartData
         }
+        return Result.success(response.body())
+    } catch (e: Exception) {
+        return Result.failure(e)
+    }
+}
 
         //override suspend fun getImageVerificationCode(
         //    appid: Int = 1,
