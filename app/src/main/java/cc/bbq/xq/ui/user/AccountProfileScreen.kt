@@ -259,28 +259,36 @@ fun saveChanges(context: Context, nickname: String, qqNumber: String, onDeviceNa
         try {
             if (nickname.isNotEmpty()) {
                 val nicknameResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
+                    appid = 1,
                     token = token,
-                    nickname = nickname
+                    nickname = nickname,
+                    qq = null
                 )
-                withContext(Dispatchers.Main) {
-                    if (nicknameResponse.isSuccessful && nicknameResponse.getOrNull()?.code == 1) {
-                        Toast.makeText(context, "昵称修改成功", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(context, "昵称修改失败: ${nicknameResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
+                if (nicknameResponse.isSuccess){
+                    withContext(Dispatchers.Main) {
+                        if (nicknameResponse.getOrNull()?.code == 1) {
+                            Toast.makeText(context, "昵称修改成功", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "昵称修改失败: ${nicknameResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
 
             if (qqNumber.isNotEmpty()) {
                 val qqResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
+                    appid = 1,
                     token = token,
+                    nickname = null,
                     qq = qqNumber
                 )
-                withContext(Dispatchers.Main) {
-                    if (qqResponse.isSuccessful && qqResponse.getOrNull()?.code == 1) {
-                        Toast.makeText(context, "QQ号修改成功", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(context, "QQ号修改失败: ${qqResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
+                if (qqResponse.isSuccess){
+                    withContext(Dispatchers.Main) {
+                        if (qqResponse.getOrNull()?.code == 1) {
+                            Toast.makeText(context, "QQ号修改成功", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "QQ号修改失败: ${qqResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }

@@ -594,298 +594,298 @@ object KtorClient {
 
     interface ApiService {
         suspend fun login(
-            appid: Int = 1,
-            username: String,
-            password: String,
-            device: String
+             appid: Int = 1,
+             username: String,
+             password: String,
+             device: String
         ): Result<LoginResponse>
 
         suspend fun heartbeat(
-            appid: Int = 1,
-            token: String
+             appid: Int = 1,
+             token: String
         ): Result<HeartbeatResponse>
 
         suspend fun getPostsList(
-            appid: Int = 1,
-            limit: Int,
-            page: Int,
-            sort: String = "create_time",
-            sortOrder: String = "desc",
-            sectionId: Int? = null,
-            userId: Long? = null
+             appid: Int = 1,
+             limit: Int,
+             page: Int,
+             sort: String = "create_time",
+             sortOrder: String = "desc",
+             sectionId: Int? = null,
+             userId: Long? = null
         ): Result<PostListResponse>
 
         suspend fun getUserInfo(
-            appid: Int = 1,
-            token: String
+             appid: Int = 1,
+             token: String
         ): Result<UserInfoResponse>
 
         suspend fun getPostDetail(
-            appid: Int = 1,
-            token: String,
-            postId: Long
+             appid: Int = 1,
+             token: String,
+             postId: Long
         ): Result<PostDetailResponse>
 
         suspend fun getPostComments(
-            appid: Int = 1,
-            postId: Long,
-            limit: Int,
-            page: Int,
-            sort: String = "time",
-            sortOrder: String = "desc"
+             appid: Int = 1,
+             postId: Long,
+             limit: Int,
+             page: Int,
+             sort: String = "time",
+             sortOrder: String = "desc"
         ): Result<CommentListResponse>
 
         suspend fun createPost(
-            appid: Int = 1,
-            token: String,
-            title: String,
-            content: String,
-            sectionId: Int,
-            imageUrls: String? = null,
-            paidReading: Int = 0,
-            downloadMethod: Int = 0
+             appid: Int = 1,
+             token: String,
+             title: String,
+             content: String,
+             sectionId: Int,
+             imageUrls: String? = null,
+             paidReading: Int = 0,
+             downloadMethod: Int = 0
         ): Result<BaseResponse>
 
         suspend fun getAppsList(
-            appid: Int = 1,
-            limit: Int,
-            page: Int,
-            sort: String = "update_time",
-            sortOrder: String = "desc",
-            categoryId: Int? = null,
-            subCategoryId: Int? = null,
-            appName: String? = null,
-            userId: Long? = null
+             appid: Int = 1,
+             limit: Int,
+             page: Int,
+             sort: String = "update_time",
+             sortOrder: String = "desc",
+             categoryId: Int? = null,
+             subCategoryId: Int? = null,
+             appName: String? = null,
+             userId: Long? = null
         ): Result<AppListResponse>
 
         suspend fun getAppsInformation(
-            appid: Int = 1,
-            token: String,
-            appsId: Long,
-            appsVersionId: Long
+             appid: Int = 1,
+             token: String,
+             appsId: Long,
+             appsVersionId: Long
         ): Result<AppDetailResponse>
 
         suspend fun getAppsCommentList(
-            appid: Int = 1,
-            appsId: Long,
-            appsVersionId: Long,
-            limit: Int,
-            page: Int,
-            sortOrder: String = "asc"
+             appid: Int = 1,
+             appsId: Long,
+             appsVersionId: Long,
+             limit: Int,
+             page: Int,
+             sortOrder: String = "asc"
         ): Result<AppCommentListResponse>
 
         suspend fun postComment(
-            appid: Int = 1,
-            token: String,
-            content: String,
-            postId: Long? = null,
-            parentId: Long? = null,
-            imageUrl: String? = null
+             appid: Int = 1,
+             token: String,
+             content: String,
+             postId: Long? = null,
+             parentId: Long? = null,
+             imageUrl: String? = null
         ): Result<BaseResponse>
 
         suspend fun getMessageNotifications(
-            appid: Int = 1,
-            token: String,
-            limit: Int,
-            page: Int
+             appid: Int = 1,
+             token: String,
+             limit: Int,
+             page: Int
         ): Result<MessageNotificationResponse>
 
         suspend fun getBrowseHistory(
-            appid: Int = 1,
-            token: String,
-            limit: Int = 10,
-            page: Int
+             appid: Int = 1,
+             token: String,
+             limit: Int = 10,
+             page: Int
         ): Result<BrowseHistoryResponse>
 
         suspend fun getLikesRecords(
-            appid: Int = 1,
-            token: String,
-            limit: Int = 10,
-            page: Int
+             appid: Int = 1,
+             token: String,
+             limit: Int = 10,
+             page: Int
         ): Result<PostListResponse>
 
         suspend fun searchPosts(
-            appid: Int = 1,
-            query: String,
-            limit: Int = 10,
-            page: Int
+             appid: Int = 1,
+             query: String,
+             limit: Int = 10,
+             page: Int
         ): Result<PostListResponse>
 
         suspend fun getHotPostsList(
-            appid: Int = 1,
-            limit: Int,
-            page: Int,
-            sortOrder: String = "desc",
-            sort: String = "score"
+             appid: Int = 1,
+             limit: Int,
+             page: Int,
+             sortOrder: String = "desc",
+             sort: String = "score"
         ): Result<PostListResponse>
 
         suspend fun getMyFollowingPosts(
-            appid: Int = 1,
-            token: String,
-            limit: Int,
-            page: Int
+             appid: Int = 1,
+             token: String,
+             limit: Int,
+             page: Int
         ): Result<PostListResponse>
 
         suspend fun likePost(
-            appid: Int = 1,
-            token: String,
-            postId: Long
+             appid: Int = 1,
+             token: String,
+             postId: Long
         ): Result<BaseResponse>
 
         suspend fun deletePost(
-            appid: Int = 1,
-            token: String,
-            postId: Long
+             appid: Int = 1,
+             token: String,
+             postId: Long
         ): Result<BaseResponse>
 
         suspend fun getFanList(
-            appid: Int = 1,
-            token: String,
-            limit: Int = 10,
-            page: Int
+             appid: Int = 1,
+             token: String,
+             limit: Int = 10,
+             page: Int
         ): Result<UserListResponse>
 
         suspend fun getFollowList(
-            appid: Int = 1,
-            token: String,
-            limit: Int = 10,
-            page: Int
+             appid: Int = 1,
+             token: String,
+             limit: Int = 10,
+             page: Int
         ): Result<UserListResponse>
 
         suspend fun getUserInformation(
-            appid: Int = 1,
-            userId: Long,
-            token: String
+             appid: Int = 1,
+             userId: Long,
+             token: String
         ): Result<UserInformationResponse>
 
         suspend fun deleteComment(
-            appid: Int = 1,
-            token: String,
-            commentId: Long
+             appid: Int = 1,
+             token: String,
+             commentId: Long
         ): Result<BaseResponse>
 
         suspend fun getUserBilling(
-            appid: Int = 1,
-            token: String,
-            limit: Int,
-            page: Int
+             appid: Int = 1,
+             token: String,
+             limit: Int,
+             page: Int
         ): Result<BillingResponse>
 
         suspend fun payForApp(
-            appid: Int = 1,
-            token: String,
-            appsId: Long,
-            appsVersionId: Long,
-            money: Int,
-            type: Int = 0
+             appid: Int = 1,
+             token: String,
+             appsId: Long,
+             appsVersionId: Long,
+             money: Int,
+             type: Int = 0
         ): Result<BaseResponse>
 
         suspend fun rewardPost(
-            appid: Int = 1,
-            token: String,
-            postId: Long,
-            money: Int,
-            payment: Int = 0
+             appid: Int = 1,
+             token: String,
+             postId: Long,
+             money: Int,
+             payment: Int = 0
         ): Result<BaseResponse>
 
         suspend fun postAppComment(
-            appid: Int = 1,
-            token: String,
-            content: String,
-            appsId: Long,
-            appsVersionId: Long,
-            parentId: Long? = null,
-            imageUrl: String? = null
+             appid: Int = 1,
+             token: String,
+             content: String,
+             appsId: Long,
+             appsVersionId: Long,
+             parentId: Long? = null,
+             imageUrl: String? = null
         ): Result<BaseResponse>
 
         suspend fun deleteAppComment(
-            appid: Int = 1,
-            token: String,
-            commentId: Long
+             appid: Int = 1,
+             token: String,
+             commentId: Long
         ): Result<BaseResponse>
 
         suspend fun userSignIn(
-            appid: Int = 1,
-            token: String
+             appid: Int = 1,
+             token: String
         ): Result<BaseResponse>
 
         suspend fun register(
-            appid: Int = 1,
-            username: String,
-            password: String,
-            email: String,
-            device: String,
-            captcha: String
+             appid: Int = 1,
+             username: String,
+             password: String,
+             email: String,
+             device: String,
+             captcha: String
         ): Result<BaseResponse>
 
         suspend fun modifyUserInfo(
-            appid: Int = 1,
-            token: String,
-            nickname: String? = null,
-            qq: String? = null
+             appid: Int = 1,
+             token: String,
+             nickname: String? = null,
+             qq: String? = null
         ): Result<BaseResponse>
 
         suspend fun releaseApp(
-            appid: Int = 1,
-            usertoken: String,
-            appname: String,
-            icon: String?,
-            app_size: String,
-            app_introduce: String,
-            app_introduction_image: String?,
-            file: String,
-            app_explain: String?,
-            app_version: String,
-            is_pay: Int,
-            pay_money: String?,
-            category_id: Int,
-            sub_category_id: Int
+             appid: Int = 1,
+             usertoken: String,
+             appname: String,
+             icon: String?,
+             app_size: String,
+             app_introduce: String,
+             app_introduction_image: String?,
+             file: String,
+             app_explain: String?,
+             app_version: String,
+             is_pay: Int,
+             pay_money: String?,
+             category_id: Int,
+             sub_category_id: Int
         ): Result<BaseResponse>
 
         suspend fun updateApp(
-            appid: Int = 1,
-            usertoken: String,
-            apps_id: Long,
-            appname: String,
-            icon: String?,
-            app_size: String,
-            app_introduce: String,
-            app_introduction_image: String,
-            file: String,
-            app_explain: String?,
-            app_version: String,
-            is_pay: Int,
-            pay_money: String?,
-            category_id: Int,
-            sub_category_id: Int
+             appid: Int = 1,
+             usertoken: String,
+             apps_id: Long,
+             appname: String,
+             icon: String?,
+             app_size: String,
+             app_introduce: String,
+             app_introduction_image: String,
+             file: String,
+             app_explain: String?,
+             app_version: String,
+             is_pay: Int,
+             pay_money: String?,
+             category_id: Int,
+             sub_category_id: Int
         ): Result<BaseResponse>
 
         suspend fun deleteApp(
-            appid: Int = 1,
-            usertoken: String,
-            apps_id: Long,
-            app_version_id: Long
+             appid: Int = 1,
+             usertoken: String,
+             apps_id: Long,
+             app_version_id: Long
         ): Result<BaseResponse>
 
         suspend fun getRankingList(
-            appid: Int = 1,
-            sort: String,
-            sortOrder: String,
-            limit: Int = 15,
-            page: Int
+             appid: Int = 1,
+             sort: String = "money",
+             sortOrder: String = "desc",
+             limit: Int = 15,
+             page: Int
         ): Result<RankingListResponse>
 
         suspend fun followUser(
-            appid: Int = 1,
-            token: String,
-            followedId: Long
+             appid: Int = 1,
+             token: String,
+             followedId: Long
         ): Result<BaseResponse>
 
         suspend fun uploadAvatar(
-            appid: Int,
-            token: String,
-            file: ByteArray,
-            filename: String
+             appid: Int,
+             token: String,
+             file: ByteArray,
+             filename: String
         ): Result<BaseResponse>
 
         //suspend fun getImageVerificationCode(
@@ -1036,12 +1036,12 @@ object KtorClient {
         ): Result<BaseResponse> {
             val parameters = Parameters.build {
                 append("appid", appid.toString())
-                append("usertoken", token)
+                                append("usertoken", token)
                 append("title", title)
                 append("content", content)
                 append("subsectionid", sectionId.toString())
                 imageUrls?.let { append("network_picture", it) }
-                           append("paid_reading", paidReading.toString())
+                append("paid_reading", paidReading.toString())
                 append("file_download_method", downloadMethod.toString())
             }
             return request(CREATE_POST_URL, parameters = parameters)
@@ -1520,7 +1520,7 @@ object KtorClient {
             appid: Int,
             sort: String,
             sortOrder: String,
-            limit: Int = 15,
+            limit: Int,
             page: Int
         ): Result<RankingListResponse> {
             val parameters = Parameters.build {
@@ -1554,20 +1554,13 @@ object KtorClient {
         ): Result<BaseResponse> {
             try {
                 val response: HttpResponse = httpClient.post(UPLOAD_AVATAR_URL) {
-                    val multipartData = formData {
+                    val multipartData = FormDataContent(Parameters.build {
                         append("appid", appid.toString())
                         append("usertoken", token)
-                        append("file", file, Headers.build {
-                            append(HttpHeaders.ContentType, "image/jpeg")
-                            append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
-                        })
-                    }
-                    
-                    // Convert FormData to a List<PartData>
-                    val parts = multipartData.build()
 
-                    // Set the body as a MultiPartFormDataContent
-                    body = MultiPartFormDataContent(parts, multipartData.boundary)
+                        append("file", filename)
+                    })
+                    this.body = multipartData
                 }
                 return Result.success(response.body())
             } catch (e: Exception) {
