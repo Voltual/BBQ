@@ -1,0 +1,245 @@
+//Copyright (C) 2025 Voltual
+// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
+//（或任意更新的版本）的条款重新分发和/或修改它。
+//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
+// 有关更多细节，请参阅 GNU 通用公共许可证。
+//
+// 你应该已经收到了一份 GNU 通用公共许可证的副本
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+
+package cc.bbq.xq.ui.community
+
+import android.app.Application
+import android.net.Uri
+import android.widget.Toast
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import cc.bbq.xq.AuthManager
+import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.data.db.PostDraftRepository
+import cc.bbq.xq.util.FileUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
+
+class PostCreateViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val draftRepository = PostDraftRepository()
+
+    private val _uiState = MutableStateFlow(PostCreateUiState())
+    val uiState: StateFlow<PostCreateUiState> = _uiState.asStateFlow()
+
+    // 新增：发帖状态
+    private val _postStatus = MutableStateFlow<PostStatus>(PostStatus.Idle)
+    val postStatus: StateFlow<PostStatus> = _postStatus.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            draftRepository.draftFlow.first()?.let { draft ->
+                _uiState.update { it.copy(
+                    title = draft.title,
+                    content = draft.content,
+                    selectedImageUris = draft.imageUris,
+                    imageUrls = draft.imageUrls,
+                    selectedSubsectionId = draft.subsectionId,
+                    imageUriToUrlMap = draft.imageUris.zip(draft.imageUrls.split(",").filter { s -> s.isNotEmpty() }).toMap()
+                )}
+            }
+        }
+        observeAndAutoSave()
+    }
+
+    // --- Event Handlers ---
+    fun onTitleChange(newTitle: String) { _uiState.update { it.copy(title = newTitle) } }
+    fun onContentChange(newContent: String) { _uiState.update { it.copy(content = newContent) } }
+    fun onSubsectionChange(newId: Int) { _uiState.update { it.copy(selectedSubsectionId = newId) } }
+    fun onImageUrlsChange(urls: String) { _uiState.update { it.copy(imageUrls = urls) } }
+
+    fun uploadImage(uri: Uri) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(showProgressDialog = true, progressMessage = "上传图片中...") }
+            
+            val realPath = withContext(Dispatchers.IO) {
+                FileUtil.getRealPathFromURI(getApplication(), uri)
+            }
+
+            if (realPath == null) {
+                _uiState.update { it.copy(showProgressDialog = false) }
+                Toast.makeText(getApplication(), "无法获取图片路径", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+
+            try {
+                val file = File(realPath)
+                val requestFile = MultipartBody.Part.createFormData(
+                    "file", file.name, file.asRequestBody("image/*".toMediaTypeOrNull())
+                )
+                val response = RetrofitClient.uploadInstance.uploadImage(requestFile)
+
+                if (response.isSuccessful && response.body()?.code == 0) {
+                    response.body()?.downurl?.let { url ->
+                        _uiState.update { currentState ->
+                            val newUris = currentState.selectedImageUris + uri
+                            val newUrlMap = currentState.imageUriToUrlMap + (uri to url)
+                            val newUrls = newUrlMap.values.joinToString(",")
+                            currentState.copy(
+                                selectedImageUris = newUris,
+                                imageUrls = newUrls,
+                                imageUriToUrlMap = newUrlMap
+                            )
+                        }
+                        Toast.makeText(getApplication(), "图片上传成功", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(getApplication(), "上传失败: ${response.body()?.msg}", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(getApplication(), "上传错误: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                _uiState.update { it.copy(showProgressDialog = false) }
+            }
+        }
+    }
+
+    fun removeImage(uri: Uri) {
+        _uiState.update { currentState ->
+            val newUris = currentState.selectedImageUris - uri
+            val newUrlMap = currentState.imageUriToUrlMap - uri
+            val newUrls = newUrlMap.values.joinToString(",")
+            currentState.copy(
+                selectedImageUris = newUris,
+                imageUrls = newUrls,
+                imageUriToUrlMap = newUrlMap
+            )
+        }
+    }
+
+    // 新增：发帖方法
+    fun createPost(
+        title: String,
+        content: String,
+        imageUrls: String,
+        subsectionId: Int,
+        bvNumber: String,
+        tempDeviceName: String,
+        mode: String,
+        refundAppName: String = "",
+        refundAppId: Long = 0L,
+        refundVersionId: Long = 0L,
+        refundPayMoney: Int = 0,
+        selectedRefundReason: String = ""
+    ) {
+        viewModelScope.launch {
+            _postStatus.value = PostStatus.Loading
+            
+            try {
+                val credentials = AuthManager.getCredentials(getApplication())
+                if (credentials == null) {
+                    _postStatus.value = PostStatus.Error("请先登录")
+                    return@launch
+                }
+
+                val token = credentials.third
+                
+                // 构建最终内容
+                val finalContent = if (mode == "refund") {
+                    val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
+                    """
+                    ${_uiState.value.content}
+
+
+                    问题类型:$selectedRefundReason
+                    系统定制商：${android.os.Build.BRAND.uppercase()}
+                    设备型号：${android.os.Build.MODEL}
+                    退还金额:$refundPayMoney
+                    资源id:$refundAppId
+                    资源版本:$refundVersionId 機型：$tempDeviceName｜$videoPart
+                    """.trimIndent()
+                } else {
+                    val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
+                    "${_uiState.value.content} 機型：$tempDeviceName｜$videoPart"
+                }
+
+                val finalSubsectionId = if (mode == "refund") 21 else subsectionId
+
+                val response = RetrofitClient.instance.createPost(
+                    appid = 1,
+                    token = token,  // 这里使用参数名 token，而不是 usertoken
+                    title = title,
+                    content = finalContent,
+                    sectionId = finalSubsectionId,
+                    imageUrls = if (imageUrls.isNotBlank()) imageUrls else null
+                )
+
+                if (response.isSuccessful && response.body()?.code == 1) {
+                    // 发帖成功，清除草稿
+                    clearDraft()
+                    _postStatus.value = PostStatus.Success
+                    Toast.makeText(getApplication(), "发帖成功", Toast.LENGTH_SHORT).show()
+                } else {
+                    val errorMsg = response.body()?.msg ?: "发帖失败"
+                    _postStatus.value = PostStatus.Error(errorMsg)
+                    Toast.makeText(getApplication(), "发帖失败: $errorMsg", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                val errorMsg = "网络错误: ${e.message}"
+                _postStatus.value = PostStatus.Error(errorMsg)
+                Toast.makeText(getApplication(), errorMsg, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun clearDraft() {
+        viewModelScope.launch {
+            draftRepository.clearDraft()
+        }
+    }
+
+    // 新增：重置发帖状态
+    fun resetPostStatus() {
+        _postStatus.value = PostStatus.Idle
+    }
+
+    private fun observeAndAutoSave() {
+        _uiState
+            .debounce(1000)
+            .onEach { state ->
+                if (state.title.isNotBlank() || state.content.isNotBlank() || state.selectedImageUris.isNotEmpty()) {
+                    draftRepository.saveDraft(
+                        PostDraftRepository.DraftDto(
+                            title = state.title,
+                            content = state.content,
+                            imageUris = state.selectedImageUris,
+                            imageUrls = state.imageUrls,
+                            subsectionId = state.selectedSubsectionId
+                        )
+                    )
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+}
+
+data class PostCreateUiState(
+    val title: String = "",
+    val content: String = "",
+    val selectedSubsectionId: Int = 11,
+    val selectedImageUris: List<Uri> = emptyList(),
+    val imageUrls: String = "",
+    val imageUriToUrlMap: Map<Uri, String> = emptyMap(),
+    val showProgressDialog: Boolean = false,
+    val progressMessage: String = ""
+)
+
+// 新增：发帖状态密封类
+sealed class PostStatus {
+    object Idle : PostStatus()
+    object Loading : PostStatus()
+    object Success : PostStatus()
+    data class Error(val message: String) : PostStatus()
+}

@@ -1,0 +1,70 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ master ]
+  issues:
+    types: [opened]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: gradle
+
+      - name: Switch to Official Gradle Source for Runner
+        run: |
+          sed -i 's|https://mirrors.cloud.tencent.com/gradle|https://services.gradle.org/distributions|g' gradle/wrapper/gradle-wrapper.properties
+          cat gradle/wrapper/gradle-wrapper.properties
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 简化缓存 Key
+      - name: Gradle Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ${{ github.workspace }}/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle.kts', '**/settings.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/bundle/debug/*.aab
+          retention-days: 7
+
+      # 仅在构建成功时缓存，避免缓存错误
+      - name: Save Gradle cache
+        uses: actions/cache@v3
+        if: ${{ success() }}
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ${{ github.workspace }}/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle.kts', '**/settings.gradle.kts') }}

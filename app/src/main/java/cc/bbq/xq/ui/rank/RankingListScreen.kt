@@ -1,0 +1,100 @@
+//Copyright (C) 2025 Voltual
+// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
+//（或任意更新的版本）的条款重新分发和/或修改它。
+//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
+// 有关更多细节，请参阅 GNU 通用公共许可证。
+//
+// 你应该已经收到了一份 GNU 通用公共许可证的副本
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+package cc.bbq.xq.ui.rank
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import cc.bbq.xq.ui.UserDetail
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+fun RankingListScreen(
+    navController: NavController,
+    viewModel: RankingListViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsState()
+    val listState = rememberLazyListState()
+    val refreshing = state.isRefreshing
+    val pullRefreshState = rememberPullRefreshState(refreshing, { viewModel.refreshRankingList() })
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        if (state.isLoading && state.rankingList.isEmpty()) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else if (state.error != null) {
+            Text(
+                text = "加载失败: ${state.error}",
+                modifier = Modifier.align(Alignment.Center)
+            )
+        } else if (state.rankingList.isEmpty()) {
+            Text(
+                text = "暂无排名数据",
+                modifier = Modifier.align(Alignment.Center)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                state = listState,
+                contentPadding = PaddingValues(bottom = 8.dp)
+            ) {
+                itemsIndexed(state.rankingList) { index, user ->
+                    RankingListItem(
+                        ranking = index + 1,
+                        user = user,
+                        onClick = {
+                            // 使用 NavController 导航
+                            navController.navigate(UserDetail(user.id).createRoute())
+                        }
+                    )
+
+                    if (index == state.rankingList.size - 1 && state.hasMore && !state.isLoading) {
+                        SideEffect {
+                            viewModel.loadNextRankingList()
+                        }
+                    }
+                }
+
+                if (state.isLoading) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
+            }
+        }
+
+        PullRefreshIndicator(
+            refreshing,
+            pullRefreshState,
+            Modifier.align(Alignment.TopCenter)
+        )
+    }
+}

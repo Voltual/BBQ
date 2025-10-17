@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_license">GNU General Public License v3.0</string>
+    <string name="app_name">BBQ</string>
+    <string name="reply_dialog_title">回复评论</string>
+    <string name="reply_hint">输入回复内容</string>
+    <string name="send_button">发送</string>
+    <string name="cancel_button">取消</string>
+    <string name="search_hint">搜索帖子.</string>
+    <string name="no_users_found">没有找到用户</string>
+    <string name="error_not_logged_in">请先登录</string>
+    <string name="error_data_invalid">数据格式错误</string>
+    <string name="error_unknown">未知错误</string>
+    <string name="error_network">网络连接错误</string>
+    <string name="retry">重试</string>
+    <string name="avatar_desc">用户头像</string>
+    <string name="level_tag_desc">用户等级标签</string>
+    <!-- 账单类型 -->
+    <string name="billing_signin">签到奖励</string>
+    <string name="billing_reward">被打赏</string>
+    <string name="billing_comment_reward">评论打赏</string>
+    <string name="username_hint">用户名</string>
+    <string name="password_hint">密码</string>
+    <string name="login_button">登录</string>
+    <string name="register_button">注册账号</string>
+    <string name="register_coming_soon">注册功能开发中</string>
+    <string name="login_empty_fields">请输入用户名和密码</string>
+    <string name="show_password">显示密码</string>
+    <string name="hide_password">隐藏密码</string>
+    <string name="resource_plaza">资源广场</string>
+    <string name="my_resources">我的资源</string>
+    <string name="search_resources">搜索资源...</string>
+    <string name="popular_apps">热门应用</string>
+    <string name="my_apps">我的应用</string>
+    <string name="search_results">搜索结果</string>
+    <string name="prev_page">上一页</string>
+    <string name="next_page">下一页</string>
+    <string name="page_info">第 %1$d 页/共 %2$d 页</string>
+    <string name="jump_to_page">跳转页面</string>
+    <string name="enter_page_number">输入页码 (1-%d)</string>
+    <string name="jump">跳转</string>
+    <string name="title_follow_list">我的关注</string>
+    <string name="title_fan_list">我的粉丝</string>
+    <string name="open_drawer">打开菜单</string>
+    <string name="back">返回</string>
+    <string name="clear">清除</string>
+    <string name="close">关闭</string>
+    <string name="about_title">关于本程序</string>
+    <string name="gpl_notice">本程序采用GNU通用公共许可证第3版(GPLv3)授权。您可以自由地分发、修改本程序，但必须遵守许可证条款。完整许可证文本请访问：https://www.gnu.org/licenses/gpl-3.0.html</string>
+
+    <!-- 搜索历史 -->
+    <string name="search_history">搜索历史</string>
+    <string name="clear_all_history">清空所有历史记录</string>
+    <string name="delete_history_title">删除历史记录</string>
+    <string name="delete_history_text">您确定要删除这条历史记录吗？\n\"%1$s\"</string>
+    <string name="clear_all_history_title">清空所有历史记录</string>
+    <string name="clear_all_history_text">您确定要清空所有搜索历史记录吗？此操作不可恢复。</string>
+    <string name="confirm">确认</string>
+    <string name="cancel">取消</string>
+</resources>

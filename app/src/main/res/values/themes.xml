@@ -1,0 +1,10 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- 基础主题（浅色模式） -->
+    <style name="Theme.BBQ" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- 设置状态栏和导航栏透明 -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- 浅色状态栏图标（深色图标） -->
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

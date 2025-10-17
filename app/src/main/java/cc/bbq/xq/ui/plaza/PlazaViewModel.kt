@@ -1,0 +1,520 @@
+//Copyright (C) 2025 Voltual
+// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
+//（或任意更新的版本）的条款重新分发和/或修改它。
+//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
+// 有关更多细节，请参阅 GNU 通用公共许可证。
+//
+// 你应该已经收到了一份 GNU 通用公共许可证的副本
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+package cc.bbq.xq.ui.plaza
+
+import android.app.Application
+import android.content.Context
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.lifecycle.*
+import android.util.Log
+import cc.bbq.xq.AuthManager
+import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.RetrofitClient.models.AppListResponse
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import retrofit2.Response
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.catch
+
+// ==================== 内部类 - 数据模型和ViewModel ====================
+
+// ==================== 数据模型 ====================
+data class AppItem(
+    val id: String,
+    val name: String,
+    val iconUrl: String,
+    val versionId: Long
+) {
+    val uniqueId: String get() = "$id-$versionId-${System.nanoTime()}"
+}
+
+data class PlazaData(val popularApps: List<AppItem>)
+
+// ==================== ViewModel ====================
+private val Context.dataStore by preferencesDataStore(name = "plaza_preferences")
+
+class PlazaViewModel(
+    application: Application,
+    initialMode: Boolean = false
+) : AndroidViewModel(application) {
+    private val repository = PlazaRepository(application.applicationContext)
+    private val _plazaData = MutableLiveData(PlazaData(emptyList()))
+    private val _searchResults = MutableLiveData(emptyList<AppItem>())
+    private val _errorMessage = MutableLiveData("")
+    private val _isLoading = MutableLiveData(false)
+
+    // 模式管理
+    private var currentMode = initialMode
+    private var hasLoadedInitialData = false
+
+    // 分页状态
+    private var popularAppsPage = 1
+    private var popularAppsTotalPages = 1
+    private var searchPage = 1
+    private var searchTotalPages = 1
+    private var currentQuery = ""
+    private var currentCategoryId: Int? = null
+    private var currentSubCategoryId: Int? = null
+    private var currentUserId: Long? = null
+
+    // DataStore keys
+    private val AUTO_SCROLL_MODE_KEY = booleanPreferencesKey("auto_scroll_mode")
+
+    // 状态跟踪 - 类似 UserDetailViewModel
+    private var _isInitialized = false
+    private var _currentModeState: Boolean = initialMode
+    private var _currentUserIdState: Long? = null
+
+    // Public autoScrollMode LiveData
+    private val _autoScrollMode = MutableLiveData<Boolean>()
+    val autoScrollMode: LiveData<Boolean> = _autoScrollMode
+
+    // 公开的LiveData
+    val currentPage = MutableLiveData(1)
+    val totalPages = MutableLiveData(1)
+    val plazaData: LiveData<PlazaData> = _plazaData
+    val searchResults: LiveData<List<AppItem>> = _searchResults
+    val errorMessage: LiveData<String> = _errorMessage
+    val isLoading: LiveData<Boolean> = _isLoading
+
+    init {
+        Log.d("PlazaViewModel", "初始模式: $currentMode")
+        viewModelScope.launch {
+            _autoScrollMode.postValue(getAutoScrollMode())
+        }
+    }
+
+    private suspend fun getAutoScrollMode(): Boolean {
+        val dataStore = getApplication<Application>().applicationContext.dataStore
+        return try {
+            val preferences = dataStore.data.first()
+            preferences[AUTO_SCROLL_MODE_KEY] ?: false
+        } catch (e: Exception) {
+            Log.e("PlazaViewModel", "Error reading auto scroll mode from DataStore", e)
+            false
+        }
+    }
+
+    fun setAutoScrollMode(enabled: Boolean) {
+        viewModelScope.launch {
+            getApplication<Application>().applicationContext.dataStore.edit { preferences ->
+                preferences[AUTO_SCROLL_MODE_KEY] = enabled
+            }
+            _autoScrollMode.postValue(enabled)
+            Log.d("PlazaViewModel", "自动滚动模式设置为：$enabled")
+        }
+    }
+
+    // 核心初始化方法 - 类似 UserDetailViewModel 的模式
+    fun initializeData(isMyResourceMode: Boolean, userId: Long? = null) {
+        // 只有当模式或用户ID真正改变时才重新加载
+        if (this._currentModeState != isMyResourceMode || this._currentUserIdState != userId) {
+            this._currentModeState = isMyResourceMode
+            this._currentUserIdState = userId
+            this._isInitialized = false
+            resetState()
+            loadDataIfNeeded()
+        } else {
+            // 相同的状态，确保数据已加载
+            loadDataIfNeeded()
+        }
+    }
+
+    // 分类数据加载方法
+    fun loadDataByCategory(categoryId: Int? = null, subCategoryId: Int? = null, userId: Long? = null) {
+        if (categoryId != currentCategoryId || subCategoryId != currentSubCategoryId) {
+            currentCategoryId = categoryId
+            currentSubCategoryId = subCategoryId
+            currentUserId = userId
+            loadData(categoryId, subCategoryId, userId)
+        }
+    }
+
+    private fun resetState() {
+        _plazaData.postValue(PlazaData(emptyList()))
+        _searchResults.postValue(emptyList())
+        _errorMessage.postValue("")
+        popularAppsPage = 1
+        currentPage.postValue(1)
+    }
+
+    private fun loadDataIfNeeded() {
+        if (!_isInitialized && !(_isLoading.value == true)) {
+            _isInitialized = true
+            loadData(currentCategoryId, currentSubCategoryId, _currentUserIdState)
+        }
+    }
+
+    fun resetForMode(newMode: Boolean) {
+        if (newMode != currentMode) {
+            Log.d("PlazaViewModel", "模式变化: $currentMode -> $newMode")
+            currentMode = newMode
+            _isInitialized = false
+            popularAppsPage = 1
+            currentUserId = null
+            _plazaData.value = PlazaData(emptyList())
+            _searchResults.value = emptyList()
+        }
+    }
+    
+    fun setMyResourceMode(isMyResource: Boolean) {
+        if (currentMode != isMyResource) {
+            currentMode = isMyResource
+            _isInitialized = false
+            popularAppsPage = 1
+            currentUserId = null
+            _plazaData.value = PlazaData(emptyList())
+            _searchResults.value = emptyList()
+        }
+    }
+
+    fun loadData(categoryId: Int? = null, subCategoryId: Int? = null, userId: Long? = null) {
+        if (_isLoading.value == true) return
+        _isLoading.value = true
+        popularAppsPage = 1
+        currentPage.value = 1
+        currentCategoryId = categoryId
+        currentSubCategoryId = subCategoryId
+        currentUserId = userId
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                Log.d("PlazaViewModel", "加载数据: 模式=$currentMode, 页码=$popularAppsPage, categoryId=$categoryId, subCategoryId=$subCategoryId, userId=$userId")
+                val popularApps = repository.getAppsList(
+                    limit = if (currentMode) 12 else 9,
+                    page = popularAppsPage,
+                    userId = userId,
+                    categoryId = categoryId,
+                    subCategoryId = subCategoryId
+                )
+                popularAppsTotalPages = repository.lastTotalPages ?: 1
+                if (popularAppsTotalPages <= 0) popularAppsTotalPages = 1
+                totalPages.postValue(popularAppsTotalPages)
+
+                if (popularApps.isEmpty()) {
+                    _errorMessage.postValue("加载失败或暂无资源")
+                    _plazaData.postValue(PlazaData(emptyList()))
+                } else {
+                    _plazaData.postValue(PlazaData(popularApps.map { convertToUiModel(it) }))
+                }
+            } catch (e: Exception) {
+                _errorMessage.postValue("发生错误: ${e.localizedMessage}")
+            } finally {
+                _isLoading.postValue(false)
+            }
+        }
+    }
+
+    fun nextPage(onComplete: (() -> Unit)? = null) {
+        if (_isLoading.value == true || popularAppsPage >= popularAppsTotalPages) return
+        _isLoading.value = true
+        popularAppsPage++
+        currentPage.postValue(popularAppsPage)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) AuthManager.getUserId(getApplication()) else null
+                val newApps = repository.getAppsList(
+                    limit = if (currentMode) 12 else 9,
+                    page = popularAppsPage,
+                    userId = finalUserId,
+                    categoryId = currentCategoryId,
+                    subCategoryId = currentSubCategoryId
+                )
+                popularAppsTotalPages = repository.lastTotalPages ?: popularAppsTotalPages
+                totalPages.postValue(popularAppsTotalPages)
+
+                if (newApps.isNotEmpty()) {
+                    val currentApps = _plazaData.value?.popularApps ?: emptyList()
+                    val updatedApps = currentApps + newApps.map { convertToUiModel(it) }
+                    _plazaData.postValue(PlazaData(popularApps = updatedApps))
+                }
+            } catch (e: Exception) {
+                popularAppsPage--
+                currentPage.postValue(popularAppsPage)
+                _errorMessage.postValue("加载更多失败: ${e.localizedMessage}")
+            } finally {
+                _isLoading.postValue(false)
+                onComplete?.invoke()
+            }
+        }
+    }
+
+    fun prevPage() {
+        if (_isLoading.value == true || popularAppsPage <= 1) return
+        _isLoading.value = true
+        popularAppsPage--
+        currentPage.postValue(popularAppsPage)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) AuthManager.getUserId(getApplication()) else null
+                val newApps = repository.getAppsList(
+                    limit = if (currentMode) 12 else 9,
+                    page = popularAppsPage,
+                    userId = finalUserId,
+                    categoryId = currentCategoryId,
+                    subCategoryId = currentSubCategoryId
+                )
+                popularAppsTotalPages = repository.lastTotalPages ?: popularAppsTotalPages
+                totalPages.postValue(popularAppsTotalPages)
+                _plazaData.postValue(PlazaData(popularApps = newApps.map { convertToUiModel(it) }))
+            } catch (e: Exception) {
+                popularAppsPage++
+                currentPage.postValue(popularAppsPage)
+                _errorMessage.postValue("加载上一页失败: ${e.localizedMessage}")
+            } finally {
+                _isLoading.postValue(false)
+            }
+        }
+    }
+
+    fun searchResources(query: String, isMyResource: Boolean = false) {
+    if (_isLoading.value == true) return
+    _isLoading.postValue(true)
+    searchPage = 1
+    currentQuery = query
+    currentPage.postValue(1)
+
+    viewModelScope.launch(Dispatchers.IO) {
+        try {
+            // 修复：在"我的资源"或"TA的资源"模式下，需要传递 userId
+            val finalUserId = when {
+                // 如果是"我的资源"模式，使用当前登录用户的ID
+                isMyResource && currentUserId == null -> AuthManager.getUserId(getApplication())
+                // 如果是"TA的资源"模式，使用指定的 userId
+                currentUserId != null -> currentUserId
+                // 普通资源广场模式，不传递 userId
+                else -> null
+            }
+            
+            val results = repository.searchApps(query, page = searchPage, userId = finalUserId)
+            searchTotalPages = repository.lastTotalPages ?: 1
+            totalPages.postValue(searchTotalPages)
+
+            if (results.isEmpty()) {
+                _errorMessage.postValue("未找到相关资源")
+                _searchResults.postValue(emptyList())
+            } else {
+                _searchResults.postValue(results.map { convertToUiModel(it) })
+            }
+        } catch (e: Exception) {
+            _errorMessage.postValue("搜索失败: ${e.localizedMessage}")
+        } finally {
+            _isLoading.postValue(false)
+        }
+    }
+}
+
+    fun searchNextPage(onComplete: (() -> Unit)? = null) {
+    if (_isLoading.value == true || searchPage >= searchTotalPages) return
+    _isLoading.postValue(true)
+    searchPage++
+    currentPage.postValue(searchPage)
+
+    viewModelScope.launch(Dispatchers.IO) {
+        try {
+            // 修复：在分页搜索时也传递正确的 userId
+            val finalUserId = when {
+                currentMode && currentUserId == null -> AuthManager.getUserId(getApplication())
+                currentUserId != null -> currentUserId
+                else -> null
+            }
+            
+            val newResults = repository.searchApps(currentQuery, page = searchPage, userId = finalUserId)
+            searchTotalPages = repository.lastTotalPages ?: searchTotalPages
+            totalPages.postValue(searchTotalPages)
+
+            if (newResults.isNotEmpty()) {
+                val currentResults = _searchResults.value ?: emptyList()
+                val updatedResults = currentResults + newResults.map { convertToUiModel(it) }
+                _searchResults.postValue(updatedResults)
+            }
+        } catch (e: Exception) {
+            searchPage--
+            currentPage.postValue(searchPage)
+            _errorMessage.postValue("加载更多失败: ${e.localizedMessage}")
+        } finally {
+            _isLoading.postValue(false)
+            onComplete?.invoke()
+        }
+    }
+}
+
+    fun searchPrevPage() {
+    if (_isLoading.value == true || searchPage <= 1) return
+    _isLoading.value = true
+    searchPage--
+    currentPage.postValue(searchPage)
+
+    viewModelScope.launch(Dispatchers.IO) {
+        try {
+            // 修复：在上一页搜索时也传递正确的 userId
+            val finalUserId = when {
+                currentMode && currentUserId == null -> AuthManager.getUserId(getApplication())
+                currentUserId != null -> currentUserId
+                else -> null
+            }
+            
+            val newResults = repository.searchApps(currentQuery, page = searchPage, userId = finalUserId)
+            searchTotalPages = repository.lastTotalPages ?: searchTotalPages
+            totalPages.postValue(searchTotalPages)
+            _searchResults.postValue(newResults.map { convertToUiModel(it) })
+        } catch (e: Exception) {
+            searchPage++
+            currentPage.postValue(searchPage)
+            _errorMessage.postValue("加载上一页失败: ${e.localizedMessage}")
+        } finally {
+            _isLoading.postValue(false)
+        }
+    }
+}
+
+    fun cancelSearch() {
+        _searchResults.postValue(emptyList())
+    }
+
+    private fun convertToUiModel(apiItem: RetrofitClient.models.AppItem): AppItem = AppItem(
+        id = apiItem.id.toString(),
+        name = apiItem.appname,
+        iconUrl = apiItem.app_icon,
+        versionId = apiItem.apps_version_id
+    )
+
+    fun goToPage(page: Int) {
+        if (page < 1 || page > popularAppsTotalPages) {
+            _errorMessage.postValue("页码超出范围")
+            return
+        }
+        if (page == popularAppsPage && _plazaData.value?.popularApps?.isNotEmpty() == true) return
+
+        _isLoading.value = true
+        popularAppsPage = page
+        currentPage.postValue(page)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) AuthManager.getUserId(getApplication()) else null
+                val newApps = repository.getAppsList(
+                    limit = if (currentMode) 12 else 9,
+                    page = page,
+                    userId = finalUserId,
+                    categoryId = currentCategoryId,
+                    subCategoryId = currentSubCategoryId
+                )
+                popularAppsTotalPages = repository.lastTotalPages ?: popularAppsTotalPages
+                totalPages.postValue(popularAppsTotalPages)
+                _plazaData.postValue(PlazaData(popularApps = newApps.map { convertToUiModel(it) }))
+            } catch (e: Exception) {
+                _errorMessage.postValue("加载失败: ${e.message}")
+            } finally {
+                _isLoading.postValue(false)
+            }
+        }
+    }
+
+    fun searchGoToPage(page: Int) {
+    if (page < 1 || page > searchTotalPages) {
+        _errorMessage.postValue("页码超出范围")
+        return
+    }
+    if (page == searchPage && _searchResults.value?.isNotEmpty() == true) return
+
+    _isLoading.value = true
+    searchPage = page
+    currentPage.postValue(page)
+
+    viewModelScope.launch(Dispatchers.IO) {
+        try {
+            // 修复：在跳页搜索时也传递正确的 userId
+            val finalUserId = when {
+                currentMode && currentUserId == null -> AuthManager.getUserId(getApplication())
+                currentUserId != null -> currentUserId
+                else -> null
+            }
+            
+            val newResults = repository.searchApps(currentQuery, page = page, userId = finalUserId)
+            searchTotalPages = repository.lastTotalPages ?: searchTotalPages
+            totalPages.postValue(searchTotalPages)
+            _searchResults.postValue(newResults.map { convertToUiModel(it) })
+        } catch (e: Exception) {
+            _errorMessage.postValue("加载失败: ${e.message}")
+        } finally {
+            _isLoading.postValue(false)
+        }
+    }
+}
+
+    fun loadMore(isSearchMode: Boolean) {
+        if (autoScrollMode.value == true && _isLoading.value != true) {
+            if (isSearchMode) {
+                if (searchPage < searchTotalPages) {
+                    searchNextPage()
+                }
+            } else {
+                if (popularAppsPage < popularAppsTotalPages) {
+                    nextPage()
+                }
+            }
+        }
+    }
+}
+
+class PlazaRepository(private val context: Context) {
+    private val api = RetrofitClient.instance
+    var lastTotalPages: Int? = null
+
+    suspend fun getAppsList(limit: Int, page: Int = 1, categoryId: Int? = null, subCategoryId: Int? = null, userId: Long? = null): List<RetrofitClient.models.AppItem> {
+        return handleResponse(api.getAppsList(
+            limit = limit,
+            page = page,
+            sortOrder = "desc",
+            categoryId = categoryId,
+            subCategoryId = subCategoryId,
+            appName = null,
+            userId = userId
+        ))
+    }
+
+    suspend fun searchApps(query: String, page: Int = 1, limit: Int = 20, userId: Long? = null): List<RetrofitClient.models.AppItem> {
+        return handleResponse(api.getAppsList(
+            limit = limit,
+            page = page,
+            appName = query,
+            sortOrder = "desc",
+            userId = userId
+        ))
+    }
+
+    private suspend fun handleResponse(response: Response<RetrofitClient.models.AppListResponse>): List<RetrofitClient.models.AppItem> {
+        return try {
+            if (response.isSuccessful) {
+                response.body()?.let { body ->
+                    if (body.code == 1) {
+                        lastTotalPages = body.data.pagecount.takeIf { it > 0 } ?: 1
+                        body.data.list
+                    } else {
+                        emptyList()
+                    }
+                } ?: emptyList()
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+}
