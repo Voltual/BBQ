@@ -1556,7 +1556,7 @@ override suspend fun uploadAvatar(
 ): Result<BaseResponse> {
     try {
         val response: HttpResponse = httpClient.post(UPLOAD_AVATAR_URL) {
-            this.body = MultiPartFormDataContent(
+            val multipartData = MultiPartFormDataContent(
                 listOf(
                     PartData.FormItem(
                         value = appid.toString(),
@@ -1574,17 +1574,13 @@ override suspend fun uploadAvatar(
                     ),
                     PartData.FileItem(
                         {
-                            file.inputStream().use { stream ->
-                                object : InputStreamBody(stream, ContentType.Image.JPEG) {
-                                    override val filename: String? = filename
-                                }
+                            val stream = ByteArrayInputStream(file)
+                            object : InputStreamBody(stream, ContentType.Image.JPEG) {
+                                override val filename: String = filename
                             }
                         },
                         Headers.build {
-                            append(
-                                HttpHeaders.ContentDisposition,
-                                "form-data; name=\"file\"; filename=\"$filename\""
-                            )
+                            append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"$filename\"")
                             append(HttpHeaders.ContentType, "image/jpeg")
                         },
                         dispose = {}
@@ -1592,6 +1588,7 @@ override suspend fun uploadAvatar(
                 ),
                 boundary = "5c1f4c34-2506-4631-8162-dfffc6af3b2d"
             )
+            this.body = multipartData
         }
         return Result.success(response.body())
     } catch (e: Exception) {
