@@ -29,7 +29,8 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.File
 import io.ktor.client.request.forms.* // 导入 Ktor 表单相关类
 import io.ktor.http.* // 导入 Ktor HTTP 相关类
@@ -91,7 +92,6 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     val isApkUploading = mutableStateOf(false)
     val isIconUploading = mutableStateOf(false)
-
     val isIntroImagesUploading = mutableStateOf(false)
 
     private val _processFeedback = MutableStateFlow<Result<String>?>(null)

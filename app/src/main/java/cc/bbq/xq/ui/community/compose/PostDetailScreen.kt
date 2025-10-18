@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import cc.bbq.xq.AuthManager
 import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.KtorClient // 导入 KtorClient
 import cc.bbq.xq.ui.*
@@ -440,7 +439,6 @@ fun PostDetailScreen(
     }
 }
 
-// CommentDialog 和 CommentItem 函数保持不变...
 @Composable
 fun CommentDialog(
     hint: String,
@@ -794,5 +792,4 @@ fun CommentItem(
             }
         }
     }
-}
 }
