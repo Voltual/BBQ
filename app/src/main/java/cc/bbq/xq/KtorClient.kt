@@ -41,7 +41,7 @@ object KtorClient {
             explicitNulls = false
         })
     }
-
+}
     // 上传专用客户端
     val uploadHttpClient = HttpClient(OkHttp) {
         defaultRequest {
