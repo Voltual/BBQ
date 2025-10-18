@@ -16,7 +16,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
+import cc.bbq.xq.KtorClient // 导入 KtorClient
 import cc.bbq.xq.util.ApkInfo
 import cc.bbq.xq.util.ApkParser
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +31,10 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import io.ktor.client.request.forms.* // 导入 Ktor 表单相关类
+import io.ktor.http.* // 导入 Ktor HTTP 相关类
+import io.ktor.utils.io.*
+import io.ktor.http.content.*
 
 enum class ApkUploadService(val displayName: String) {
     KEYUN("氪云"),
@@ -180,7 +185,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun populateFromAppDetail(appDetail: RetrofitClient.models.AppDetail) {
+    fun populateFromAppDetail(appDetail: KtorClient.AppDetail) {
         isUpdateMode.value = true
         appId = appDetail.id
         appVersionId = appDetail.apps_version_id
@@ -234,8 +239,9 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                 val selectedCategory = categories[selectedCategoryIndex.value]
                 val introImagesString = introductionImageUrls.take(MAX_INTRO_IMAGES).joinToString(",")
 
+                //val response = if (isUpdateMode.value) {
                 val response = if (isUpdateMode.value) {
-                    RetrofitClient.instance.updateApp(
+                    KtorClient.ApiServiceImpl.updateApp(
                         usertoken = token,
                         apps_id = appId,
                         appname = appName.value,
@@ -252,7 +258,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                         sub_category_id = selectedCategory.subCategoryId!!
                     )
                 } else {
-                    RetrofitClient.instance.releaseApp(
+                    KtorClient.ApiServiceImpl.releaseApp(
                         usertoken = token,
                         appname = appName.value,
                         icon = iconUrl.value,
@@ -269,11 +275,11 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                     )
                 }
 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    _processFeedback.value = Result.success(response.body()?.msg ?: "${action}成功, 等待审核")
+                response.onSuccess { result ->
+                    _processFeedback.value = Result.success(result.msg ?: "${action}成功, 等待审核")
                     withContext(Dispatchers.Main) { onSuccess() }
-                } else {
-                    _processFeedback.value = Result.failure(Throwable(response.body()?.msg ?: "${action}失败"))
+                }.onFailure { error ->
+                    _processFeedback.value = Result.failure(Throwable(error.message ?: "${action}失败"))
                 }
             } catch (e: Exception) {
                 _processFeedback.value = Result.failure(e)
@@ -296,17 +302,18 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             isReleasing.value = true // Reuse releasing flag for loading state
             _processFeedback.value = Result.success("正在删除应用...")
             try {
-                val response = RetrofitClient.instance.deleteApp(
+                //val response = RetrofitClient.instance.deleteApp(
+                val response = KtorClient.ApiServiceImpl.deleteApp(
                     usertoken = token,
                     apps_id = appId,
                     app_version_id = appVersionId
                 )
 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    _processFeedback.value = Result.success(response.body()?.msg ?: "删除成功")
+                response.onSuccess { result ->
+                    _processFeedback.value = Result.success(result.msg ?: "删除成功")
                     withContext(Dispatchers.Main) { onSuccess() }
-                } else {
-                    _processFeedback.value = Result.failure(Throwable(response.body()?.msg ?: "删除失败"))
+                }.onFailure { error ->
+                    _processFeedback.value = Result.failure(Throwable(error.message ?: "删除失败"))
                 }
             } catch (e: Exception) {
                 _processFeedback.value = Result.failure(e)
@@ -316,31 +323,34 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    //private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
     private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
         try {
-            val requestFile = file.asRequestBody(mediaType.toMediaTypeOrNull())
-            val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
-            val response = RetrofitClient.uploadInstance.uploadImage(body)
+            val response = KtorClient.uploadHttpClient.post("api.php") {
+                body = MultiPartFormDataContent(
+                    formData {
+                        append("file", file.readBytes(), Headers.build {
+                            append(HttpHeaders.ContentType, mediaType)
+                            append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                        })
+                    }
+                )
+            }
 
-            if (response.isSuccessful) {
-                val responseBody = response.body()
-                if (responseBody != null && (responseBody.code == 1 || responseBody.exists == 1) && !responseBody.downurl.isNullOrBlank()) {
-                    withContext(Dispatchers.Main) {
-                        _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
-                        onSuccess(responseBody.downurl)
-                    }
-                } else {
-                    withContext(Dispatchers.Main){
-                        _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${responseBody?.msg ?: "上传失败"}"))
-                    }
+            val uploadResponse: KtorClient.UploadResponse = response.body()
+
+            if (uploadResponse.code == 1 || uploadResponse.exists == 1) {
+                withContext(Dispatchers.Main) {
+                    _processFeedback.value = Result.success("$contextMessage (氪云): ${uploadResponse.msg}")
+                    onSuccess(uploadResponse.downurl ?: "")
                 }
             } else {
-                withContext(Dispatchers.Main){
-                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 网络错误 ${response.code()}"))
+                withContext(Dispatchers.Main) {
+                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${uploadResponse.msg ?: "上传失败"}"))
                 }
             }
         } catch (e: Exception) {
-            withContext(Dispatchers.Main){
+            withContext(Dispatchers.Main) {
                 _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${e.message}"))
             }
         } finally {
@@ -350,31 +360,31 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
         try {
-            val requestFile = file.asRequestBody("application/vnd.android.package-archive".toMediaTypeOrNull())
-            val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
-            val apiName = "小趣API".toRequestBody("text/plain".toMediaTypeOrNull())
-            
-            val response = RetrofitClient.wanyueyunUploadInstance.uploadFile(apiName, body)
+            val response = KtorClient.wanyueyunUploadHttpClient.post("upload") {
+                body = MultiPartFormDataContent(
+                    formData {
+                        append("Api", "小趣API")
+                        append("file", file.readBytes(), Headers.build {
+                            append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+                            append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                        })
+                    }
+                )
+            }
+            val uploadResponse: KtorClient.WanyueyunUploadResponse = response.body()
 
-            if (response.isSuccessful) {
-                val responseBody = response.body()
-                if (responseBody != null && responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
-                    withContext(Dispatchers.Main) {
-                        _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
-                        onSuccess(responseBody.data)
-                    }
-                } else {
-                    withContext(Dispatchers.Main){
-                        _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${responseBody?.msg ?: "上传失败"}"))
-                    }
+            if (uploadResponse.code == 200 && !uploadResponse.data.isNullOrBlank()) {
+                withContext(Dispatchers.Main) {
+                    _processFeedback.value = Result.success("APK (挽悦云): ${uploadResponse.msg}")
+                    onSuccess(uploadResponse.data)
                 }
             } else {
-                withContext(Dispatchers.Main){
-                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): 网络错误 ${response.code()}"))
+                withContext(Dispatchers.Main) {
+                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${uploadResponse.msg ?: "上传失败"}"))
                 }
             }
         } catch (e: Exception) {
-            withContext(Dispatchers.Main){
+            withContext(Dispatchers.Main) {
                 _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${e.message}"))
             }
         } finally {
