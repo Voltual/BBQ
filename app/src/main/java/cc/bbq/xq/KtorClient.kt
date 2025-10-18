@@ -1592,10 +1592,8 @@ override suspend fun uploadAvatar(
             return Result.failure(IOException("Request failed with status ${response.status.value}"))
         }
 
-        // 使用 kotlinx-serialization 解析 JSON 响应
-        val responseBody = response.bodyAsText()
-        val jsonElement = Json.parseToJsonElement(responseBody)
-        val baseResponse = Json.decodeFromJsonElement<BaseResponse>(jsonElement)
+        // 使用 Ktor 的 body<T>() 函数解析 JSON 响应
+        val baseResponse: BaseResponse = response.body()
 
         return Result.success(baseResponse)
 
