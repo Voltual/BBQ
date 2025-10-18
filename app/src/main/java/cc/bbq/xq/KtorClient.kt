@@ -530,6 +530,7 @@ object KtorClient {
         val remark: String,
         val type: Int
     )
+    
 
     @kotlinx.serialization.Serializable
     data class RankingUser(
