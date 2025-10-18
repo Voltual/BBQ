@@ -105,7 +105,7 @@ val httpClient = HttpClient(OkHttp) {
     // ===== 模型类定义 =====
 
     // 基础响应模型
-    @Serializable
+    @kotlinx.serialization.Serializable
     data class BaseResponse(
         val code: Int,
         val msg: String,

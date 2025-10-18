@@ -4,6 +4,7 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("com.google.devtools.ksp") version "1.9.23-1.0.20"
+    kotlin("plugin.serialization") version "1.9.23" //Kotlin 序列化插件
 }
 
 android {
