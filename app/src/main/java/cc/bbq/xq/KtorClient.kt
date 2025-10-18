@@ -71,34 +71,30 @@ val httpClient = HttpClient(OkHttp) {
     }
 
     private fun initConfig(client: HttpClientConfig<OkHttpConfig>) {
-        // 默认请求配置
-        client.defaultRequest {
-            url(BASE_URL)
-            header(HttpHeaders.ContentType, ContentType.Application.FormUrlEncoded.toString())
-        }
-
-        // JSON 序列化配置
-        client.install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                isLenient = true
-                explicitNulls = false
-            })
-        }
-
-        // 日志配置
-        client.install(Logging) {
-            logger = Logger.DEFAULT
-            level = LogLevel.HEADERS
-        }
-
-        // 超时配置
-        client.install(HttpTimeout) {
-            requestTimeoutMillis = REQUEST_TIMEOUT
-            connectTimeoutMillis = CONNECT_TIMEOUT
-            socketTimeoutMillis = SOCKET_TIMEOUT
-        }
+    // 默认请求配置
+    client.defaultRequest {
+        url(BASE_URL)
+        header(HttpHeaders.ContentType, ContentType.Application.FormUrlEncoded.toString())
     }
+
+    // JSON 序列化配置
+    client.install(ContentNegotiation) {
+        json()
+    }
+
+    // 日志配置
+    client.install(Logging) {
+        logger = Logger.DEFAULT
+        level = LogLevel.HEADERS
+    }
+
+    // 超时配置
+    client.install(HttpTimeout) {
+        requestTimeoutMillis = REQUEST_TIMEOUT
+        connectTimeoutMillis = CONNECT_TIMEOUT
+        socketTimeoutMillis = SOCKET_TIMEOUT
+    }
+}
 
     // ===== 模型类定义 =====
 
