@@ -53,6 +53,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient // 导入 KtorClient
 import cc.bbq.xq.ui.*
 import cc.bbq.xq.ui.community.PostDetailViewModel
 import cc.bbq.xq.ui.compose.LinkifyText
@@ -99,7 +100,9 @@ fun PostDetailScreen(
     val viewModel: PostDetailViewModel = viewModel()
     val context = LocalContext.current
 
+    //val postDetail by viewModel.postDetail.collectAsState()
     val postDetail by viewModel.postDetail.collectAsState()
+    //val comments by viewModel.comments.collectAsState()
     val comments by viewModel.comments.collectAsState()
     val isLiked by viewModel.isLiked.collectAsState()
     val likeCount by viewModel.likeCount.collectAsState()
@@ -116,7 +119,7 @@ fun PostDetailScreen(
     }
 
     var showShareDialog by remember { mutableStateOf(false) }
-    // 修复：将 showMoreOptions 状态移到 PostDetailScreen 内部
+    // 修复：将 showMoreOptions 状态移到 PostDetailScreen 内部 
     var showMoreOptions by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
@@ -636,7 +639,6 @@ fun CommentDialog(
             }
         }
     }
-}
 
     if (showProgressDialog) {
         AlertDialog(
@@ -654,7 +656,8 @@ fun CommentDialog(
 
 @Composable
 fun CommentItem(
-    comment: RetrofitClient.models.Comment,
+    //comment: RetrofitClient.models.Comment,
+    comment: KtorClient.Comment,
     navController: NavController,
     onReply: () -> Unit,
     onDelete: () -> Unit,
