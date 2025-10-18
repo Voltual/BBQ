@@ -1576,11 +1576,8 @@ override suspend fun uploadAvatar(
                         provider = {
                             object : InputProvider {
                                 override fun open(): Input {
-                                    return object : ByteReadChannel(file) : Input() {
-                                        override fun close() {
-                                            super.close()
-                                        }
-                                    }
+                                    val stream = ByteArrayInputStream(file)
+                                    return stream.asInput()
                                 }
                             }
                         },
