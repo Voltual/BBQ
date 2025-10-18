@@ -104,11 +104,11 @@ val httpClient = HttpClient(OkHttp) {
 
     // 基础响应模型
     @Serializable
-data class BaseResponse(
-    val code: Int,
-    val msg: String,
-    val data: JsonElement? = null,
-    val timestamp: Long
+    data class BaseResponse(
+        val code: Int,
+        val msg: String,
+        val data: JsonObject? = null,
+        val timestamp: Long
     ) {
         // 辅助方法：从 data 字段获取下载链接
         fun getDownloadUrl(): String? {
