@@ -1575,7 +1575,7 @@ override suspend fun uploadAvatar(
                             dispose = {}
                         ),
                         PartData.FileItem(
-                            { ByteReadChannel(file) },
+                            { ByteArrayInputStream(file) }, // 修复：使用 ByteArrayInputStream 而不是 ByteReadChannel
                             { },
                             Headers.build {
                                 append(
