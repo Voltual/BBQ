@@ -26,7 +26,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.R
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.ui.community.ListScreen
 import cc.bbq.xq.AuthManager // 添加 AuthManager 导入
 
@@ -41,10 +41,10 @@ import androidx.compose.material.pullrefresh.rememberPullRefreshState
 @Composable
 fun BaseComposeListScreen(
     title: String = "",
-    posts: List<RetrofitClient.models.Post>,
+    posts: List<KtorClient.Post>, // 修改为 KtorClient.Post
     isLoading: Boolean,
     errorMessage: String,
-    onItemClick: (RetrofitClient.models.Post) -> Unit,
+    onItemClick: (KtorClient.Post) -> Unit, // 修改为 KtorClient.Post
     onLoadMore: () -> Unit,
     onRefresh: () -> Unit,
     onSearchClick: () -> Unit = {},
