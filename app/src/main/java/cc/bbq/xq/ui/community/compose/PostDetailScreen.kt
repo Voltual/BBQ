@@ -471,17 +471,38 @@ fun CommentDialog(
                     file.asRequestBody("image/*".toMediaTypeOrNull())
                 )
 
-                val response = RetrofitClient.uploadInstance.uploadImage(requestFile)
+                //val response = RetrofitClient.uploadInstance.uploadImage(requestFile)
+                val response = KtorClient.uploadHttpClient.post("api.php") {
+                    body = MultiPartFormDataContent(
+                        formData {
+                            append("file", file.readBytes(), Headers.build {
+                                append(HttpHeaders.ContentType, "image/*")
+                                append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                            })
+                        }
+                    )
+                }
+
+                //val uploadResponse: KtorClient.UploadResponse = response.body()
+                val uploadResponse: KtorClient.UploadResponse? = try {
+                    response.body()
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        showProgressDialog = false
+                        Toast.makeText(context, "上传错误: 响应解析失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
 
                 withContext(Dispatchers.Main) {
                     showProgressDialog = false
-                    if (response.isSuccessful && (response.body()?.code == 0 || response.body()?.code == 1)) {
-                        response.body()?.downurl?.let { url ->
+                    if (uploadResponse?.code == 1 || uploadResponse?.exists == 1) {
+                        uploadResponse.downurl?.let { url ->
                             onSuccess(url)
                             Toast.makeText(context, "图片上传成功", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        Toast.makeText(context, "上传失败: ${response.body()?.msg}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "上传失败: ${uploadResponse?.msg}", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
