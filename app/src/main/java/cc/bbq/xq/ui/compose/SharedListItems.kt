@@ -5,7 +5,7 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 
 package cc.bbq.xq.ui.compose
 
@@ -15,8 +15,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.automirrored.filled.Comment
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,7 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.ui.theme.ThemeManager
 import cc.bbq.xq.ui.theme.billing_expense
 import cc.bbq.xq.ui.theme.billing_expense_dark
@@ -36,7 +37,7 @@ import coil.compose.rememberAsyncImagePainter
 
 @Composable
 fun SharedPostItem(
-    post: RetrofitClient.models.Post,
+    post: KtorClient.Post, // 修改为 KtorClient.Post
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -65,7 +66,7 @@ fun SharedPostItem(
             Spacer(modifier = Modifier.height(12.dp))
             Text(post.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(post.content.replace("<br>", "\n"), style = MaterialTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Text(post.content, style = MaterialTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
             
             post.img_url?.takeIf { it.isNotEmpty() }?.firstOrNull()?.let { imageUrl ->
                 Spacer(modifier = Modifier.height(12.dp))
@@ -88,7 +89,7 @@ fun SharedPostItem(
                     Text("点赞: ${post.thumbs}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 12.dp))
                     Text("评论: ${post.comment}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text(post.sub_section_name, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.End)
+                Text(post.section_name, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.End)
             }
         }
     }
