@@ -561,26 +561,30 @@ object KtorClient {
     )
 
     /**
-     * 安全地执行 Ktor 请求，并处理异常和重试
-     */
-    private suspend inline fun <reified T> safeApiCall(block: suspend () -> HttpResponse): Result<T> {
-        var attempts = 0
-        while (attempts < MAX_RETRIES) {
-            try {
-                val response = block()
-                return Result.success(response.body())
-            } catch (e: IOException) {
-                attempts++
-                println("Request failed, retrying in $RETRY_DELAY ms... (Attempt $attempts/$MAX_RETRIES)")
-                delay(RETRY_DELAY)
-            } catch (e: Exception) {
-                println("Request failed: ${e.message}")
-                return Result.failure(e)
+ * 安全地执行 Ktor 请求，并处理异常和重试
+ */
+private suspend inline fun <reified T> safeApiCall(block: suspend () -> HttpResponse): Result<T> {
+    var attempts = 0
+    while (attempts < MAX_RETRIES) {
+        try {
+            val response = block()
+            if (!response.status.isSuccess()) {
+                println("Request failed with status: ${response.status}")
+                throw IOException("Request failed with status: ${response.status}")
             }
+            return Result.success(response.body<T>())
+        } catch (e: IOException) {
+            attempts++
+            println("Request failed, retrying in $RETRY_DELAY ms... (Attempt $attempts/$MAX_RETRIES)")
+            delay(RETRY_DELAY)
+        } catch (e: Exception) {
+            println("Request failed: ${e.message}")
+            return Result.failure(e)
         }
-        println("Request failed after $MAX_RETRIES attempts.")
-        return Result.failure(IOException("Request failed after $MAX_RETRIES attempts."))
     }
+    println("Request failed after $MAX_RETRIES attempts.")
+    return Result.failure(IOException("Request failed after $MAX_RETRIES attempts."))
+}
 
     /**
      * 发起 Ktor 请求
