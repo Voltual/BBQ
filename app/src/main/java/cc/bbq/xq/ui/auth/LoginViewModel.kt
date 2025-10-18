@@ -176,7 +176,7 @@ class LoginViewModel(
     }
 
     fun loadVerificationCode() {
-        _verificationCodeUrl.value = "http://apk.xiaoqu.online/api/get_image_verification_code?appid=1&type=2"
+        _verificationCodeUrl.value = "http://apk.xiaoqu.online/api/get_image_verification_code?appid=1&type=2&t=${System.currentTimeMillis()}"
     }
 
     private fun saveCredentialsAndNotifySuccess(usertoken: String, userId: Long) {
