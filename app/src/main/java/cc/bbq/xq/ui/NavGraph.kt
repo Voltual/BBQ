@@ -349,17 +349,15 @@ composable(route = ResourcePlaza(false).route, arguments = ResourcePlaza.argumen
     )
 }
 
-        // 在 NavGraph.kt 中更新 AppDetailScreen 的调用
 composable(route = AppDetail(0, 0).route, arguments = AppDetail.arguments) { backStackEntry ->
     val appId = backStackEntry.arguments?.getLong(AppDestination.ARG_APP_ID) ?: 0L
     val versionId = backStackEntry.arguments?.getLong(AppDestination.ARG_VERSION_ID) ?: 0L
 
     // 使用公共方法 initializeData() 替代私有方法
-    LaunchedEffect(appId, versionId) {
-        if (appId != 0L && versionId != 0L) {
-            appDetailViewModel.initializeData(appId, versionId)
-        }
-    }
+         LaunchedEffect(key1 = appId, key2 = versionId) {
+         if (appId != 0L && versionId != 0L) {
+             appDetailViewModel.initializeData(appId, versionId)
+         }
 
     AppDetailScreen(
         viewModel = appDetailViewModel,
@@ -384,21 +382,15 @@ composable(route = AppDetail(0, 0).route, arguments = AppDetail.arguments) { bac
             val appDetailJson = backStackEntry.arguments?.getString(AppDestination.ARG_APP_DETAIL_JSON)?.let {
                 URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
             }
-            if (!appDetailJson.isNullOrBlank()) {
-                val appDetailToUpdate = RetrofitClient.JsonConverter.fromJson(appDetailJson)
-                if (appDetailToUpdate != null) {
-                    appReleaseViewModel.populateFromAppDetail(appDetailToUpdate)
-                }
-            }
-            AppReleaseScreen(
+                 val appDetailToUpdate = cc.bbq.xq.KtorClient.JsonConverter.fromJson(appDetailJson)
+                 if (appDetailToUpdate != null) {
+                     appReleaseViewModel.populateFromAppDetail(appDetailToUpdate)
+                 }            AppReleaseScreen(
                 viewModel = appReleaseViewModel,
                 navController = navController, // 传递 navController
                 modifier = Modifier.fillMaxSize()
             )
         }
-
-        // cc/bbq/xq/bot/ui/NavGraph.kt
-// ... (之前的代码)
 
         // --- 机器人 & 日志 ---
  /*       composable(route = BotSettings.route) {

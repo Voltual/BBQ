@@ -35,6 +35,8 @@ import io.ktor.client.request.forms.* // 导入 Ktor 表单相关类
 import io.ktor.http.* // 导入 Ktor HTTP 相关类
 import io.ktor.utils.io.*
 import io.ktor.http.content.*
+import io.ktor.client.call.* // 导入 Ktor call
+import io.ktor.client.statement.* // 导入 Ktor statement
 
 enum class ApkUploadService(val displayName: String) {
     KEYUN("氪云"),
@@ -324,9 +326,9 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     //private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
-    private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
+    private suspend fun uploadToKeyun(file: File, mediaType: String = "image/*", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
         try {
-            val response = KtorClient.uploadHttpClient.post("api.php") {
+            val response: HttpResponse = KtorClient.uploadHttpClient.post("api.php") {
                 body = MultiPartFormDataContent(
                     formData {
                         append("file", file.readBytes(), Headers.build {
@@ -360,7 +362,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
         try {
-            val response = KtorClient.wanyueyunUploadHttpClient.post("upload") {
+            val response: HttpResponse = KtorClient.wanyueyunUploadHttpClient.post("upload") {
                 body = MultiPartFormDataContent(
                     formData {
                         append("Api", "小趣API")
