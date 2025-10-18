@@ -16,7 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-//import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
+import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
 import cc.bbq.xq.KtorClient // 导入 KtorClient
 import cc.bbq.xq.util.ApkInfo
 import cc.bbq.xq.util.ApkParser
@@ -91,6 +91,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     val isApkUploading = mutableStateOf(false)
     val isIconUploading = mutableStateOf(false)
+
     val isIntroImagesUploading = mutableStateOf(false)
 
     private val _processFeedback = MutableStateFlow<Result<String>?>(null)
