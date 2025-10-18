@@ -220,7 +220,7 @@ suspend fun uploadAvatar(
             return
         }
 
-        val file = File(realPath)
+        val file = File(realPath) // 修复：明确使用 String 构造函数
         val bytes = file.readBytes()
 
         val appid = 1
@@ -235,7 +235,6 @@ suspend fun uploadAvatar(
 
         if (uploadResult.isSuccess) {
             val response = uploadResult.getOrNull()
-            // 只检查 code 值，不依赖 data 字段的结构
             if (response?.code == 1) {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "头像上传成功", Toast.LENGTH_SHORT).show()

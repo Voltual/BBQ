@@ -1570,8 +1570,8 @@ override suspend fun uploadAvatar(
     file: ByteArray,
     filename: String
 ): Result<BaseResponse> {
-    return safeApiCall {
-        httpClient.post(UPLOAD_AVATAR_URL) {
+    try {
+        val response: HttpResponse = httpClient.post(UPLOAD_AVATAR_URL) {
             setBody(
                 MultiPartFormDataContent(
                     formData {
@@ -1585,6 +1585,21 @@ override suspend fun uploadAvatar(
                 )
             )
         }
+        // 检查状态码是否成功
+        if (!response.status.isSuccess()) {
+            return Result.failure(IOException("Request failed with status ${response.status.value}"))
+        }
+        // 简单地检查 code 字段
+        val responseBody = response.bodyAsText()
+        val code = responseBody.substringAfter("\"code\":").substringBefore(",").trim().toInt()
+        if (code == 1) {
+            return Result.success(BaseResponse(code = code, msg = "success", null, 0))
+        } else {
+            return Result.failure(IOException("Upload failed, code: $code, message: $responseBody"))
+        }
+
+    } catch (e: Exception) {
+        return Result.failure(e)
     }
 }
         //override suspend fun getImageVerificationCode(
