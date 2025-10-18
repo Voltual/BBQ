@@ -10,6 +10,8 @@
 package cc.bbq.xq.ui.community
 
 import android.app.Application
+import io.ktor.client.request.post // 添加这个导入
+import io.ktor.client.request.setBody // 添加这个导入
 import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
