@@ -13,7 +13,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
+import cc.bbq.xq.KtorClient // 导入 KtorClient
 import cc.bbq.xq.ui.theme.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -72,12 +73,14 @@ class HomeViewModel : ViewModel() {
                     dataLoadState = DataLoadState.Loading
                 )
                 
+                // 使用 KtorClient 发起网络请求
                 val response = withContext(Dispatchers.IO) {
-                    RetrofitClient.instance.getUserInfo(token = credentials.third)
+                    //KtorClient.instance.getUserInfo(token = credentials.third)
+                    KtorClient.ApiServiceImpl.getUserInfo(token = credentials.third)
                 }
                 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    response.body()?.data?.let { userData ->
+                response.onSuccess { result ->
+                    result.data?.let { userData ->
                         // 计算时间差（创建时间到上次签到时间）
                         val daysDiff = calculateDaysDiff(
                             userData.create_time, 
@@ -103,7 +106,7 @@ class HomeViewModel : ViewModel() {
                             dataLoadState = DataLoadState.Loaded
                         )
                     }
-                } else {
+                }.onFailure { error ->
                     uiState.value = uiState.value.copy(
                         isLoading = false,
                         dataLoadState = DataLoadState.Error
@@ -140,41 +143,41 @@ class HomeViewModel : ViewModel() {
         try {
             uiState.value = uiState.value.copy(isLoading = true)
             
+            // 使用 KtorClient 发起网络请求
             val response = withContext(Dispatchers.IO) {
-                RetrofitClient.instance.userSignIn(token = token)
+                //RetrofitClient.instance.userSignIn(token = token)
+                KtorClient.ApiServiceImpl.userSignIn(token = token)
             }
             
-            if (response.isSuccessful) {
-                response.body()?.let { signResponse ->
-                    // 处理服务器返回的401错误
-                    if (signResponse.code == 401) {
-                        uiState.value = uiState.value.copy(
-                            signStatusMessage = "登录已过期，请长按头像刷新",
-                            showLoginPrompt = true,
-                            isLoading = false
-                        )
-                        // 重置加载状态，因为登录已过期
-                        resetLoadState()
-                    } else {
-                        // 正常处理成功响应
-                        uiState.value = uiState.value.copy(
-                            signStatusMessage = signResponse.msg,
-                            isLoading = false
-                        )
-                        
-                        // 2秒后清除状态消息
-                        launch {
-                            delay(2000)
-                            uiState.value = uiState.value.copy(signStatusMessage = null)
-                        }
-                        
-                        // 重新加载用户数据（强制刷新）
-                        refreshUserData(context)
+            response.onSuccess { result ->
+                // 处理服务器返回的401错误
+                if (result.code == 401) {
+                    uiState.value = uiState.value.copy(
+                        signStatusMessage = "登录已过期，请长按头像刷新",
+                        showLoginPrompt = true,
+                        isLoading = false
+                    )
+                    // 重置加载状态，因为登录已过期
+                    resetLoadState()
+                } else {
+                    // 正常处理成功响应
+                    uiState.value = uiState.value.copy(
+                        signStatusMessage = result.msg,
+                        isLoading = false
+                    )
+                    
+                    // 2秒后清除状态消息
+                    launch {
+                        delay(2000)
+                        uiState.value = uiState.value.copy(signStatusMessage = null)
                     }
+                    
+                    // 重新加载用户数据（强制刷新）
+                    refreshUserData(context)
                 }
-            } else {
+            }.onFailure { error ->
                 uiState.value = uiState.value.copy(
-                    signStatusMessage = "签到失败: ${response.code()}",
+                    signStatusMessage = "签到失败: ${error.message}",
                     isLoading = false
                 )
             }
