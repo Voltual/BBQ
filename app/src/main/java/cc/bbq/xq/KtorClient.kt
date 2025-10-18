@@ -1556,16 +1556,42 @@ override suspend fun uploadAvatar(
 ): Result<BaseResponse> {
     try {
         val response: HttpResponse = httpClient.post(UPLOAD_AVATAR_URL) {
-            this.body = MultiPartFormDataContent(
-                formData = formData {
-                    append("appid", appid.toString())
-                    append("usertoken", token)
-                    append("file", file, Headers.build {
-                        append(HttpHeaders.ContentType, "image/png") // 根据抓包修改为 image/png
-                        append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
-                    })
-                },
-                boundary = "******" // 根据抓包修改 boundary
+            val boundary = "******" // 根据抓包修改 boundary
+            setBody(
+                MultiPartFormDataContent(
+                    listOf(
+                        PartData.FormItem(
+                            value = appid.toString(),
+                            partHeaders = Headers.build {
+                                append(HttpHeaders.ContentDisposition, "form-data; name=\"appid\"")
+                            },
+                            dispose = {}
+                        ),
+                        PartData.FormItem(
+                            value = token,
+                            partHeaders = Headers.build {
+                                append(HttpHeaders.ContentDisposition, "form-data; name=\"usertoken\"")
+                            },
+                            dispose = {}
+                        ),
+                        PartData.FileItem(
+                            { ByteReadChannel(file) },
+                            { },
+                            Headers.build {
+                                append(
+                                    HttpHeaders.ContentDisposition,
+                                    ContentDisposition.File
+                                        .withParameter(ContentDisposition.Parameters.Name, "file")
+                                        .withParameter(ContentDisposition.Parameters.FileName, filename)
+                                        .toString()
+                                )
+                                append(HttpHeaders.ContentType, "image/png") // 根据抓包修改为 image/png
+                            }
+                        )
+                    ),
+                    boundary,
+                    ContentType.MultiPart.FormData.withParameter("boundary", boundary)
+                )
             )
         }
         return Result.success(response.body())
@@ -1573,9 +1599,6 @@ override suspend fun uploadAvatar(
         return Result.failure(e)
     }
 }
-
-
-
         //override suspend fun getImageVerificationCode(
         //    appid: Int = 1,
         //    type: Int = 2
