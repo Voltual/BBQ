@@ -7,7 +7,6 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
-import io.ktor.client.statement.bodyAsText
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.*
@@ -1587,30 +1586,23 @@ override suspend fun uploadAvatar(
                 )
             )
         }
+
         // 检查状态码是否成功
         if (!response.status.isSuccess()) {
             return Result.failure(IOException("Request failed with status ${response.status.value}"))
         }
-        // 简单地检查 code 字段
+
+        // 使用 kotlinx-serialization 解析 JSON 响应
         val responseBody = response.bodyAsText()
-        val code = responseBody.substringAfter("\"code\":").substringBefore(",").trim().toInt()
-        if (code == 1) {
-            return Result.success(BaseResponse(code = code, msg = "success", null, 0))
-        } else {
-            return Result.failure(IOException("Upload failed, code: $code, message: $responseBody"))
-        }
+        val jsonElement = Json.parseToJsonElement(responseBody)
+        val baseResponse = Json.decodeFromJsonElement<BaseResponse>(jsonElement)
+
+        return Result.success(baseResponse)
 
     } catch (e: Exception) {
         return Result.failure(e)
     }
-}
-        //override suspend fun getImageVerificationCode(
-        //    appid: Int = 1,
-        //    type: Int = 2
-        //): Result<ResponseBody> {
-        //    TODO("Not yet implemented")
-        //}
-    }
+}        
 
     /**
      * 关闭 HttpClient（在应用退出时调用）

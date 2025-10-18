@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.RetrofitClient
+import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -142,7 +143,7 @@ fun RegisterContent(
     val password by viewModel.password.collectAsState()
     val email by viewModel.email.collectAsState()
     val captcha by viewModel.captcha.collectAsState()
-    val verificationCodeBitmap by viewModel.verificationCodeBitmap.collectAsState()
+    val verificationCodeUrl by viewModel.verificationCodeUrl.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
@@ -202,8 +203,14 @@ fun RegisterContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                verificationCodeBitmap?.let {
-                    Image(bitmap = it, contentDescription = "Verification Code", modifier = Modifier.size(120.dp, 40.dp))
+                // 核心修改 #3: 使用 Coil 加载网络图片
+                verificationCodeUrl?.let { url ->
+                    Image(
+                        painter = rememberAsyncImagePainter(url),
+                        contentDescription = "Verification Code",
+                        modifier = Modifier.size(120.dp, 40.dp),
+                        contentScale = ContentScale.FillBounds
+                    )
                 } ?: Box(modifier = Modifier.size(120.dp, 40.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp))
                 }

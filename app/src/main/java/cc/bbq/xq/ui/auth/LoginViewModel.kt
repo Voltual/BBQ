@@ -53,8 +53,8 @@ class LoginViewModel(
     private val _captcha = MutableStateFlow("")
     val captcha: StateFlow<String> = _captcha.asStateFlow()
     
-    private val _verificationCodeBitmap = MutableStateFlow<ImageBitmap?>(null)
-    val verificationCodeBitmap: StateFlow<ImageBitmap?> = _verificationCodeBitmap.asStateFlow()   
+    private val _verificationCodeUrl = MutableStateFlow<String?>(null)
+    val verificationCodeUrl: StateFlow<String?> = _verificationCodeUrl.asStateFlow()
 
     // --- 事件处理 ---
     fun onUsernameChange(newUsername: String) { _username.value = newUsername }
@@ -176,26 +176,7 @@ class LoginViewModel(
     }
 
     fun loadVerificationCode() {
-        //viewModelScope.launch(Dispatchers.IO) {
-        //    try {
-        //        val response = RetrofitClient.instance.getImageVerificationCode()
-        //        if (response.isSuccessful) {
-        //            val inputStream: InputStream? = response.body()?.byteStream()
-        //            inputStream?.let {
-        //                val bitmap = BitmapFactory.decodeStream(it)
-        //                _verificationCodeBitmap.value = bitmap?.asImageBitmap()
-        //            }
-        //        } else {
-        //            withContext(Dispatchers.Main) {
-        //                _errorMessage.value = "获取验证码失败"
-        //            }
-        //        }
-        //    } catch (e: Exception) {
-        //        withContext(Dispatchers.Main) {
-        //            _errorMessage.value = "获取验证码时网络错误: ${e.message}"
-        //        }
-        //    }
-        //}
+        _verificationCodeUrl.value = "http://apk.xiaoqu.online/api/get_image_verification_code?appid=1&type=2"
     }
 
     private fun saveCredentialsAndNotifySuccess(usertoken: String, userId: Long) {
