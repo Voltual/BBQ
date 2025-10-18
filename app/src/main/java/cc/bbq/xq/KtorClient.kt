@@ -6,14 +6,14 @@ import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
-import io.ktor.utils.io.core.*
-import java.io.InputStream
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.*
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import java.io.ByteArrayInputStream
+import java.io.InputStream
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.delay
@@ -1575,7 +1575,7 @@ override suspend fun uploadAvatar(
                     PartData.FileItem(
                         provider = {
                             object : InputStream() {
-                                private val byteArrayInputStream = file.inputStream()
+                                private val byteArrayInputStream = ByteArrayInputStream(file)
 
                                 override fun read(): Int {
                                     return byteArrayInputStream.read()
