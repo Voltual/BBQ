@@ -559,7 +559,7 @@ val httpClient = HttpClient(OkHttp) {
         val viewurl: String?
     )
 
-    /**
+/**
  * 安全地执行 Ktor 请求，并处理异常和重试
  */
 private suspend inline fun <reified T> safeApiCall(block: suspend () -> HttpResponse): Result<T> {
@@ -571,7 +571,13 @@ private suspend inline fun <reified T> safeApiCall(block: suspend () -> HttpResp
                 println("Request failed with status: ${response.status}")
                 throw IOException("Request failed with status: ${response.status}")
             }
-            return Result.success(response.body<T>())
+            val responseBody: T = try {
+                response.body()
+            } catch (e: Exception) {
+                println("Failed to deserialize response body: ${e.message}")
+                throw e
+            }
+            return Result.success(responseBody)
         } catch (e: IOException) {
             attempts++
             println("Request failed, retrying in $RETRY_DELAY ms... (Attempt $attempts/$MAX_RETRIES)")
