@@ -6,6 +6,8 @@ import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
+import io.ktor.utils.io.core.*
+import java.io.InputStream
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.HttpResponse
@@ -1572,15 +1574,15 @@ override suspend fun uploadAvatar(
                     ),
                     PartData.FileItem(
                         provider = {
-                            object : Input() {
-                                override fun read(destination: ByteArray, offset: Int, length: Int): Int {
-                                    file.inputStream().use {
-                                        return it.read(destination, offset, length)
-                                    }
+                            object : InputStream() {
+                                private val byteArrayInputStream = file.inputStream()
+
+                                override fun read(): Int {
+                                    return byteArrayInputStream.read()
                                 }
 
                                 override fun close() {
-                                    // Do nothing, the file stream is closed in the read function
+                                    byteArrayInputStream.close()
                                 }
                             }
                         },
