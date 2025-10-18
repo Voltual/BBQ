@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.*
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -74,15 +74,27 @@ class LoginViewModel(
             _errorMessage.value = null
             try {
                 val deviceId = AuthManager.getDeviceId(getApplication())
-                val response = RetrofitClient.instance.login(
+                val loginResult = KtorClient.ApiServiceImpl.login(
                     username = _username.value,
                     password = _password.value,
                     device = deviceId
                 )
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    saveCredentialsAndNotifySuccess(response.body()!!.data!!)
+                if (loginResult.isSuccess) {
+                    val loginResponse = loginResult.getOrNull()
+                    if (loginResponse?.code == 1) {
+                        loginResponse.data?.let { 
+                            saveCredentialsAndNotifySuccess(
+                                usertoken = it.usertoken,
+                                userId = it.id
+                            )
+                        } ?: run {
+                            _errorMessage.value = "登录失败: 无法获取用户信息"
+                        }
+                    } else {
+                        _errorMessage.value = loginResponse?.msg ?: "登录失败"
+                    }
                 } else {
-                    _errorMessage.value = response.body()?.msg ?: "登录失败"
+                    _errorMessage.value = loginResult.exceptionOrNull()?.message ?: "登录失败"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
@@ -102,21 +114,29 @@ class LoginViewModel(
             _errorMessage.value = null
             try {
                 val deviceId = AuthManager.getDeviceId(getApplication())
-                val response = RetrofitClient.instance.register(
+                val registerResult = KtorClient.ApiServiceImpl.register(
                     username = _username.value,
                     password = _password.value,
                     email = _email.value,
                     device = deviceId,
                     captcha = _captcha.value
                 )
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    // 注册成功，自动登录
-                    loginAfterRegister()
+                if (registerResult.isSuccess) {
+                    val registerResponse = registerResult.getOrNull()
+                    if (registerResponse?.code == 1) {
+                        // 注册成功，自动登录
+                        loginAfterRegister()
+                    } else {
+                        _errorMessage.value = registerResponse?.msg ?: "注册失败"
+                        // 注册失败后，通常需要刷新验证码
+                        loadVerificationCode()
+                    }
                 } else {
-                    _errorMessage.value = response.body()?.msg ?: "注册失败"
+                    _errorMessage.value = registerResult.exceptionOrNull()?.message ?: "注册失败"
                     // 注册失败后，通常需要刷新验证码
                     loadVerificationCode()
                 }
+                
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
             } finally {
@@ -128,15 +148,27 @@ class LoginViewModel(
     private suspend fun loginAfterRegister() {
         try {
             val deviceId = AuthManager.getDeviceId(getApplication())
-            val response = RetrofitClient.instance.login(
+            val loginResult = KtorClient.ApiServiceImpl.login(
                 username = _username.value,
                 password = _password.value,
                 device = deviceId
             )
-            if (response.isSuccessful && response.body()?.code == 1) {
-                saveCredentialsAndNotifySuccess(response.body()!!.data!!)
+            if (loginResult.isSuccess) {
+                 val loginResponse = loginResult.getOrNull()
+                if (loginResponse?.code == 1) {
+                    loginResponse.data?.let { 
+                        saveCredentialsAndNotifySuccess(
+                            usertoken = it.usertoken,
+                            userId = it.id
+                        )
+                    } ?: run {
+                        _errorMessage.value = "登录失败: 无法获取用户信息"
+                    }
+                } else {
+                    _errorMessage.value = "注册成功，但自动登录失败: ${loginResponse?.msg}"
+                }
             } else {
-                _errorMessage.value = "注册成功，但自动登录失败: ${response.body()?.msg}"
+                _errorMessage.value = "注册成功，但自动登录时网络错误: ${loginResult.exceptionOrNull()?.message}"
             }
         } catch (e: Exception) {
             _errorMessage.value = "注册成功，但自动登录时网络错误: ${e.message}"
@@ -144,31 +176,31 @@ class LoginViewModel(
     }
 
     fun loadVerificationCode() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val response = RetrofitClient.instance.getImageVerificationCode()
-                if (response.isSuccessful) {
-                    val inputStream: InputStream? = response.body()?.byteStream()
-                    inputStream?.let {
-                        val bitmap = BitmapFactory.decodeStream(it)
-                        _verificationCodeBitmap.value = bitmap?.asImageBitmap()
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        _errorMessage.value = "获取验证码失败"
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    _errorMessage.value = "获取验证码时网络错误: ${e.message}"
-                }
-            }
-        }
+        //viewModelScope.launch(Dispatchers.IO) {
+        //    try {
+        //        val response = RetrofitClient.instance.getImageVerificationCode()
+        //        if (response.isSuccessful) {
+        //            val inputStream: InputStream? = response.body()?.byteStream()
+        //            inputStream?.let {
+        //                val bitmap = BitmapFactory.decodeStream(it)
+        //                _verificationCodeBitmap.value = bitmap?.asImageBitmap()
+        //            }
+        //        } else {
+        //            withContext(Dispatchers.Main) {
+        //                _errorMessage.value = "获取验证码失败"
+        //            }
+        //        }
+        //    } catch (e: Exception) {
+        //        withContext(Dispatchers.Main) {
+        //            _errorMessage.value = "获取验证码时网络错误: ${e.message}"
+        //        }
+        //    }
+        //}
     }
 
-    private fun saveCredentialsAndNotifySuccess(loginData: RetrofitClient.models.LoginData) {
+    private fun saveCredentialsAndNotifySuccess(usertoken: String, userId: Long) {
         AuthManager.saveCredentials(
-            getApplication(), _username.value, _password.value, loginData.usertoken, loginData.id
+            getApplication(), _username.value, _password.value, usertoken, userId
         )
         _loginSuccess.value = true
     }
