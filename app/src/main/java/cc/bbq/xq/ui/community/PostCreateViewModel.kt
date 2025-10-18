@@ -29,6 +29,7 @@ import io.ktor.http.*
 import io.ktor.utils.io.*
 import io.ktor.http.content.*
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.HttpResponse
 
 class PostCreateViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -110,7 +111,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     private suspend fun uploadImageKtor(fileBytes: ByteArray, fileName: String): Result<String> {
         return withContext(Dispatchers.IO) {
             try {
-                val response = KtorClient.uploadHttpClient.post("api.php") {
+                val response: HttpResponse = KtorClient.uploadHttpClient.post("api.php") {
                     setBody(
                         MultiPartFormDataContent(
                             formData {
