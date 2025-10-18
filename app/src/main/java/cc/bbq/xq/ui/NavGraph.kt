@@ -242,7 +242,7 @@ composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { back
     }
 
     val userData by viewModel.userData.observeAsState()
-    val isLoading by viewModel.isLoading.observeAsState()
+    val isLoading by viewModel.isLoading.observeAsState(false)
     val errorMessage by viewModel.errorMessage.observeAsState()
 
     UserDetailScreen(
@@ -542,7 +542,7 @@ private fun BotSettingsNavHost(navController: NavHostController) {
                     // 登录成功后返回到设置页面
                     innerNavController.popBackStack() 
                 },
-                isBotLoginMode = true, // 这里应该是机器人登录模式
+                isBotLoginMode = true, // 这里应该是 true，因为是机器人登录模式
                 modifier = Modifier.fillMaxSize()
             )
         }
