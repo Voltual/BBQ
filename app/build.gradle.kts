@@ -127,6 +127,6 @@ dependencies {
     implementation("io.ktor:ktor-client-auth:$ktor_version") // 认证支持
 
     // ===== kotlinx.serialization =====
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
 }
