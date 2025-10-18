@@ -1554,43 +1554,21 @@ override suspend fun uploadAvatar(
     file: ByteArray,
     filename: String
 ): Result<BaseResponse> {
-    try {
-        val response: HttpResponse = httpClient.post(UPLOAD_AVATAR_URL) {
-            val multipartData = MultiPartFormDataContent(
-                listOf(
-                    PartData.FormItem(
-                        value = appid.toString(),
-                        partHeaders = Headers.build {
-                            append(HttpHeaders.ContentDisposition, "form-data; name=\"appid\"")
-                        },
-                        dispose = {}
-                    ),
-                    PartData.FormItem(
-                        value = token,
-                        partHeaders = Headers.build {
-                            append(HttpHeaders.ContentDisposition, "form-data; name=\"usertoken\"")
-                        },
-                        dispose = {}
-                    ),
-                    PartData.FileItem(
-                        provider = { file.inputStream().asInput() },
-                        partHeaders = Headers.build {
-                            append(
-                                HttpHeaders.ContentDisposition,
-                                "form-data; name=\"file\"; filename=\"$filename\""
-                            )
-                            append(HttpHeaders.ContentType, "image/png") // 根据抓包修改为 image/png
-                        },
-                        dispose = {}
-                    )
-                ),
-                boundary = "******" // 根据抓包修改 boundary
+    return safeApiCall {
+        httpClient.post(UPLOAD_AVATAR_URL) {
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append("appid", appid.toString())
+                        append("usertoken", token)
+                        append("file", file, Headers.build {
+                            append(HttpHeaders.ContentType, "image/png")
+                            append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
+                        })
+                    }
+                )
             )
-            this.body = multipartData
         }
-        return Result.success(response.body())
-    } catch (e: Exception) {
-        return Result.failure(e)
     }
 }
         //override suspend fun getImageVerificationCode(
