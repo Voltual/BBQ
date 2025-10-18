@@ -354,10 +354,11 @@ composable(route = AppDetail(0, 0).route, arguments = AppDetail.arguments) { bac
     val versionId = backStackEntry.arguments?.getLong(AppDestination.ARG_VERSION_ID) ?: 0L
 
     // 使用公共方法 initializeData() 替代私有方法
-         LaunchedEffect(key1 = appId, key2 = versionId) {
-         if (appId != 0L && versionId != 0L) {
-             appDetailViewModel.initializeData(appId, versionId)
-         }
+    LaunchedEffect(key1 = appId, key2 = versionId) {
+        if (appId != 0L && versionId != 0L) {
+            appDetailViewModel.initializeData(appId, versionId)
+        }
+    }
 
     AppDetailScreen(
         viewModel = appDetailViewModel,
@@ -367,7 +368,6 @@ composable(route = AppDetail(0, 0).route, arguments = AppDetail.arguments) { bac
         modifier = Modifier.fillMaxSize()
     )
 }
-
 
         // 在 NavGraph.kt 中更新 AppReleaseScreen 的调用
         composable(route = CreateAppRelease.route) {
