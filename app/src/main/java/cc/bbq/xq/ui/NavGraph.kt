@@ -381,23 +381,24 @@ composable(route = AppDetail(0, 0).route, arguments = AppDetail.arguments) { bac
             )
         }
 
-        composable(route = UpdateAppRelease("").route, arguments = UpdateAppRelease.arguments) { backStackEntry ->
-            val appDetailJson = backStackEntry.arguments?.getString(AppDestination.ARG_APP_DETAIL_JSON)?.let {
-                URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
-            }
-            if (!appDetailJson.isNullOrBlank()) {
-                //val appDetailToUpdate = RetrofitClient.JsonConverter.fromJson(appDetailJson)
-                val appDetailToUpdate = KtorClient.JsonConverter.fromJson(appDetailJson)
-                if (appDetailToUpdate != null) {
-                    appReleaseViewModel.populateFromAppDetail(appDetailToUpdate)
-                }
-            }
-            AppReleaseScreen(
-                viewModel = appReleaseViewModel,
-                navController = navController, // 传递 navController
-                modifier = Modifier.fillMaxSize()
-            )
+        // 在 NavGraph.kt 中，更新 UpdateAppRelease 相关的代码
+composable(route = UpdateAppRelease("").route, arguments = UpdateAppRelease.arguments) { backStackEntry ->
+    val appDetailJson = backStackEntry.arguments?.getString(AppDestination.ARG_APP_DETAIL_JSON)?.let {
+        URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
+    }
+    if (!appDetailJson.isNullOrBlank()) {
+        // 改为使用 KtorClient 的 JsonConverter
+        val appDetailToUpdate = KtorClient.JsonConverter.fromJson(appDetailJson)
+        if (appDetailToUpdate != null) {
+            appReleaseViewModel.populateFromAppDetail(appDetailToUpdate)
         }
+    }
+    AppReleaseScreen(
+        viewModel = appReleaseViewModel,
+        navController = navController,
+        modifier = Modifier.fillMaxSize()
+    )
+}
 
         // cc/bbq/xq/bot/ui/NavGraph.kt
 // ... (之前的代码)
