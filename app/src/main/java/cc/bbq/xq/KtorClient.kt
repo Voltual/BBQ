@@ -1519,6 +1519,7 @@ private suspend inline fun <reified T> safeApiCall(block: suspend () -> HttpResp
             return request(RELEASE_NEW_VERSION_URL, parameters = parameters)
         }
 
+
         override suspend fun deleteApp(
             appid: Int,
             usertoken: String,
