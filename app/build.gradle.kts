@@ -127,6 +127,5 @@ dependencies {
 
     // ===== kotlinx.serialization =====
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-    ksp("org.jetbrains.kotlinx:kotlinx-serialization-compiler-plugin:1.7.3") // 为kotlinx.serialization添加 KSP 注解处理器
 
 }
