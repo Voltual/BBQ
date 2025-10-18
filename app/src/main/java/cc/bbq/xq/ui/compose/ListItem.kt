@@ -23,7 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.ui.theme.messageCommentBg
 import cc.bbq.xq.ui.theme.messageLikeBg
 import cc.bbq.xq.ui.theme.messageDefaultBg // 新增导入
@@ -93,7 +93,7 @@ fun ListItem(
 
 @Composable
 fun MessageItem(
-    message: RetrofitClient.models.MessageNotification,
+    message: KtorClient.MessageNotification, // 修改为 KtorClient.MessageNotification
     onClick: () -> Unit
 ) {
     val (icon, bgColor) = when (message.type) {
@@ -113,7 +113,7 @@ fun MessageItem(
 }
 
 @Composable
-fun BillingItem(billing: RetrofitClient.models.BillingItem) {
+fun BillingItem(billing: KtorClient.BillingItem) { // 修改为 KtorClient.BillingItem
     val amountColor = if (billing.transaction_amount.startsWith("+")) 
         MaterialTheme.billingIncome else MaterialTheme.billingExpense
     
