@@ -15,12 +15,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.AuthManager
 
 class FollowingPostsViewModel(private val context: Context) : ViewModel() {
-    private val _posts = MutableStateFlow<List<RetrofitClient.models.Post>>(emptyList())
-    val posts: StateFlow<List<RetrofitClient.models.Post>> = _posts.asStateFlow()
+    private val _posts = MutableStateFlow<List<KtorClient.Post>>(emptyList())
+    val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -69,26 +69,32 @@ class FollowingPostsViewModel(private val context: Context) : ViewModel() {
                 val credentials = AuthManager.getCredentials(context)
                 val token = credentials?.third ?: ""
 
-                val response = RetrofitClient.instance.getMyFollowingPosts(
+                val followingPostsResult = KtorClient.ApiServiceImpl.getMyFollowingPosts(
                     token = token,
                     limit = PAGE_SIZE,
                     page = currentPage
                 )
 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    response.body()?.data?.let { data ->
-                        _totalPages.value = data.pagecount
-                        val newPosts = if (currentPage == 1) {
-                            data.list
-                        } else {
-                            _posts.value + data.list
-                        }
+                if (followingPostsResult.isSuccess) {
+                    followingPostsResult.getOrNull()?.let { followingPostsResponse ->
+                        if (followingPostsResponse.code == 1) {
+                            followingPostsResponse.data?.let { data ->
+                                _totalPages.value = data.pagecount
+                                val newPosts = if (currentPage == 1) {
+                                    data.list
+                                } else {
+                                    _posts.value + data.list
+                                }
 
-                        _posts.value = newPosts
-                        _errorMessage.value = ""
+                                _posts.value = newPosts
+                                _errorMessage.value = ""
+                            }
+                        } else {
+                            _errorMessage.value = "加载失败: ${followingPostsResponse.msg ?: "未知错误"}"
+                        }
                     }
                 } else {
-                    _errorMessage.value = "加载失败: ${response.body()?.msg ?: "未知错误"}"
+                    _errorMessage.value = "加载失败: ${followingPostsResult.exceptionOrNull()?.message ?: "未知错误"}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"

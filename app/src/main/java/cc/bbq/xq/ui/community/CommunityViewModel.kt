@@ -14,11 +14,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 
 class CommunityViewModel : ViewModel() { // 移除接口实现
-    private val _posts = MutableStateFlow(emptyList<RetrofitClient.models.Post>())
-    val posts: StateFlow<List<RetrofitClient.models.Post>> = _posts.asStateFlow() // 移除 override
+    private val _posts = MutableStateFlow(emptyList<KtorClient.Post>())
+    val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow() // 移除 override
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow() // 移除 override
@@ -65,25 +65,31 @@ class CommunityViewModel : ViewModel() { // 移除接口实现
             _isLoading.value = true
             
             try {
-                val response = RetrofitClient.instance.getPostsList(
+                val postsResult = KtorClient.ApiServiceImpl.getPostsList(
                     limit = PAGE_SIZE,
                     page = currentPage
                 )
                 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    response.body()?.data?.let { data ->
-                        _totalPages.value = data.pagecount
-                        val newPosts = if (currentPage == 1) {
-                            data.list
+                if (postsResult.isSuccess) {
+                    postsResult.getOrNull()?.let { postsResponse ->
+                        if (postsResponse.code == 1) {
+                            postsResponse.data?.let { data ->
+                                _totalPages.value = data.pagecount
+                                val newPosts = if (currentPage == 1) {
+                                    data.list
+                                } else {
+                                    _posts.value + data.list
+                                }
+                                
+                                _posts.value = newPosts
+                                _errorMessage.value = ""
+                            }
                         } else {
-                            _posts.value + data.list
+                            _errorMessage.value = "加载失败: ${postsResponse.msg ?: "未知错误"}"
                         }
-                        
-                        _posts.value = newPosts
-                        _errorMessage.value = ""
                     }
                 } else {
-                    _errorMessage.value = "加载失败: ${response.body()?.msg ?: "未知错误"}"
+                    _errorMessage.value = "加载失败: ${postsResult.exceptionOrNull()?.message ?: "未知错误"}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"

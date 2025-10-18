@@ -15,12 +15,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.AuthManager
+import java.io.IOException
 
 class MyLikesViewModel(private val context: Context) : ViewModel() { // 移除接口实现
-    private val _posts = MutableStateFlow(emptyList<RetrofitClient.models.Post>())
-    val posts: StateFlow<List<RetrofitClient.models.Post>> = _posts.asStateFlow() // 移除 override
+    private val _posts = MutableStateFlow(emptyList<KtorClient.Post>())
+    val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow() // 移除 override
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow() // 移除 override
@@ -63,35 +64,48 @@ class MyLikesViewModel(private val context: Context) : ViewModel() { // 移除�
         
         viewModelScope.launch {
             _isLoading.value = true
+            _errorMessage.value = ""
             
             try {
                 val credentials = AuthManager.getCredentials(context)
-                
-                val response = RetrofitClient.instance.getLikesRecords(
-                    token = credentials?.third ?: "",
+                val token = credentials?.third ?: ""
+
+                val likesRecordsResult = KtorClient.ApiServiceImpl.getLikesRecords(
+                    token = token,
+                    limit = PAGE_SIZE,
                     page = currentPage
                 )
                 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    response.body()?.data?.let { data ->
-                        _totalPages.value = data.pagecount
-                        val newPosts = if (currentPage == 1) {
-                            data.list
+                if (likesRecordsResult.isSuccess) {
+                    likesRecordsResult.getOrNull()?.let { likesRecordsResponse ->
+                        if (likesRecordsResponse.code == 1) {
+                            likesRecordsResponse.data?.let { data ->
+                                _totalPages.value = data.pagecount
+                                val newPosts = if (currentPage == 1) {
+                                    data.list
+                                } else {
+                                    _posts.value + data.list
+                                }
+                                
+                                _posts.value = newPosts
+                                _errorMessage.value = ""
+                            }
                         } else {
-                            _posts.value + data.list
+                            _errorMessage.value = "操作失败: ${likesRecordsResponse.msg ?: "服务器错误"}"
                         }
-                        
-                        _posts.value = newPosts
-                        _errorMessage.value = ""
                     }
                 } else {
-                    _errorMessage.value = "操作失败: ${response.body()?.msg ?: "服务器错误"}"
+                     _errorMessage.value = "加载失败: ${likesRecordsResult.exceptionOrNull()?.message ?: "未知错误"}"
                 }
-            } catch (e: Exception) {
+            } catch (e: IOException) {
                 _errorMessage.value = "网络异常: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    companion object {
+        private const val PAGE_SIZE = 10
     }
 }

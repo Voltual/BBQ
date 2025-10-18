@@ -14,11 +14,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 
 class HotPostsViewModel : ViewModel() {
-    private val _posts = MutableStateFlow<List<RetrofitClient.models.Post>>(emptyList())
-    val posts: StateFlow<List<RetrofitClient.models.Post>> = _posts.asStateFlow()
+    private val _posts = MutableStateFlow<List<KtorClient.Post>>(emptyList())
+    val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -64,25 +64,31 @@ class HotPostsViewModel : ViewModel() {
             _errorMessage.value = ""
 
             try {
-                val response = RetrofitClient.instance.getHotPostsList(
+                val hotPostsResult = KtorClient.ApiServiceImpl.getHotPostsList(
                     limit = PAGE_SIZE,
                     page = currentPage
                 )
 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    response.body()?.data?.let { data ->
-                        _totalPages.value = data.pagecount
-                        val newPosts = if (currentPage == 1) {
-                            data.list
-                        } else {
-                            _posts.value + data.list
-                        }
+                if (hotPostsResult.isSuccess) {
+                    hotPostsResult.getOrNull()?.let { hotPostsResponse ->
+                        if (hotPostsResponse.code == 1) {
+                            hotPostsResponse.data?.let { data ->
+                                _totalPages.value = data.pagecount
+                                val newPosts = if (currentPage == 1) {
+                                    data.list
+                                } else {
+                                    _posts.value + data.list
+                                }
 
-                        _posts.value = newPosts
-                        _errorMessage.value = ""
+                                _posts.value = newPosts
+                                _errorMessage.value = ""
+                            }
+                        } else {
+                            _errorMessage.value = "加载失败: ${hotPostsResponse.msg ?: "未知错误"}"
+                        }
                     }
                 } else {
-                    _errorMessage.value = "加载失败: ${response.body()?.msg ?: "未知错误"}"
+                    _errorMessage.value = "加载失败: ${hotPostsResult.exceptionOrNull()?.message ?: "未知错误"}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"

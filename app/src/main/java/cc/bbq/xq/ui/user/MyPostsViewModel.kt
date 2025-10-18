@@ -5,7 +5,7 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 package cc.bbq.xq.ui.user
 
 import androidx.lifecycle.ViewModel
@@ -14,11 +14,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
+import java.io.IOException
 
 class MyPostsViewModel : ViewModel() {
-    private val _posts = MutableStateFlow(emptyList<RetrofitClient.models.Post>())
-    val posts: StateFlow<List<RetrofitClient.models.Post>> = _posts.asStateFlow()
+    private val _posts = MutableStateFlow(emptyList<KtorClient.Post>())
+    val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow()
     
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -97,25 +98,31 @@ class MyPostsViewModel : ViewModel() {
             _errorMessage.value = ""
             
             try {
-                val response = RetrofitClient.instance.getPostsList(
+                val postsResult = KtorClient.ApiServiceImpl.getPostsList(
                     limit = PAGE_SIZE,
                     page = currentPage,
                     userId = userId
                 )
                 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    response.body()?.data?.let { data ->
-                        _totalPages.value = data.pagecount
-                        val newPosts = if (currentPage == 1) {
-                            data.list
+                if (postsResult.isSuccess) {
+                    postsResult.getOrNull()?.let { postsResponse ->
+                        if (postsResponse.code == 1) {
+                            postsResponse.data?.let { data ->
+                                _totalPages.value = data.pagecount
+                                val newPosts = if (currentPage == 1) {
+                                    data.list
+                                } else {
+                                    _posts.value + data.list
+                                }
+                                
+                                _posts.value = newPosts
+                            }
                         } else {
-                            _posts.value + data.list
+                            _errorMessage.value = "加载失败: ${postsResponse.msg ?: "未知错误"}"
                         }
-                        
-                        _posts.value = newPosts
                     }
                 } else {
-                    _errorMessage.value = "加载失败: ${response.body()?.msg ?: "未知错误"}"
+                    _errorMessage.value = "加载失败: ${postsResult.exceptionOrNull()?.message ?: "未知错误"}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
