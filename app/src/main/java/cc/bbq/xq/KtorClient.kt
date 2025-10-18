@@ -10,6 +10,8 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import java.io.ByteArrayInputStream
@@ -101,12 +103,12 @@ val httpClient = HttpClient(OkHttp) {
     // ===== 模型类定义 =====
 
     // 基础响应模型
-    @kotlinx.serialization.Serializable
-    data class BaseResponse(
-        val code: Int,
-        val msg: String,
-        val data: JsonObject? = null,
-        val timestamp: Long
+    @Serializable
+data class BaseResponse(
+    val code: Int,
+    val msg: String,
+    val data: JsonElement? = null,
+    val timestamp: Long
     ) {
         // 辅助方法：从 data 字段获取下载链接
         fun getDownloadUrl(): String? {
