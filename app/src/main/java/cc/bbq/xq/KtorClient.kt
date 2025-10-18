@@ -75,11 +75,16 @@ val httpClient = HttpClient(OkHttp) {
     client.defaultRequest {
         url(BASE_URL)
         header(HttpHeaders.ContentType, ContentType.Application.FormUrlEncoded.toString())
+        header(HttpHeaders.Accept, ContentType.Application.Json.toString()) // 显式设置 Accept 头部
     }
 
     // JSON 序列化配置
     client.install(ContentNegotiation) {
-        json()
+        json(Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            explicitNulls = false
+        })
     }
 
     // 日志配置
@@ -103,7 +108,7 @@ val httpClient = HttpClient(OkHttp) {
     data class BaseResponse(
         val code: Int,
         val msg: String,
-        val data: JsonObject? = null,
+        val data: T? = null,
         val timestamp: Long
     ) {
         // 辅助方法：从 data 字段获取下载链接
