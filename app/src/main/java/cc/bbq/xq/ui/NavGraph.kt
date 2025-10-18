@@ -68,6 +68,7 @@ import cc.bbq.xq.ui.animation.materialSharedAxisXIn
 import cc.bbq.xq.ui.animation.materialSharedAxisXOut
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.ui.animation.rememberSlideDistance
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -247,6 +248,7 @@ composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { back
     UserDetailScreen(
         userData = userData,
         isLoading = isLoading,
+        errorMessage = errorMessage,
 //        onBackClick = { navController.popBackStack() },
         onPostsClick = { 
             navController.navigate(MyPosts(userId).createRoute()) 
