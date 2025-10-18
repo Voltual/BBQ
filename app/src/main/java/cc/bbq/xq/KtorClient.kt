@@ -1573,20 +1573,28 @@ override suspend fun uploadAvatar(
                         dispose = {}
                     ),
                     PartData.FileItem(
-                        {
-                            val stream = ByteArrayInputStream(file)
-                            object : InputStreamBody(stream, ContentType.Image.JPEG) {
-                                override val filename: String = filename
+                        provider = {
+                            object : InputProvider {
+                                override fun open(): Input {
+                                    return object : ByteReadChannel(file) : Input() {
+                                        override fun close() {
+                                            super.close()
+                                        }
+                                    }
+                                }
                             }
                         },
-                        Headers.build {
-                            append(HttpHeaders.ContentDisposition, "form-data; name=\"file\"; filename=\"$filename\"")
-                            append(HttpHeaders.ContentType, "image/jpeg")
+                        partHeaders = Headers.build {
+                            append(
+                                HttpHeaders.ContentDisposition,
+                                "form-data; name=\"file\"; filename=\"$filename\""
+                            )
+                            append(HttpHeaders.ContentType, "image/png") // 根据抓包修改为 image/png
                         },
                         dispose = {}
                     )
                 ),
-                boundary = "5c1f4c34-2506-4631-8162-dfffc6af3b2d"
+                boundary = "******" // 根据抓包修改 boundary
             )
             this.body = multipartData
         }
