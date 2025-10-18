@@ -368,7 +368,7 @@ private fun PostSearchResultsList(
             when (it) {
                 is SearchResultItem.PostItem -> "post_${it.post.postid}"
                 // 修复：BrowseHistory 使用 postId 而不是 id
-                is SearchResultItem.HistoryItem -> "history_${it.history.postId}"
+                is SearchResultItem.HistoryItem -> "history_${it.history.postid}"
                 // 修复：LogEntry 使用 id，但它是 Int 类型
                 is SearchResultItem.LogItem -> "log_${it.log.id}"
             }
@@ -376,7 +376,7 @@ private fun PostSearchResultsList(
             when (item) {
                 is SearchResultItem.PostItem -> {
                     SharedPostItem(
-                        post = item.post, 
+                        post = item.post,
                         onClick = { onPostClick(item.post.postid) }
                     )
                 }
