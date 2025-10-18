@@ -132,8 +132,26 @@ private fun loadDataIfNeeded() {
                 )
 
                 response.onSuccess { result ->
+                    //val appComments = response.body()?.data?.list ?: emptyList()
                     val appComments = result.data?.list ?: emptyList()
                     _comments.value = appComments
+                    /*_comments.value = appComments.map { appComment ->
+                        RetrofitClient.models.Comment(
+                            id = appComment.id,
+                            content = appComment.content,
+                            userid = appComment.userid,
+                            time = appComment.time,
+                            username = appComment.username,
+                            nickname = appComment.nickname,
+                            usertx = appComment.usertx,
+                            hierarchy = appComment.hierarchy,
+                            parentid = appComment.parentid,
+                            parentnickname = appComment.parentnickname,
+                            parentcontent = appComment.parentcontent,
+                            image_path = appComment.image_path,
+                            sub_comments_count = 0
+                        )
+                    }*/
                 }.onFailure { error ->
                     _errorMessage.value = "加载评论出错: ${error.message}"
                 }
