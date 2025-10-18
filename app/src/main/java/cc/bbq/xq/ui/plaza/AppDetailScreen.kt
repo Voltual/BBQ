@@ -125,6 +125,9 @@ fun AppDetailScreen(
                     appDetail?.let {
                         //val appDetailJson = RetrofitClient.JsonConverter.toJson(it)
                         //navController.navigate(UpdateAppRelease(appDetailJson).createRoute())
+                        // 使用 KtorClient.JsonConverter
+                        val appDetailJson = KtorClient.JsonConverter.toJson(it)
+                        navController.navigate(UpdateAppRelease(appDetailJson).createRoute())
                     }
                 },
                 onRefundClick = {
@@ -495,7 +498,7 @@ fun AppDetailContent(
                         Text(
                             text = "查看用户详情",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
