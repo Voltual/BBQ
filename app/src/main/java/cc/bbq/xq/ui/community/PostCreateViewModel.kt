@@ -134,6 +134,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     }
 }
 
+
     fun removeImage(uri: Uri) {
         _uiState.update { currentState ->
             val newUris = currentState.selectedImageUris - uri
