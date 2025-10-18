@@ -5,7 +5,7 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 
 package cc.bbq.xq.ui.community.compose
 
@@ -21,14 +21,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.ui.compose.SharedPostItem
 
 @Composable
 fun PostListComposable(
-    posts: List<RetrofitClient.models.Post>,
+    posts: List<KtorClient.Post>, // 修改为 KtorClient.Post
     isLoading: Boolean,
-    onItemClick: (RetrofitClient.models.Post) -> Unit,
+    onItemClick: (KtorClient.Post) -> Unit, // 修改为 KtorClient.Post
     onLoadMore: () -> Unit, // 核心修正: 恢复被我误删的 onLoadMore 参数
     modifier: Modifier = Modifier
 ) {
@@ -72,7 +72,7 @@ fun PostListComposable(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp)
-            )
+                )
         }
     }
 }
