@@ -12,6 +12,7 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import cc.bbq.xq.KtorClient
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -654,7 +655,7 @@ fun CommentDialog(
 
 @Composable
 fun CommentItem(
-    comment: RetrofitClient.models.Comment,
+    comment: KtorClient.Comment, // 改为 KtorClient 模型
     navController: NavController,
     onReply: () -> Unit,
     onDelete: () -> Unit,
@@ -701,7 +702,7 @@ fun CommentItem(
                 )
             },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant, // 评论卡片使用 surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     ) {

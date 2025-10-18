@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import cc.bbq.xq.KtorClient
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -224,9 +225,9 @@ fun AppDetailScreen(
 @Composable
 fun AppDetailContent(
     navController: NavController,
-    appDetail: RetrofitClient.models.AppDetail,
-    comments: List<RetrofitClient.models.Comment>,
-    onCommentReply: (RetrofitClient.models.Comment) -> Unit,
+    appDetail: KtorClient.AppDetail, // 改为 KtorClient 模型
+    comments: List<KtorClient.Comment>, // 改为 KtorClient 模型
+    onCommentReply: (KtorClient.Comment) -> Unit, // 改为 KtorClient 模型
     onDownload: (String) -> Unit,
     onCommentDelete: (Long) -> Unit,
     onUpdateClick: () -> Unit,

@@ -180,36 +180,36 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun populateFromAppDetail(appDetail: RetrofitClient.models.AppDetail) {
-        isUpdateMode.value = true
-        appId = appDetail.id
-        appVersionId = appDetail.apps_version_id
+    fun populateFromAppDetail(appDetail: KtorClient.AppDetail) { // 改为 KtorClient 模型
+    isUpdateMode.value = true
+    appId = appDetail.id
+    appVersionId = appDetail.apps_version_id
 
-        appName.value = appDetail.appname
-        apkDownloadUrl.value = appDetail.download ?: ""
+    appName.value = appDetail.appname
+    apkDownloadUrl.value = appDetail.download ?: ""
 
-        val explainLines = appDetail.app_explain?.split("\n")
-        val pkgNameLine = explainLines?.find { it.startsWith("包名：") }
-        packageName.value = pkgNameLine?.substringAfter("包名：")?.trim() ?: ""
+    val explainLines = appDetail.app_explain?.split("\n")
+    val pkgNameLine = explainLines?.find { it.startsWith("包名：") }
+    packageName.value = pkgNameLine?.substringAfter("包名：")?.trim() ?: ""
 
-        versionName.value = appDetail.version
-        appVersion.value = appDetail.version
-        appSize.value = appDetail.app_size.replace("MB", "").trim()
-        appIntroduce.value = appDetail.app_introduce?.replace("<br>", "\n") ?: ""
-        appExplain.value = appDetail.app_explain ?: ""
-        isPay.value = appDetail.is_pay
-        payMoney.value = if (appDetail.pay_money > 0) appDetail.pay_money.toString() else ""
-        selectedCategoryIndex.value = categories.indexOfFirst {
-            it.categoryId == appDetail.category_id && it.subCategoryId == appDetail.sub_category_id
-        }.takeIf { it != -1 } ?: 0
+    versionName.value = appDetail.version
+    appVersion.value = appDetail.version
+    appSize.value = appDetail.app_size.replace("MB", "").trim()
+    appIntroduce.value = appDetail.app_introduce?.replace("<br>", "\n") ?: ""
+    appExplain.value = appDetail.app_explain ?: ""
+    isPay.value = appDetail.is_pay
+    payMoney.value = if (appDetail.pay_money > 0) appDetail.pay_money.toString() else ""
+    selectedCategoryIndex.value = categories.indexOfFirst {
+        it.categoryId == appDetail.category_id && it.subCategoryId == appDetail.sub_category_id
+    }.takeIf { it != -1 } ?: 0
 
-        iconUrl.value = appDetail.app_icon
-        localIconUri.value = null
-        introductionImageUrls.clear()
-        appDetail.app_introduction_image_array?.let {
-            introductionImageUrls.addAll(it)
-        }
+    iconUrl.value = appDetail.app_icon
+    localIconUri.value = null
+    introductionImageUrls.clear()
+    appDetail.app_introduction_image_array?.let {
+        introductionImageUrls.addAll(it)
     }
+}
 
     fun releaseApp(onSuccess: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
