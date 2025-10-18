@@ -109,31 +109,30 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     private suspend fun uploadImageKtor(fileBytes: ByteArray, fileName: String): Result<String> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response: HttpResponse = KtorClient.uploadHttpClient.post("api.php") {
-                    setBody(
-                        MultiPartFormDataContent(
-                            formData {
-                                append("file", fileBytes, Headers.build {
-                                    append(HttpHeaders.ContentType, "image/png")
-                                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
-                                })
-                            },
-                            boundary = "******"
-                        )
+    return withContext(Dispatchers.IO) {
+        try {
+            val response: HttpResponse = KtorClient.uploadHttpClient.post("api.php") {
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("file", fileBytes, Headers.build {
+                                append(HttpHeaders.ContentType, "image/jpeg") // 根据实际文件类型设置
+                                append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                            })
+                        }
                     )
-                }
-
-                val responseBody = response.bodyAsText()
-                // 使用 Ktor 客户端的响应体获取图片 URL
-                val imageUrl = responseBody.substringAfter("\"viewurl\":\"").substringBefore("\"").trim()
-                Result.success(imageUrl)
-            } catch (e: Exception) {
-                Result.failure(e)
+                )
             }
+
+            val responseBody = response.bodyAsText()
+            // 使用 Ktor 客户端的响应体获取图片 URL
+            val imageUrl = responseBody.substringAfter("\"viewurl\":\"").substringBefore("\"").trim()
+            Result.success(imageUrl)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
+}
 
     fun removeImage(uri: Uri) {
         _uiState.update { currentState ->
