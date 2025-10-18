@@ -1574,15 +1574,9 @@ override suspend fun uploadAvatar(
                     ),
                     PartData.FileItem(
                         provider = {
-                            object : InputStream() {
-                                private val byteArrayInputStream = ByteArrayInputStream(file)
-
-                                override fun read(): Int {
-                                    return byteArrayInputStream.read()
-                                }
-
+                            object : ByteReadChannel(file) : Input() {
                                 override fun close() {
-                                    byteArrayInputStream.close()
+                                    super.close()
                                 }
                             }
                         },
