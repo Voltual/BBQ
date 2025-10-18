@@ -5,7 +5,7 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 
 package cc.bbq.xq.ui.community
 
@@ -28,6 +28,7 @@ import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
 import io.ktor.http.content.*
+import io.ktor.client.statement.bodyAsText
 
 class PostCreateViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -110,15 +111,21 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
         return withContext(Dispatchers.IO) {
             try {
                 val response = KtorClient.uploadHttpClient.post("api.php") {
-                    body = MultiPartFormDataContent(formData {
-                        append("file", fileBytes, Headers.build {
-                            append(HttpHeaders.ContentType, "image/png")
-                            append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
-                        })
-                    }, boundary = "******")
+                    setBody(
+                        MultiPartFormDataContent(
+                            formData {
+                                append("file", fileBytes, Headers.build {
+                                    append(HttpHeaders.ContentType, "image/png")
+                                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                                })
+                            },
+                            boundary = "******"
+                        )
+                    )
                 }
 
                 val responseBody = response.bodyAsText()
+                // 使用 Ktor 客户端的响应体获取图片 URL
                 val imageUrl = responseBody.substringAfter("\"viewurl\":\"").substringBefore("\"").trim()
                 Result.success(imageUrl)
             } catch (e: Exception) {
@@ -189,6 +196,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 val finalSubsectionId = if (mode == "refund") 21 else subsectionId
 
                 val createPostResult = KtorClient.ApiServiceImpl.createPost(
+                    appid = 1,
                     token = token,  // 这里使用参数名 token，而不是 usertoken
                     title = title,
                     content = finalContent,

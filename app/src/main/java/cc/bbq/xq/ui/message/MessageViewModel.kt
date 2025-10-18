@@ -5,21 +5,21 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 package cc.bbq.xq.ui.message
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class MessageState(
-    val messages: List<RetrofitClient.models.MessageNotification> = emptyList(),
+    val messages: List<KtorClient.MessageNotification> = emptyList(), // 使用 KtorClient.MessageNotification
     val isLoading: Boolean = false,
     val error: String? = null,
     val currentPage: Int = 1,
@@ -62,30 +62,39 @@ class MessageViewModel(application: Application) : AndroidViewModel(application)
         
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.instance.getMessageNotifications(
+                val messageNotificationsResult = KtorClient.ApiServiceImpl.getMessageNotifications(
                     token = token!!,
                     limit = 5,
                     page = page
                 )
                 
-                if (response.isSuccessful) {
-                    response.body()?.data?.let { data ->
-                        _state.value = MessageState(
-                            messages = data.list,
-                            currentPage = page,
-                            totalPages = data.pagecount,
-                            isInitialized = true,
-                            isLoading = false // 修复：加载完成
-                        )
-                    } ?: run {
-                        _state.value = _state.value.copy(
-                            error = "加载失败: 数据为空",
-                            isLoading = false
-                        )
+                if (messageNotificationsResult.isSuccess) {
+                    messageNotificationsResult.getOrNull()?.let { messageNotificationsResponse ->
+                        if (messageNotificationsResponse.code == 1) {
+                            messageNotificationsResponse.data?.let { data ->
+                                _state.value = MessageState(
+                                    messages = data.list,
+                                    currentPage = page,
+                                    totalPages = data.pagecount,
+                                    isInitialized = true,
+                                    isLoading = false // 修复：加载完成
+                                )
+                            } ?: run {
+                                _state.value = _state.value.copy(
+                                    error = "加载失败: 数据为空",
+                                    isLoading = false
+                                )
+                            }
+                        } else {
+                            _state.value = _state.value.copy(
+                                error = "加载失败: ${messageNotificationsResponse.msg}",
+                                isLoading = false
+                            )
+                        }
                     }
                 } else {
                     _state.value = _state.value.copy(
-                        error = "加载失败: ${response.code()}",
+                        error = "加载失败: ${messageNotificationsResult.exceptionOrNull()?.message}",
                         isLoading = false
                     )
                 }
