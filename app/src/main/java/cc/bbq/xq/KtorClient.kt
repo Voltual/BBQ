@@ -1546,7 +1546,7 @@ object KtorClient {
             return request(FOLLOW_USERS_URL, parameters = parameters)
         }
 
-        override suspend fun uploadAvatar(
+override suspend fun uploadAvatar(
     appid: Int,
     token: String,
     file: ByteArray,
@@ -1560,16 +1560,30 @@ object KtorClient {
                         value = appid.toString(),
                         partHeaders = Headers.build {
                             append(HttpHeaders.ContentDisposition, "form-data; name=\"appid\"")
-                        }
+                        },
+                        dispose = {}
                     ),
                     PartData.FormItem(
                         value = token,
                         partHeaders = Headers.build {
                             append(HttpHeaders.ContentDisposition, "form-data; name=\"usertoken\"")
-                        }
+                        },
+                        dispose = {}
                     ),
                     PartData.FileItem(
-                        provider = { ByteReadChannel(file) },
+                        provider = {
+                            object : Input() {
+                                override fun read(destination: ByteArray, offset: Int, length: Int): Int {
+                                    file.inputStream().use {
+                                        return it.read(destination, offset, length)
+                                    }
+                                }
+
+                                override fun close() {
+                                    // Do nothing, the file stream is closed in the read function
+                                }
+                            }
+                        },
                         partHeaders = Headers.build {
                             append(
                                 HttpHeaders.ContentDisposition,
@@ -1577,7 +1591,7 @@ object KtorClient {
                             )
                             append(HttpHeaders.ContentType, "image/jpeg")
                         },
-                        contentType = ContentType.Image.JPEG
+                        dispose = {}
                     )
                 ),
                 boundary = "5c1f4c34-2506-4631-8162-dfffc6af3b2d"
