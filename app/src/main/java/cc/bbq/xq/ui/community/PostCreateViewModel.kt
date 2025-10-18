@@ -5,7 +5,7 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 
 package cc.bbq.xq.ui.community
 
@@ -15,17 +15,19 @@ import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.db.PostDraftRepository
 import cc.bbq.xq.util.FileUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+import io.ktor.client.plugins.*
+import io.ktor.client.request.forms.*
+import io.ktor.http.*
+import io.ktor.utils.io.*
+import io.ktor.http.content.*
 
 class PostCreateViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -76,16 +78,14 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
             try {
                 val file = File(realPath)
-                val requestFile = MultipartBody.Part.createFormData(
-                    "file", file.name, file.asRequestBody("image/*".toMediaTypeOrNull())
-                )
-                val response = RetrofitClient.uploadInstance.uploadImage(requestFile)
+                val bytes = file.readBytes() // 将文件读取为字节数组
+                val uploadResult = uploadImageKtor(bytes, file.name)
 
-                if (response.isSuccessful && response.body()?.code == 0) {
-                    response.body()?.downurl?.let { url ->
+                if (uploadResult.isSuccess) {
+                    uploadResult.getOrNull()?.let {
                         _uiState.update { currentState ->
                             val newUris = currentState.selectedImageUris + uri
-                            val newUrlMap = currentState.imageUriToUrlMap + (uri to url)
+                            val newUrlMap = currentState.imageUriToUrlMap + (uri to it)
                             val newUrls = newUrlMap.values.joinToString(",")
                             currentState.copy(
                                 selectedImageUris = newUris,
@@ -96,12 +96,33 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                         Toast.makeText(getApplication(), "图片上传成功", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(getApplication(), "上传失败: ${response.body()?.msg}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(getApplication(), "上传失败: ${uploadResult.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(getApplication(), "上传错误: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {
                 _uiState.update { it.copy(showProgressDialog = false) }
+            }
+        }
+    }
+
+    private suspend fun uploadImageKtor(fileBytes: ByteArray, fileName: String): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = KtorClient.uploadHttpClient.post("api.php") {
+                    body = MultiPartFormDataContent(formData {
+                        append("file", fileBytes, Headers.build {
+                            append(HttpHeaders.ContentType, "image/png")
+                            append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                        })
+                    }, boundary = "******")
+                }
+
+                val responseBody = response.bodyAsText()
+                val imageUrl = responseBody.substringAfter("\"viewurl\":\"").substringBefore("\"").trim()
+                Result.success(imageUrl)
+            } catch (e: Exception) {
+                Result.failure(e)
             }
         }
     }
@@ -167,8 +188,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
                 val finalSubsectionId = if (mode == "refund") 21 else subsectionId
 
-                val response = RetrofitClient.instance.createPost(
-                    appid = 1,
+                val createPostResult = KtorClient.ApiServiceImpl.createPost(
                     token = token,  // 这里使用参数名 token，而不是 usertoken
                     title = title,
                     content = finalContent,
@@ -176,13 +196,11 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                     imageUrls = if (imageUrls.isNotBlank()) imageUrls else null
                 )
 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    // 发帖成功，清除草稿
-                    clearDraft()
+                if (createPostResult.isSuccess) {
                     _postStatus.value = PostStatus.Success
                     Toast.makeText(getApplication(), "发帖成功", Toast.LENGTH_SHORT).show()
                 } else {
-                    val errorMsg = response.body()?.msg ?: "发帖失败"
+                    val errorMsg = createPostResult.exceptionOrNull()?.message ?: "发帖失败"
                     _postStatus.value = PostStatus.Error(errorMsg)
                     Toast.makeText(getApplication(), "发帖失败: $errorMsg", Toast.LENGTH_SHORT).show()
                 }
