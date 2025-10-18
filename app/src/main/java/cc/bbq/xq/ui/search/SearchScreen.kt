@@ -418,67 +418,6 @@ private fun SearchResultsList(
             when (it) {
                 is SearchResultItem.PostItem -> "post_${it.post.postid}"
                 // 修复：BrowseHistory 使用 postId 而不是 id
-                is SearchResultItem.HistoryItem -> "history_${it.history.postId}"
-                // 修复：LogEntry 使用 id，但它是 Int 类型
-                is SearchResultItem.LogItem -> "log_${it.log.id}"
-            }
-        }) { item ->
-            when (item) {
-                is SearchResultItem.PostItem -> {
-                    SharedPostItem(
-                        post = item.post, 
-                        onClick = { onPostClick(item.post.postid) }
-                    )
-                }
-                is SearchResultItem.HistoryItem -> {
-                    ListItem(
-                        headlineContent = { 
-                            Text(
-                                item.history.title, 
-                                maxLines = 1
-                            ) 
-                        },
-                        supportingContent = { 
-                            Text(
-                                item.history.previewContent, 
-                                maxLines = 2
-                            ) 
-                        },
-                        trailingContent = { 
-                            Text(item.history.formattedTime()) 
-                        },
-                        modifier = Modifier.clickable { 
-                            onPostClick(item.history.postId) 
-                        }
-                    )
-                }
-                is SearchResultItem.LogItem -> {
-                    SharedLogListItem(
-                        log = item.log, 
-                        modifier = Modifier.clickable { onLogClick() }
-                    )
-                }
-            }
-        }
-    }
-}
-
-// 原有的 SearchResultsList 保持不变
-@Composable
-private fun SearchResultsList(
-    results: List<SearchResultItem>,
-    onPostClick: (Long) -> Unit,
-    onLogClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(vertical = 8.dp)
-    ) {
-        items(results, key = { 
-            when (it) {
-                is SearchResultItem.PostItem -> "post_${it.post.postid}"
-                // 修复：BrowseHistory 使用 postId 而不是 id
                 is SearchResultItem.HistoryItem -> "history_${it.history.postid}"
                 // 修复：LogEntry 使用 id，但它是 Int 类型
                 is SearchResultItem.LogItem -> "log_${it.log.id}"
