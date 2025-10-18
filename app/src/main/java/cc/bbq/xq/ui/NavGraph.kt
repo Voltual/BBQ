@@ -24,7 +24,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -34,6 +33,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient // 导入 KtorClient
 import cc.bbq.xq.ui.auth.LoginScreen
 import cc.bbq.xq.ui.auth.LoginViewModel
 import cc.bbq.xq.ui.billing.BillingScreen
@@ -233,7 +233,7 @@ composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { back
     // 使用 koinViewModel() 而不是 viewModel()
     val viewModel: UserDetailViewModel = koinViewModel()
 
-    // 简化的 LaunchedEffect - 只设置用户ID
+    // 简化的LaunchedEffect - 只设置用户ID
     LaunchedEffect(userId) {
         if (userId != -1L) {
             viewModel.loadUserDetails(userId)
@@ -247,7 +247,6 @@ composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { back
     UserDetailScreen(
         userData = userData,
         isLoading = isLoading,
-        errorMessage = errorMessage,
 //        onBackClick = { navController.popBackStack() },
         onPostsClick = { 
             navController.navigate(MyPosts(userId).createRoute()) 
@@ -385,7 +384,8 @@ composable(route = AppDetail(0, 0).route, arguments = AppDetail.arguments) { bac
                 URLDecoder.decode(it, StandardCharsets.UTF_8.toString())
             }
             if (!appDetailJson.isNullOrBlank()) {
-                val appDetailToUpdate = RetrofitClient.JsonConverter.fromJson(appDetailJson)
+                //val appDetailToUpdate = RetrofitClient.JsonConverter.fromJson(appDetailJson)
+                val appDetailToUpdate = KtorClient.JsonConverter.fromJson(appDetailJson)
                 if (appDetailToUpdate != null) {
                     appReleaseViewModel.populateFromAppDetail(appDetailToUpdate)
                 }
@@ -478,7 +478,7 @@ composable(route = AppDetail(0, 0).route, arguments = AppDetail.arguments) { bac
             PaymentCenterScreen(
                 viewModel = paymentViewModel,
                 modifier = Modifier.fillMaxSize()//,
-       //         navController = navController // 传递 navController
+//                navController = navController // 传递 navController
             )
         }
 

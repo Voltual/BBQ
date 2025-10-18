@@ -16,7 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
+//import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
 import cc.bbq.xq.KtorClient // 导入 KtorClient
 import cc.bbq.xq.util.ApkInfo
 import cc.bbq.xq.util.ApkParser
@@ -339,16 +339,25 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                 )
             }
 
-            val uploadResponse: KtorClient.UploadResponse = response.body()
+            //val uploadResponse: KtorClient.UploadResponse = response.body()
 
-            if (uploadResponse.code == 1 || uploadResponse.exists == 1) {
+            val uploadResponse: KtorClient.UploadResponse? = try {
+                response.body()
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 响应解析失败: ${e.message}"))
+                }
+                return
+            }
+
+            if (uploadResponse?.code == 1 || uploadResponse?.exists == 1) {
                 withContext(Dispatchers.Main) {
                     _processFeedback.value = Result.success("$contextMessage (氪云): ${uploadResponse.msg}")
                     onSuccess(uploadResponse.downurl ?: "")
                 }
             } else {
                 withContext(Dispatchers.Main) {
-                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${uploadResponse.msg ?: "上传失败"}"))
+                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${uploadResponse?.msg ?: "上传失败"}"))
                 }
             }
         } catch (e: Exception) {
@@ -373,16 +382,24 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                     }
                 )
             }
-            val uploadResponse: KtorClient.WanyueyunUploadResponse = response.body()
+            //val uploadResponse: KtorClient.WanyueyunUploadResponse = response.body()
+            val uploadResponse: KtorClient.WanyueyunUploadResponse? = try {
+                response.body()
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): 响应解析失败: ${e.message}"))
+                }
+                return
+            }
 
-            if (uploadResponse.code == 200 && !uploadResponse.data.isNullOrBlank()) {
+            if (uploadResponse?.code == 200 && !uploadResponse.data.isNullOrBlank()) {
                 withContext(Dispatchers.Main) {
                     _processFeedback.value = Result.success("APK (挽悦云): ${uploadResponse.msg}")
                     onSuccess(uploadResponse.data)
                 }
             } else {
                 withContext(Dispatchers.Main) {
-                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${uploadResponse.msg ?: "上传失败"}"))
+                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${uploadResponse?.msg ?: "上传失败"}"))
                 }
             }
         } catch (e: Exception) {

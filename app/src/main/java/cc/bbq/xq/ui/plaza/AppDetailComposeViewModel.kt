@@ -12,7 +12,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
+//import cc.bbq.xq.RetrofitClient  移除 RetrofitClient
 import cc.bbq.xq.KtorClient // 导入 KtorClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
