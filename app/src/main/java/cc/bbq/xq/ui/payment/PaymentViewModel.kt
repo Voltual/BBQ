@@ -12,11 +12,14 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
+import cc.bbq.xq.KtorClient // 导入 KtorClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 
 class PaymentViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -90,13 +93,20 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                     return@launch
                 }
                 
-                val response = RetrofitClient.instance.getPostDetail(
-                    token = token,
-                    postId = postId
-                )
+                // 使用 KtorClient 发起请求
+                val response = withContext(Dispatchers.IO) {
+                    //RetrofitClient.instance.getPostDetail(
+                    //    token = token,
+                    //    postId = postId
+                    //)
+                    KtorClient.ApiServiceImpl.getPostDetail(
+                        token = token,
+                        postId = postId
+                    )
+                }
                 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    val post = response.body()?.data
+                response.onSuccess { result ->
+                    val post = result.data
                     _paymentInfo.value = PaymentInfo(
                         type = PaymentType.POST_REWARD,
                         postId = postId,
@@ -107,8 +117,8 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                         authorAvatar = post?.usertx ?: "",
                         postTime = post?.create_time_ago ?: ""
                     )
-                } else {
-                    _errorMessage.value = "加载帖子失败: ${response.body()?.msg}"
+                }.onFailure { error ->
+                    _errorMessage.value = "加载帖子失败: ${error.message}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "加载帖子失败: ${e.message}"
@@ -129,15 +139,22 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                     return@launch
                 }
                 
-                val response = RetrofitClient.instance.getUserInformation(
-                    userId = credentials.fourth,
-                    token = credentials.third
-                )
+                // 使用 KtorClient 发起请求
+                val response = withContext(Dispatchers.IO) {
+                    //RetrofitClient.instance.getUserInformation(
+                    //    userId = credentials.fourth,
+                    //    token = credentials.third
+                    //)
+                    KtorClient.ApiServiceImpl.getUserInformation(
+                        userId = credentials.fourth,
+                        token = credentials.third
+                    )
+                }
                 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    _coinsBalance.value = response.body()?.data?.money ?: 0
-                } else {
-                    _errorMessage.value = "获取余额失败: ${response.body()?.msg}"
+                response.onSuccess { result ->
+                    _coinsBalance.value = result.data?.money ?: 0
+                }.onFailure { error ->
+                    _errorMessage.value = "获取余额失败: ${error.message}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
@@ -158,32 +175,34 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
             try {
                 when (info.type) {
                     PaymentType.APP_PURCHASE -> {
-                        val response = RetrofitClient.instance.getAppsInformation(
+                        // 使用 KtorClient 发起请求
+                        val response = KtorClient.ApiServiceImpl.getAppsInformation(
                             token = "",
                             appsId = info.appId,
                             appsVersionId = info.versionId
                         )
                         
-                        if (response.isSuccessful && response.body()?.code == 1) {
-                            val appDetail = response.body()?.data
+                        response.onSuccess { result ->
+                            val appDetail = result.data
                             _verificationResult.value = 
                                 "验证成功: ${appDetail?.appname} (¥${appDetail?.pay_money})"
-                        } else {
-                            _errorMessage.value = "应用验证失败: ${response.body()?.msg}"
+                        }.onFailure { error ->
+                            _errorMessage.value = "应用验证失败: ${error.message}"
                         }
                     }
                     PaymentType.POST_REWARD -> {
-                        val response = RetrofitClient.instance.getPostDetail(
+                        // 使用 KtorClient 发起请求
+                        val response = KtorClient.ApiServiceImpl.getPostDetail(
                             token = "",
                             postId = info.postId
                         )
                         
-                        if (response.isSuccessful && response.body()?.code == 1) {
-                            val post = response.body()?.data
+                        response.onSuccess { result ->
+                            val post = result.data
                             _verificationResult.value = 
                                 "验证成功: ${post?.title}"
-                        } else {
-                            _errorMessage.value = "帖子验证失败: ${response.body()?.msg}"
+                        }.onFailure { error ->
+                            _errorMessage.value = "帖子验证失败: ${error.message}"
                         }
                     }
                 }
@@ -209,9 +228,17 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                     return@launch
                 }
                 
+                // 使用 KtorClient 发起请求
                 val response = when (info.type) {
                     PaymentType.APP_PURCHASE -> {
-                        RetrofitClient.instance.payForApp(
+                        //RetrofitClient.instance.payForApp(
+                        //    token = credentials.third,
+                        //    appsId = info.appId,
+                        //    appsVersionId = info.versionId,
+                        //    money = amount,
+                        //    type = 0 // 硬币支付
+                        //)
+                        KtorClient.ApiServiceImpl.payForApp(
                             token = credentials.third,
                             appsId = info.appId,
                             appsVersionId = info.versionId,
@@ -220,7 +247,13 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                         )
                     }
                     PaymentType.POST_REWARD -> {
-                        RetrofitClient.instance.rewardPost(
+                        //RetrofitClient.instance.rewardPost(
+                        //    token = credentials.third,
+                        //    postId = info.postId,
+                        //    money = amount,
+                        //    payment = 0 // 硬币支付
+                        //)
+                        KtorClient.ApiServiceImpl.rewardPost(
                             token = credentials.third,
                             postId = info.postId,
                             money = amount,
@@ -229,18 +262,23 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
                 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    _paymentStatus.value = PaymentStatus.SUCCESS
-                    // 更新硬币余额
-                    _coinsBalance.value = (_coinsBalance.value ?: 0) - amount
-                    
-                    // 保存下载链接（如果是应用购买）
-                    if (info.type == PaymentType.APP_PURCHASE) {
-                        // 使用 getDownloadUrl() 方法获取下载链接
-                        _downloadUrl = response.body()?.getDownloadUrl()
+                response.onSuccess { result ->
+                    if (result.code == 1) {
+                        _paymentStatus.value = PaymentStatus.SUCCESS
+                        // 更新硬币余额
+                        _coinsBalance.value = (_coinsBalance.value ?: 0) - amount
+                        
+                        // 保存下载链接（如果是应用购买）
+                        if (info.type == PaymentType.APP_PURCHASE) {
+                            // 使用 getDownloadUrl() 方法获取下载链接
+                            _downloadUrl = result.getDownloadUrl()
+                        }
+                    } else {
+                        _errorMessage.value = "支付失败: ${result.msg}"
+                        _paymentStatus.value = PaymentStatus.FAILED
                     }
-                } else {
-                    _errorMessage.value = "支付失败: ${response.body()?.msg}"
+                }.onFailure { error ->
+                    _errorMessage.value = "支付错误: ${error.message}"
                     _paymentStatus.value = PaymentStatus.FAILED
                 }
             } catch (e: Exception) {
