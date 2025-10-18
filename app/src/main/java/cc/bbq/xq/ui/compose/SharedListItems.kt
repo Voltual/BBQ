@@ -18,11 +18,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.CheckCircle // 导入 CheckCircle
+import androidx.compose.material.icons.filled.Error // 导入 Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color // 导入 Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,6 +37,7 @@ import cc.bbq.xq.ui.theme.billing_expense_dark
 import cc.bbq.xq.ui.theme.billing_income
 import cc.bbq.xq.ui.theme.billing_income_dark
 import coil.compose.rememberAsyncImagePainter
+import androidx.compose.ui.graphics.vector.ImageVector
 
 @Composable
 fun SharedPostItem(
@@ -103,7 +107,9 @@ fun SharedLogListItem(log: cc.bbq.xq.data.db.LogEntry, modifier: Modifier = Modi
     } else {
         if (isDarkTheme) billing_expense_dark else billing_expense
     }
-    val statusIcon = if (log.status == "SUCCESS") Icons.Default.CheckCircle else Icons.Default.Error
+    
+    // 使用 ImageVector 类型
+    val statusIcon: ImageVector = if (log.status == "SUCCESS") Icons.Default.CheckCircle else Icons.Default.Error
 
     ListItem(
         modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp),

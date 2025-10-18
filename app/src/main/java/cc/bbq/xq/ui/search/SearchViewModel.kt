@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.BBQApplication
 import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient // 导入 KtorClient
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -16,7 +17,8 @@ enum class SearchMode {
 }
 
 sealed class SearchResultItem {
-    data class PostItem(val post: RetrofitClient.models.Post) : SearchResultItem()
+    // 修改为 KtorClient.Post
+    data class PostItem(val post: KtorClient.Post) : SearchResultItem()
     data class HistoryItem(val history: cc.bbq.xq.ui.community.BrowseHistory) : SearchResultItem()
     data class LogItem(val log: cc.bbq.xq.data.db.LogEntry) : SearchResultItem()
 }
@@ -25,7 +27,7 @@ class SearchViewModel : ViewModel() {
     private val searchHistoryDataStore = BBQApplication.instance.searchHistoryDataStore
     private val browseHistoryDao = BBQApplication.instance.database.browseHistoryDao()
     private val logDao = BBQApplication.instance.database.logDao()
-    private val apiService = RetrofitClient.instance
+    //private val apiService = RetrofitClient.instance // 移除 RetrofitClient
 
     private val _searchMode = MutableStateFlow(SearchMode.POSTS)
     val searchMode: StateFlow<SearchMode> = _searchMode.asStateFlow()
@@ -140,14 +142,15 @@ class SearchViewModel : ViewModel() {
     }
 
     private suspend fun searchPosts(loadMore: Boolean = false) {
-        val response = apiService.searchPosts(
+        //val response = apiService.searchPosts( // 使用 KtorClient
+        val response = KtorClient.ApiServiceImpl.searchPosts(
             query = _query.value, 
             page = currentPage, 
             limit = PAGE_SIZE
         )
         
-        if (response.isSuccessful && response.body()?.code == 1) {
-            response.body()?.data?.let { data ->
+        response.onSuccess { result ->
+            result.data?.let { data ->
                 _totalPages.value = data.pagecount
                 _hasMoreData.value = currentPage < data.pagecount
                 
@@ -160,8 +163,8 @@ class SearchViewModel : ViewModel() {
                 }
                 _errorMessage.value = null
             }
-        } else {
-            val errorMsg = "帖子搜索失败: ${response.body()?.msg ?: "未知错误"}"
+        }.onFailure { error ->
+            val errorMsg = "帖子搜索失败: ${error.message ?: "未知错误"}"
             _errorMessage.value = errorMsg
             if (loadMore) currentPage-- // 回退页码
         }
