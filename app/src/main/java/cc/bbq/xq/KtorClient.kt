@@ -1556,43 +1556,11 @@ override suspend fun uploadAvatar(
 ): Result<BaseResponse> {
     try {
         val response: HttpResponse = httpClient.post(UPLOAD_AVATAR_URL) {
-            val multipartData = MultiPartFormDataContent(
-                listOf(
-                    PartData.FormItem(
-                        value = appid.toString(),
-                        partHeaders = Headers.build {
-                            append(HttpHeaders.ContentDisposition, "form-data; name=\"appid\"")
-                        },
-                        dispose = {}
-                    ),
-                    PartData.FormItem(
-                        value = token,
-                        partHeaders = Headers.build {
-                            append(HttpHeaders.ContentDisposition, "form-data; name=\"usertoken\"")
-                        },
-                        dispose = {}
-                    ),
-                    PartData.FileItem(
-                        provider = {
-                            object : InputProvider {
-                                override fun open(): Input {
-                                    val stream = ByteArrayInputStream(file)
-                                    return stream.asInput()
-                                }
-                            }
-                        },
-                        partHeaders = Headers.build {
-                            append(
-                                HttpHeaders.ContentDisposition,
-                                "form-data; name=\"file\"; filename=\"$filename\""
-                            )
-                            append(HttpHeaders.ContentType, "image/png") // 根据抓包修改为 image/png
-                        },
-                        dispose = {}
-                    )
-                ),
-                boundary = "******" // 根据抓包修改 boundary
-            )
+            val multipartData = FormDataContent(Parameters.build {
+                append("appid", appid.toString())
+                append("usertoken", token)
+                append("file", filename)
+            })
             this.body = multipartData
         }
         return Result.success(response.body())
