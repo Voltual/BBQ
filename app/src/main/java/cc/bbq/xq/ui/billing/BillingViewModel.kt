@@ -5,21 +5,21 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.billing
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class BillingState(
-    val billings: List<RetrofitClient.models.BillingItem> = emptyList(),
+    val billings: List<KtorClient.BillingItem> = emptyList(), // 使用 KtorClient.BillingItem
     val isLoading: Boolean = false,
     val error: String? = null,
     val currentPage: Int = 1,
@@ -43,23 +43,38 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
         
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.instance.getUserBilling(
+                val billingResult = KtorClient.ApiServiceImpl.getUserBilling(
                     token = token,
                     limit = 10,
                     page = 1
                 )
                 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    response.body()?.data?.let { data ->
-                        _state.value = BillingState(
-                            billings = data.list,
-                            currentPage = 1,
-                            totalPages = data.pagecount
-                        )
+                if (billingResult.isSuccess) {
+                    billingResult.getOrNull()?.let { billingResponse ->
+                        if (billingResponse.code == 1) {
+                            billingResponse.data?.let { data ->
+                                _state.value = BillingState(
+                                    billings = data.list,
+                                    currentPage = 1,
+                                    totalPages = data.pagecount,
+                                    isLoading = false
+                                )
+                            } ?: run {
+                                _state.value = _state.value.copy(
+                                    error = "加载账单失败: 数据为空",
+                                    isLoading = false
+                                )
+                            }
+                        } else {
+                            _state.value = _state.value.copy(
+                                error = billingResponse.msg ?: "加载账单失败",
+                                isLoading = false
+                            )
+                        }
                     }
                 } else {
                     _state.value = _state.value.copy(
-                        error = response.body()?.msg ?: "加载账单失败",
+                        error = billingResult.exceptionOrNull()?.message ?: "加载账单失败",
                         isLoading = false
                     )
                 }
@@ -82,24 +97,38 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
         
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.instance.getUserBilling(
+                val billingResult = KtorClient.ApiServiceImpl.getUserBilling(
                     token = token,
                     limit = 10,
                     page = nextPage
                 )
                 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    response.body()?.data?.let { data ->
-                        _state.value = _state.value.copy(
-                            billings = _state.value.billings + data.list,
-                            currentPage = nextPage,
-                            totalPages = data.pagecount,
-                            isLoading = false
-                        )
+                if (billingResult.isSuccess) {
+                    billingResult.getOrNull()?.let { billingResponse ->
+                        if (billingResponse.code == 1) {
+                            billingResponse.data?.let { data ->
+                                _state.value = _state.value.copy(
+                                    billings = _state.value.billings + data.list,
+                                    currentPage = nextPage,
+                                    totalPages = data.pagecount,
+                                    isLoading = false
+                                )
+                            } ?: run {
+                                _state.value = _state.value.copy(
+                                    error = "加载更多失败: 数据为空",
+                                    isLoading = false
+                                )
+                            }
+                        } else {
+                            _state.value = _state.value.copy(
+                                error = billingResponse.msg ?: "加载更多失败",
+                                isLoading = false
+                            )
+                        }
                     }
                 } else {
                     _state.value = _state.value.copy(
-                        error = "加载更多失败: ${response.body()?.msg ?: "未知错误"}",
+                        error = billingResult.exceptionOrNull()?.message ?: "加载更多失败",
                         isLoading = false
                     )
                 }
