@@ -39,6 +39,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -49,7 +53,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.RetrofitClient
-import cc.bbq.xq.KtorClient // 导入 KtorClient
 import cc.bbq.xq.ui.*
 import cc.bbq.xq.ui.community.PostDetailViewModel
 import cc.bbq.xq.ui.compose.LinkifyText
@@ -96,9 +99,7 @@ fun PostDetailScreen(
     val viewModel: PostDetailViewModel = viewModel()
     val context = LocalContext.current
 
-    //val postDetail by viewModel.postDetail.collectAsState()
     val postDetail by viewModel.postDetail.collectAsState()
-    //val comments by viewModel.comments.collectAsState()
     val comments by viewModel.comments.collectAsState()
     val isLiked by viewModel.isLiked.collectAsState()
     val likeCount by viewModel.likeCount.collectAsState()
@@ -115,7 +116,7 @@ fun PostDetailScreen(
     }
 
     var showShareDialog by remember { mutableStateOf(false) }
-    // 修复：将 showMoreOptions 状态移到 PostDetailScreen 内部 
+    // 修复：将 showMoreOptions 状态移到 PostDetailScreen 内部
     var showMoreOptions by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
@@ -436,6 +437,7 @@ fun PostDetailScreen(
     }
 }
 
+// CommentDialog 和 CommentItem 函数保持不变...
 @Composable
 fun CommentDialog(
     hint: String,
@@ -471,38 +473,17 @@ fun CommentDialog(
                     file.asRequestBody("image/*".toMediaTypeOrNull())
                 )
 
-                //val response = RetrofitClient.uploadInstance.uploadImage(requestFile)
-                val response = KtorClient.uploadHttpClient.post("api.php") {
-                    body = MultiPartFormDataContent(
-                        formData {
-                            append("file", file.readBytes(), Headers.build {
-                                append(HttpHeaders.ContentType, "image/*")
-                                append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                            })
-                        }
-                    )
-                }
-
-                //val uploadResponse: KtorClient.UploadResponse = response.body()
-                val uploadResponse: KtorClient.UploadResponse? = try {
-                    response.body()
-                } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        showProgressDialog = false
-                        Toast.makeText(context, "上传错误: 响应解析失败: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                    return@launch
-                }
+                val response = RetrofitClient.uploadInstance.uploadImage(requestFile)
 
                 withContext(Dispatchers.Main) {
                     showProgressDialog = false
-                    if (uploadResponse?.code == 1 || uploadResponse?.exists == 1) {
-                        uploadResponse.downurl?.let { url ->
+                    if (response.isSuccessful && (response.body()?.code == 0 || response.body()?.code == 1)) {
+                        response.body()?.downurl?.let { url ->
                             onSuccess(url)
                             Toast.makeText(context, "图片上传成功", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        Toast.makeText(context, "上传失败: ${uploadResponse?.msg}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "上传失败: ${response.body()?.msg}", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
@@ -655,6 +636,7 @@ fun CommentDialog(
             }
         }
     }
+}
 
     if (showProgressDialog) {
         AlertDialog(
@@ -672,8 +654,7 @@ fun CommentDialog(
 
 @Composable
 fun CommentItem(
-    //comment: RetrofitClient.models.Comment,
-    comment: KtorClient.Comment,
+    comment: RetrofitClient.models.Comment,
     navController: NavController,
     onReply: () -> Unit,
     onDelete: () -> Unit,
@@ -810,5 +791,4 @@ fun CommentItem(
             }
         }
     }
-}
 }

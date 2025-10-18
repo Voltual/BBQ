@@ -35,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import cc.bbq.xq.RetrofitClient
-import cc.bbq.xq.KtorClient // 导入 KtorClient
 import cc.bbq.xq.ui.*
 import cc.bbq.xq.ui.community.compose.CommentDialog
 import cc.bbq.xq.ui.community.compose.CommentItem
@@ -51,9 +50,7 @@ fun AppDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    //val appDetail by viewModel.appDetail.collectAsState()
     val appDetail by viewModel.appDetail.collectAsState()
-    //val comments by viewModel.comments.collectAsState()
     val comments by viewModel.comments.collectAsState()
     val showCommentDialog by viewModel.showCommentDialog.collectAsState()
     val showReplyDialog by viewModel.showReplyDialog.collectAsState()
@@ -101,9 +98,7 @@ fun AppDetailScreen(
         } else if (appDetail != null) {
             AppDetailContent(
                 navController = navController,
-                //appDetail = appDetail!!,
                 appDetail = appDetail!!,
-                //comments = comments,
                 comments = comments,
                 onCommentReply = { comment ->
                     viewModel.openReplyDialog(comment)
@@ -123,10 +118,7 @@ fun AppDetailScreen(
                 },
                 onUpdateClick = {
                     appDetail?.let {
-                        //val appDetailJson = RetrofitClient.JsonConverter.toJson(it)
-                        //navController.navigate(UpdateAppRelease(appDetailJson).createRoute())
-                        // 使用 KtorClient.JsonConverter
-                        val appDetailJson = KtorClient.JsonConverter.toJson(it)
+                        val appDetailJson = RetrofitClient.JsonConverter.toJson(it)
                         navController.navigate(UpdateAppRelease(appDetailJson).createRoute())
                     }
                 },
@@ -232,11 +224,9 @@ fun AppDetailScreen(
 @Composable
 fun AppDetailContent(
     navController: NavController,
-    //appDetail: RetrofitClient.models.AppDetail,
-    appDetail: KtorClient.AppDetail,
-    //comments: List<RetrofitClient.models.Comment>,
-    comments: List<KtorClient.Comment>,
-    onCommentReply: (KtorClient.Comment) -> Unit,
+    appDetail: RetrofitClient.models.AppDetail,
+    comments: List<RetrofitClient.models.Comment>,
+    onCommentReply: (RetrofitClient.models.Comment) -> Unit,
     onDownload: (String) -> Unit,
     onCommentDelete: (Long) -> Unit,
     onUpdateClick: () -> Unit,
@@ -498,7 +488,7 @@ fun AppDetailContent(
                         Text(
                             text = "查看用户详情",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }

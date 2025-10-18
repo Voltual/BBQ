@@ -12,8 +12,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
-import cc.bbq.xq.KtorClient // 导入 KtorClient
+import cc.bbq.xq.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,15 +21,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 
 class AppDetailComposeViewModel(application: Application) : AndroidViewModel(application) {
-    //private val _appDetail = MutableStateFlow<RetrofitClient.models.AppDetail?>(null)
-    private val _appDetail = MutableStateFlow<KtorClient.AppDetail?>(null)
-    //val appDetail: StateFlow<RetrofitClient.models.AppDetail?> = _appDetail.asStateFlow()
-    val appDetail: StateFlow<KtorClient.AppDetail?> = _appDetail.asStateFlow()
+    private val _appDetail = MutableStateFlow<RetrofitClient.models.AppDetail?>(null)
+    val appDetail: StateFlow<RetrofitClient.models.AppDetail?> = _appDetail.asStateFlow()
 
-    //private val _comments = MutableStateFlow<List<RetrofitClient.models.Comment>>(emptyList())
-    private val _comments = MutableStateFlow<List<KtorClient.Comment>>(emptyList())
-    //val comments: StateFlow<List<RetrofitClient.models.Comment>> = _comments.asStateFlow()
-    val comments: StateFlow<List<KtorClient.Comment>> = _comments.asStateFlow()
+    private val _comments = MutableStateFlow<List<RetrofitClient.models.Comment>>(emptyList())
+    val comments: StateFlow<List<RetrofitClient.models.Comment>> = _comments.asStateFlow()
 
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
@@ -41,10 +36,8 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
     private val _showReplyDialog = MutableStateFlow(false)
     val showReplyDialog: StateFlow<Boolean> = _showReplyDialog.asStateFlow()
 
-    //private val _currentReplyComment = MutableStateFlow<RetrofitClient.models.Comment?>(null)
-    private val _currentReplyComment = MutableStateFlow<KtorClient.Comment?>(null)
-    //val currentReplyComment: StateFlow<RetrofitClient.models.Comment?> = _currentReplyComment.asStateFlow()
-    val currentReplyComment: StateFlow<KtorClient.Comment?> = _currentReplyComment.asStateFlow()
+    private val _currentReplyComment = MutableStateFlow<RetrofitClient.models.Comment?>(null)
+    val currentReplyComment: StateFlow<RetrofitClient.models.Comment?> = _currentReplyComment.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -99,17 +92,16 @@ private fun loadDataIfNeeded() {
                 val credentials = AuthManager.getCredentials(context)
                 val token = credentials?.third ?: ""
 
-                //val response = RetrofitClient.instance.getAppsInformation(
-                val response = KtorClient.ApiServiceImpl.getAppsInformation(
+                val response = RetrofitClient.instance.getAppsInformation(
                     token = token,
                     appsId = _currentAppId,
                     appsVersionId = _currentVersionId
                 )
 
-                response.onSuccess { result ->
-                    _appDetail.value = result.data
-                }.onFailure { error ->
-                    _errorMessage.value = "加载失败: ${error.message ?: "未知错误"}"
+                if (response.isSuccessful && response.body()?.code == 1) {
+                    _appDetail.value = response.body()?.data
+                } else {
+                    _errorMessage.value = "加载失败: ${response.body()?.msg ?: "未知错误"}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
@@ -122,8 +114,7 @@ private fun loadDataIfNeeded() {
     private fun loadComments(page: Int = 1) {
         viewModelScope.launch {
             try {
-                //val response = RetrofitClient.instance.getAppsCommentList(
-                val response = KtorClient.ApiServiceImpl.getAppsCommentList(
+                val response = RetrofitClient.instance.getAppsCommentList(
                     appsId = _currentAppId,
                     appsVersionId = _currentVersionId,
                     limit = 20,
@@ -131,11 +122,9 @@ private fun loadDataIfNeeded() {
                     sortOrder = "desc"
                 )
 
-                response.onSuccess { result ->
-                    //val appComments = response.body()?.data?.list ?: emptyList()
-                    val appComments = result.data?.list ?: emptyList()
-                    _comments.value = appComments
-                    /*_comments.value = appComments.map { appComment ->
+                if (response.isSuccessful && response.body()?.code == 1) {
+                    val appComments = response.body()?.data?.list ?: emptyList()
+                    _comments.value = appComments.map { appComment ->
                         RetrofitClient.models.Comment(
                             id = appComment.id,
                             content = appComment.content,
@@ -151,9 +140,7 @@ private fun loadDataIfNeeded() {
                             image_path = appComment.image_path,
                             sub_comments_count = 0
                         )
-                    }*/
-                }.onFailure { error ->
-                    _errorMessage.value = "加载评论出错: ${error.message}"
+                    }
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "加载评论出错: ${e.message}"
@@ -163,7 +150,7 @@ private fun loadDataIfNeeded() {
 
     fun openCommentDialog() { _showCommentDialog.value = true; _currentReplyComment.value = null }
     fun closeCommentDialog() { _showCommentDialog.value = false }
-    fun openReplyDialog(comment: KtorClient.Comment) { _currentReplyComment.value = comment; _showReplyDialog.value = true }
+    fun openReplyDialog(comment: RetrofitClient.models.Comment) { _currentReplyComment.value = comment; _showReplyDialog.value = true }
     fun closeReplyDialog() { _showReplyDialog.value = false; _currentReplyComment.value = null }
 
   fun submitAppComment(content: String, imageUrl: String? = null) {
@@ -176,8 +163,7 @@ private fun loadDataIfNeeded() {
             val credentials = AuthManager.getCredentials(context)
             val token = credentials?.third.orEmpty()
 
-            //val response = RetrofitClient.instance.postAppComment(
-            val response = KtorClient.ApiServiceImpl.postAppComment(
+            val response = RetrofitClient.instance.postAppComment(
                 token = token,
                 content = content,
                 appsId = appDetail.id,
@@ -186,11 +172,11 @@ private fun loadDataIfNeeded() {
                 imageUrl = imageUrl
             )
 
-            response.onSuccess { result ->
+            if (response.isSuccessful && response.body()?.code == 1) {
                 loadComments()
                 if (parentId == 0L) closeCommentDialog() else closeReplyDialog()
-            }.onFailure { error ->
-                _errorMessage.value = error.message ?: "提交失败"
+            } else {
+                _errorMessage.value = response.body()?.msg ?: "提交失败"
             }
         } catch (e: Exception) {
             _errorMessage.value = "提交失败: ${e.message}"
@@ -204,15 +190,14 @@ private fun loadDataIfNeeded() {
                 val context = getApplication<Application>().applicationContext
                 val token = AuthManager.getCredentials(context)?.third.orEmpty()
 
-                //val response = RetrofitClient.instance.deleteAppComment(token = token, commentId = commentId)
-                val response = KtorClient.ApiServiceImpl.deleteAppComment(token = token, commentId = commentId)
-                response.onSuccess { result ->
+                val response = RetrofitClient.instance.deleteAppComment(token = token, commentId = commentId)
+                if (response.isSuccessful && response.body()?.code == 1) {
                     val appDetail = _appDetail.value
                     if (appDetail != null) {
                         loadComments()
                     }
-                }.onFailure { error ->
-                    _errorMessage.value = error.message ?: "删除失败"
+                } else {
+                     _errorMessage.value = response.body()?.msg ?: "删除失败"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "删除失败: ${e.message}"
@@ -232,17 +217,16 @@ private fun loadDataIfNeeded() {
             }
 
             try {
-                //val response = RetrofitClient.instance.deleteApp(
-                val response = KtorClient.ApiServiceImpl.deleteApp(
+                val response = RetrofitClient.instance.deleteApp(
                     usertoken = token,
                     apps_id = app.id,
                     app_version_id = app.apps_version_id
                 )
-                response.onSuccess { result ->
-                    _errorMessage.value = result.msg ?: "删除成功"
+                if (response.isSuccessful && response.body()?.code == 1) {
+                    _errorMessage.value = response.body()?.msg ?: "删除成功"
                     withContext(Dispatchers.Main) { onSuccess() }
-                }.onFailure { error ->
-                    _errorMessage.value = error.message ?: "删除失败"
+                } else {
+                    _errorMessage.value = response.body()?.msg ?: "删除失败"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
