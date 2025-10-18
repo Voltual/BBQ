@@ -1556,43 +1556,37 @@ override suspend fun uploadAvatar(
 ): Result<BaseResponse> {
     try {
         val response: HttpResponse = httpClient.post(UPLOAD_AVATAR_URL) {
-            val boundary = "******" // 根据抓包修改 boundary
-            setBody(
-                MultiPartFormDataContent(
-                    listOf(
-                        PartData.FormItem(
-                            value = appid.toString(),
-                            partHeaders = Headers.build {
-                                append(HttpHeaders.ContentDisposition, "form-data; name=\"appid\"")
-                            },
-                            dispose = {}
-                        ),
-                        PartData.FormItem(
-                            value = token,
-                            partHeaders = Headers.build {
-                                append(HttpHeaders.ContentDisposition, "form-data; name=\"usertoken\"")
-                            },
-                            dispose = {}
-                        ),
-                        PartData.FileItem(
-                            { ByteArrayInputStream(file) }, // 修复：使用 ByteArrayInputStream 而不是 ByteReadChannel
-                            { },
-                            Headers.build {
-                                append(
-                                    HttpHeaders.ContentDisposition,
-                                    ContentDisposition.File
-                                        .withParameter(ContentDisposition.Parameters.Name, "file")
-                                        .withParameter(ContentDisposition.Parameters.FileName, filename)
-                                        .toString()
-                                )
-                                append(HttpHeaders.ContentType, "image/png") // 根据抓包修改为 image/png
-                            }
-                        )
+            val multipartData = MultiPartFormDataContent(
+                listOf(
+                    PartData.FormItem(
+                        value = appid.toString(),
+                        partHeaders = Headers.build {
+                            append(HttpHeaders.ContentDisposition, "form-data; name=\"appid\"")
+                        },
+                        dispose = {}
                     ),
-                    boundary,
-                    ContentType.MultiPart.FormData.withParameter("boundary", boundary)
-                )
+                    PartData.FormItem(
+                        value = token,
+                        partHeaders = Headers.build {
+                            append(HttpHeaders.ContentDisposition, "form-data; name=\"usertoken\"")
+                        },
+                        dispose = {}
+                    ),
+                    PartData.FileItem(
+                        provider = { file.inputStream().asInput() },
+                        partHeaders = Headers.build {
+                            append(
+                                HttpHeaders.ContentDisposition,
+                                "form-data; name=\"file\"; filename=\"$filename\""
+                            )
+                            append(HttpHeaders.ContentType, "image/png") // 根据抓包修改为 image/png
+                        },
+                        dispose = {}
+                    )
+                ),
+                boundary = "******" // 根据抓包修改 boundary
             )
+            this.body = multipartData
         }
         return Result.success(response.body())
     } catch (e: Exception) {
