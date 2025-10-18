@@ -31,7 +31,6 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.res.painterResource
 import cc.bbq.xq.R
-import cc.bbq.xq.KtorClient
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -368,7 +367,7 @@ private fun PostSearchResultsList(
             when (it) {
                 is SearchResultItem.PostItem -> "post_${it.post.postid}"
                 // 修复：BrowseHistory 使用 postId 而不是 id
-                is SearchResultItem.HistoryItem -> "history_${it.history.postid}"
+                is SearchResultItem.HistoryItem -> "history_${it.history.postId}"
                 // 修复：LogEntry 使用 id，但它是 Int 类型
                 is SearchResultItem.LogItem -> "log_${it.log.id}"
             }
@@ -376,7 +375,7 @@ private fun PostSearchResultsList(
             when (item) {
                 is SearchResultItem.PostItem -> {
                     SharedPostItem(
-                        post = item.post,
+                        post = item.post, 
                         onClick = { onPostClick(item.post.postid) }
                     )
                 }
@@ -418,7 +417,7 @@ private fun SearchResultsList(
             when (it) {
                 is SearchResultItem.PostItem -> "post_${it.post.postid}"
                 // 修复：BrowseHistory 使用 postId 而不是 id
-                is SearchResultItem.HistoryItem -> "history_${it.history.postid}"
+                is SearchResultItem.HistoryItem -> "history_${it.history.postId}"
                 // 修复：LogEntry 使用 id，但它是 Int 类型
                 is SearchResultItem.LogItem -> "log_${it.log.id}"
             }
@@ -426,7 +425,7 @@ private fun SearchResultsList(
             when (item) {
                 is SearchResultItem.PostItem -> {
                     SharedPostItem(
-                        post = item.post,
+                        post = item.post, 
                         onClick = { onPostClick(item.post.postid) }
                     )
                 }
@@ -440,15 +439,15 @@ private fun SearchResultsList(
                         },
                         supportingContent = { 
                             Text(
-                                item.history.content, 
+                                item.history.previewContent, 
                                 maxLines = 2
                             ) 
                         },
                         trailingContent = { 
-                            Text(item.history.create_time) 
+                            Text(item.history.formattedTime()) 
                         },
                         modifier = Modifier.clickable { 
-                            onPostClick(item.history.postid) 
+                            onPostClick(item.history.postId) 
                         }
                     )
                 }
