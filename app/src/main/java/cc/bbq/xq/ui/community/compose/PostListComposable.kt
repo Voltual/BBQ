@@ -29,7 +29,7 @@ fun PostListComposable(
     posts: List<KtorClient.Post>, // 修改为 KtorClient.Post
     isLoading: Boolean,
     onItemClick: (KtorClient.Post) -> Unit, // 修改为 KtorClient.Post
-    onLoadMore: () -> Unit, // 核心修正: 恢复被我误删的 onLoadMore 参数
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -72,7 +72,7 @@ fun PostListComposable(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp)
-                )
+            )
         }
     }
 }
