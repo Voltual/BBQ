@@ -1602,7 +1602,8 @@ override suspend fun uploadAvatar(
     } catch (e: Exception) {
         return Result.failure(e)
     }
-}        
+}
+    }
 
     /**
      * 关闭 HttpClient（在应用退出时调用）
