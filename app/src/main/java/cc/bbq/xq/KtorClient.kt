@@ -33,13 +33,11 @@ object KtorClient {
     private const val CONNECT_TIMEOUT = 30000L
     private const val SOCKET_TIMEOUT = 30000L
 
-    val httpClient = HttpClient(OkHttp) {
-    install(ContentNegotiation) {
-        json(Json {
-            ignoreUnknownKeys = true
-            isLenient = true
-            explicitNulls = false
-        })
+    // Ktor HttpClient 实例
+val httpClient = HttpClient(OkHttp) {
+    initConfig(this)
+    defaultRequest {
+        header(HttpHeaders.Accept, ContentType.Application.Json.toString())
     }
 }
     // 上传专用客户端
