@@ -76,16 +76,16 @@ dependencies {
     // ===== 基础依赖 =====
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+//移除Retrofit    implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.google.android.material:material:1.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.github.chrisbanes:PhotoView:2.3.0")
 
-    // ===== Moshi 依赖 =====
-    implementation("com.squareup.moshi:moshi:1.15.1")
-    implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
-    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
-    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.1")
+    // ===== 移除Moshi 依赖 =====
+//    implementation("com.squareup.moshi:moshi:1.15.1")
+//    implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
+//    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
+//    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.1")
 
     // ===== Compose 全家桶 =====
     implementation(platform("androidx.compose:compose-bom:2025.01.01"))
