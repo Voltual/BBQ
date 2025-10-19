@@ -1,12 +1,3 @@
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
-
 package cc.bbq.xq.ui.user
 
 import android.widget.Toast
@@ -45,8 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import cc.bbq.xq.AuthManager
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.R
-import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.ui.theme.AppShapes
 import cc.bbq.xq.ui.theme.BBQButton
 import cc.bbq.xq.ui.theme.BBQCard
@@ -56,7 +47,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun UserDetailScreen(
-    userData: RetrofitClient.models.UserInformationData?,
+    userData: KtorClient.UserInformationData?,
     isLoading: Boolean,
     errorMessage: String?,
 //    onBackClick: () -> Unit,
@@ -81,7 +72,7 @@ fun UserDetailScreen(
 @Composable
 private fun ScreenContent(
     modifier: Modifier = Modifier,
-    userData: RetrofitClient.models.UserInformationData?,
+    userData: KtorClient.UserInformationData?,
     isLoading: Boolean,
     errorMessage: String?,
     onPostsClick: () -> Unit,
@@ -109,7 +100,7 @@ private fun ScreenContent(
 
 @Composable
 private fun UserProfileContent(
-    userData: RetrofitClient.models.UserInformationData,
+    userData: KtorClient.UserInformationData,
     onPostsClick: () -> Unit,
     onResourcesClick: (Long) -> Unit,
     onImagePreview: (String) -> Unit, // 新增：图片预览回调
@@ -149,7 +140,7 @@ private fun UserProfileContent(
 // 其他组件保持不变...
 @Composable
 private fun HeaderCard(
-    userData: RetrofitClient.models.UserInformationData,
+    userData: KtorClient.UserInformationData,
     onAvatarClick: () -> Unit,
 ) {
     BBQCard {
@@ -206,7 +197,7 @@ private fun UserAvatar(
 }
 
 @Composable
-private fun UserBasicInfo(userData: RetrofitClient.models.UserInformationData) {
+private fun UserBasicInfo(userData: KtorClient.UserInformationData) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -238,12 +229,13 @@ private fun UserBasicInfo(userData: RetrofitClient.models.UserInformationData) {
 
 @Composable
 private fun ActionButtonsRow(
-    userData: RetrofitClient.models.UserInformationData,
+    userData: KtorClient.UserInformationData,
     onResourcesClick: () -> Unit
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val isFollowing = remember { mutableStateOf(userData.follow_status == "2") }
+    val apiService = KtorClient.ApiServiceImpl
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -258,12 +250,27 @@ private fun ActionButtonsRow(
                 }
                 coroutineScope.launch {
                     try {
-                        val response = RetrofitClient.instance.followUser(token = token, followedId = userData.id)
-                        if (response.isSuccessful && response.body()?.code == 1) {
-                            isFollowing.value = !isFollowing.value
-                            Toast.makeText(context, if (isFollowing.value) "关注成功" else "取消关注成功", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, response.body()?.msg ?: "操作失败", Toast.LENGTH_SHORT).show()
+                        val result = apiService.followUser(token = token, followedId = userData.id)
+                        when (val response = result.getOrNull()) {
+                            is KtorClient.BaseResponse -> {
+                                if (response.code == 1) {
+                                    isFollowing.value = !isFollowing.value
+                                    Toast.makeText(
+                                        context,
+                                        if (isFollowing.value) "关注成功" else "取消关注成功",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    Toast.makeText(context, response.msg ?: "操作失败", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            else -> {
+                                Toast.makeText(
+                                    context,
+                                    result.exceptionOrNull()?.message ?: "操作失败",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                         }
                     } catch (e: Exception) {
                         Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -284,7 +291,7 @@ private fun ActionButtonsRow(
 
 @Composable
 private fun StatsCard(
-    userData: RetrofitClient.models.UserInformationData,
+    userData: KtorClient.UserInformationData,
     onPostsClick: () -> Unit
 ) {
     BBQCard {
@@ -298,7 +305,7 @@ private fun StatsCard(
 
 @Composable
 private fun UserStats(
-    userData: RetrofitClient.models.UserInformationData,
+    userData: KtorClient.UserInformationData,
     onPostsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -359,7 +366,7 @@ private fun InfoItem(
 }
 
 @Composable
-private fun DetailsCard(userData: RetrofitClient.models.UserInformationData) {
+private fun DetailsCard(userData: KtorClient.UserInformationData) {
     BBQCard {
         Column(
             modifier = Modifier

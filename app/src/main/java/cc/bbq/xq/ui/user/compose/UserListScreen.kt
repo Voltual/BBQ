@@ -1,11 +1,3 @@
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.user.compose
 
 import androidx.compose.foundation.layout.*
@@ -24,14 +16,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.R
-import cc.bbq.xq.RetrofitClient
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
 @Composable
 fun UserListScreen(
-    users: List<RetrofitClient.models.UserItem>,
+    users: List<KtorClient.UserItem>,
     isLoading: Boolean,
     errorMessage: String?,
     isEmpty: Boolean,
@@ -44,7 +36,7 @@ fun UserListScreen(
     val safeUsers by remember(users) { mutableStateOf(users) }
     val safeIsLoading by remember(isLoading) { mutableStateOf(isLoading) }
     val safeErrorMessage by remember(errorMessage) { mutableStateOf(errorMessage) }
-    
+
     Column(
         modifier = modifier.fillMaxSize()
     ) {
@@ -73,28 +65,28 @@ fun UserListScreen(
 
 @Composable
 private fun SafeLazyColumn(
-    users: List<RetrofitClient.models.UserItem>,
+    users: List<KtorClient.UserItem>,
     isLoading: Boolean,
     onLoadMore: () -> Unit,
     onUserClick: (Long) -> Unit,
     onRefresh: () -> Unit
 ) {
     val listState = rememberLazyListState()
-    
+
     // 修复：使用更保守的加载更多检测
     var lastLoadMoreIndex by remember { mutableIntStateOf(-1) }
-    
+
     LaunchedEffect(listState.isScrollInProgress) {
         if (!listState.isScrollInProgress) {
             val layoutInfo = listState.layoutInfo
             val totalItems = layoutInfo.totalItemsCount
             val visibleItems = layoutInfo.visibleItemsInfo
-            
+
             if (visibleItems.isNotEmpty() && totalItems > 0) {
                 val lastVisibleIndex = visibleItems.last().index
                 // 只有当滚动到接近底部且不是正在加载时才触发
-                if (lastVisibleIndex >= totalItems - 2 && 
-                    lastVisibleIndex != lastLoadMoreIndex && 
+                if (lastVisibleIndex >= totalItems - 2 &&
+                    lastVisibleIndex != lastLoadMoreIndex &&
                     !isLoading) {
                     lastLoadMoreIndex = lastVisibleIndex
                     onLoadMore()
@@ -135,7 +127,7 @@ private fun SafeLazyColumn(
 
 @Composable
 private fun StableUserListItem(
-    user: RetrofitClient.models.UserItem,
+    user: KtorClient.UserItem,
     onClick: () -> Unit
 ) {
     // 修复：完全稳定的状态管理

@@ -1,11 +1,3 @@
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.user
 
 import android.app.Application
@@ -14,13 +6,13 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import kotlinx.coroutines.launch
 
 class UserDetailViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _userData = MutableLiveData<RetrofitClient.models.UserInformationData?>()
-    val userData: LiveData<RetrofitClient.models.UserInformationData?> = _userData
+    private val _userData = MutableLiveData<KtorClient.UserInformationData?>()
+    val userData: LiveData<KtorClient.UserInformationData?> = _userData
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
@@ -31,6 +23,7 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
     // 添加状态跟踪
     private var _isInitialized = false
     private var _currentUserId: Long = -1L
+    private val apiService = KtorClient.ApiServiceImpl
 
     fun loadUserDetails(userId: Long) {
         // 只有当用户ID真正改变时才重新加载
@@ -73,23 +66,30 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
         if (_isLoading.value == true) return
 
         _isLoading.postValue(true)
-        
+
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.instance.getUserInformation(
+                val result = apiService.getUserInformation(
                     userId = _currentUserId,
                     token = token
                 )
-                
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    response.body()?.data?.let {
-                        _userData.postValue(it)
-                        _errorMessage.postValue("")
-                    } ?: run {
-                        _errorMessage.postValue("用户数据为空")
+
+                when (val response = result.getOrNull()) {
+                    is KtorClient.UserInformationResponse -> {
+                        if (response.code == 1) {
+                            response.data?.let {
+                                _userData.postValue(it)
+                                _errorMessage.postValue("")
+                            } ?: run {
+                                _errorMessage.postValue("用户数据为空")
+                            }
+                        } else {
+                            _errorMessage.postValue("加载失败: ${response.msg ?: "未知错误"}")
+                        }
                     }
-                } else {
-                    _errorMessage.postValue("加载失败: ${response.body()?.msg ?: "未知错误"}")
+                    else -> {
+                        _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message ?: "网络错误"}")
+                    }
                 }
             } catch (e: Exception) {
                 _errorMessage.postValue("网络错误: ${e.message}")
