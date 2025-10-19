@@ -21,6 +21,7 @@ import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.utils.io.charsets.Charsets
+import io.ktor.util.encodeBase64
 
 val SuperCachePlugin = createClientPlugin("SuperCachePlugin") {
 
@@ -40,6 +41,10 @@ val SuperCachePlugin = createClientPlugin("SuperCachePlugin") {
                 keyBuilder.append("_").append(formDataString)
             } else if (body is OutgoingContent.ByteArrayContent) {
                 keyBuilder.append("_").append(String(body.bytes(), Charsets.UTF_8))
+            } else if (body is OutgoingContent.ReadChannelContent) {
+                 val channel = body.readFrom()
+                val bytes = runBlocking { channel.toByteArray() }
+                keyBuilder.append("_").append(String(bytes, Charsets.UTF_8))
             }
         }
 
@@ -49,7 +54,7 @@ val SuperCachePlugin = createClientPlugin("SuperCachePlugin") {
 
     fun md5(input: String): String {
         val digest = MessageDigest.getInstance("MD5")
-        val result = digest.digest(input.toByteArray())
+        val result = digest.digest(input.toByteArray(Charsets.UTF_8))
         return result.joinToString("") { "%02x".format(it) }
     }
 
@@ -78,23 +83,27 @@ val SuperCachePlugin = createClientPlugin("SuperCachePlugin") {
             if (cachedResponse != null) {
                 println("[CACHE HIT] Found cache for key: $requestKey")
                 // 从数据库构建一个伪造的成功响应
-                val body = TextContent(
+                request.body(TextContent(
                     cachedResponse.responseJson,
                     ContentType.Application.Json
-                )
-                request.body(body)
+                ))
+                
+               return@onRequest
             } else {
                 println("[CACHE MISS] No cache found for key: $requestKey")
                 // 在缓存模式下，如果未命中，则返回一个特定的“客户端错误”，告知上层无可用离线数据
 
                 val errorBody = """{"code":400,"msg":"缓存未命中","data":[],"timestamp":0}"""
-                val body = TextContent(
+                 request.body(TextContent(
                     errorBody,
                     ContentType.Application.Json,
                     HttpStatusCode.BadRequest
-                )
-                request.body(body)
+                ))
+                return@onRequest
             }
+        }else{
+            // 如果缓存模式未开启，则不进行任何处理，直接执行网络请求
+            return@onRequest
         }
     }
 
@@ -106,10 +115,10 @@ val SuperCachePlugin = createClientPlugin("SuperCachePlugin") {
             return@onResponse
         }
         // --- 3. 生成唯一的请求 Key ---
-        val requestKey = generateRequestKey(request.request)
+        val requestKey = generateRequestKey(response.request.requestData)
 
         if (response.status.isSuccess()) {
-            val responseBody = response.body<String>()
+            val responseBody = response.bodyAsText()
             //val responseBytes = responseBody.toByteArray()
             //val responseString = String(responseBytes, Charsets.UTF_8)
             val responseString = responseBody
