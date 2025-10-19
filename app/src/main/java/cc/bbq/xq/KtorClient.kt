@@ -108,14 +108,18 @@ val httpClient = HttpClient(OkHttp) {
     data class BaseResponse(
         val code: Int,
         val msg: String,
-        val data: JsonObject? = null,
+        val data: JsonElement? = null, // 改为 JsonElement? 来支持任何 JSON 类型
         val timestamp: Long
     ) {
         // 辅助方法：从 data 字段获取下载链接
-        fun getDownloadUrl(): String? {
-            return data?.get("download")?.toString()?.removeSurrounding("\"")
+    fun getDownloadUrl(): String? {
+        return if (data is JsonObject) {
+            data["download"]?.toString()?.removeSurrounding("\"")
+        } else {
+            null
         }
     }
+}
 
     // 帖子详情响应模型
     @kotlinx.serialization.Serializable
