@@ -333,14 +333,15 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
             if (response.status.isSuccess()) {
                 val responseBody: KtorClient.UploadResponse = response.body()
-                if (responseBody != null && (responseBody.code == 1 || responseBody.exists == 1) && !responseBody.downurl.isNullOrBlank()) {
+                // 修复：移除不必要的空检查，因为 response.body() 已经返回非空类型
+                if ((responseBody.code == 1 || responseBody.exists == 1) && !responseBody.downurl.isNullOrBlank()) {
                     withContext(Dispatchers.Main) {
                         _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
                         onSuccess(responseBody.downurl)
                     }
                 } else {
                     withContext(Dispatchers.Main){
-                        _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${responseBody?.msg ?: "上传失败"}"))
+                        _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${responseBody.msg}"))
                     }
                 }
             } else {
@@ -372,14 +373,15 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
             if (response.status.isSuccess()) {
                 val responseBody: KtorClient.WanyueyunUploadResponse = response.body()
-                if (responseBody != null && responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
+                // 修复：移除不必要的空检查，因为 response.body() 已经返回非空类型
+                if (responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
                     withContext(Dispatchers.Main) {
                         _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
                         onSuccess(responseBody.data)
                     }
                 } else {
                     withContext(Dispatchers.Main){
-                        _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${responseBody?.msg ?: "上传失败"}"))
+                        _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${responseBody.msg}"))
                     }
                 }
             } else {

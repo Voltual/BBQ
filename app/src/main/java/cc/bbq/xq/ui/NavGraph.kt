@@ -159,7 +159,7 @@ fun AppNavHost(
             PostDetailScreen(
                 postId = postId,
                 navController = navController,
-                onBack = { navController.popBackStack() },
+//                onBack = { navController.popBackStack() },
                 onPostDeleted = { navController.popBackStack() },
                 modifier = Modifier.fillMaxSize() // 添加 modifier
             )

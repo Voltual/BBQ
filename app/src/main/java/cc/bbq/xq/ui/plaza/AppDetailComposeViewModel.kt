@@ -102,7 +102,7 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
                     if (response.code == 1) {
                         _appDetail.value = response.data
                     } else {
-                        _errorMessage.value = "加载失败: ${response.msg ?: "未知错误"}"
+                        _errorMessage.value = "加载失败: ${response.msg}"
                     }
                 } else {
                     _errorMessage.value = "加载失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
@@ -129,7 +129,7 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
                 if (result.isSuccess) {
                     val response = result.getOrThrow()
                     if (response.code == 1) {
-                        val appComments = response.data.list ?: emptyList()
+                        val appComments = response.data.list
                         _comments.value = appComments.map { appComment ->
                             KtorClient.Comment(
                                 id = appComment.id,
@@ -189,7 +189,7 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
                         loadComments()
                         if (parentId == 0L) closeCommentDialog() else closeReplyDialog()
                     } else {
-                        _errorMessage.value = response.msg ?: "提交失败"
+                        _errorMessage.value = response.msg
                     }
                 } else {
                     _errorMessage.value = "提交失败: ${result.exceptionOrNull()?.message}"
@@ -215,7 +215,7 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
                             loadComments()
                         }
                     } else {
-                        _errorMessage.value = response.msg ?: "删除失败"
+                        _errorMessage.value = response.msg
                     }
                 } else {
                     _errorMessage.value = "删除失败: ${result.exceptionOrNull()?.message}"
@@ -247,10 +247,10 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
                 if (result.isSuccess) {
                     val response = result.getOrThrow()
                     if (response.code == 1) {
-                        _errorMessage.value = response.msg ?: "删除成功"
+                        _errorMessage.value = response.msg
                         withContext(Dispatchers.Main) { onSuccess() }
                     } else {
-                        _errorMessage.value = response.msg ?: "删除失败"
+                        _errorMessage.value = response.msg
                     }
                 } else {
                     _errorMessage.value = "删除失败: ${result.exceptionOrNull()?.message}"

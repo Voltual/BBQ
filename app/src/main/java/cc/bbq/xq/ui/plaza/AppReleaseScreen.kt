@@ -157,21 +157,24 @@ fun AppReleaseScreen(
                     pop()
                 }
 
-                ClickableText(
-                    text = annotatedString,
-                    modifier = Modifier.padding(top = 4.dp, start = 4.dp),
-                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                    onClick = { offset ->
-                        annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset).firstOrNull()?.let {
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.item))
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "无法打开链接", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }
-                )
+                // 修复：使用新的 LinkAnnotation API
+                androidx.compose.foundation.text.selection.SelectionContainer {
+                    androidx.compose.material3.Text(
+                        text = annotatedString,
+                        modifier = Modifier
+                            .padding(top = 4.dp, start = 4.dp)
+                            .clickable {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uploadUrl))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "无法打开链接", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             item { FormTextField(label = "包名 (自动填充)", state = viewModel.packageName, enabled = !isUpdateMode) }
@@ -286,7 +289,7 @@ private fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
                 label = { Text("选择上传服务") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.Dropdown) // 修复：使用新的 menuAnchor API
                     .fillMaxWidth()
             )
             ExposedDropdownMenu(
@@ -404,7 +407,7 @@ private fun CategoryDropdown(viewModel: AppReleaseViewModel) {
                 label = { Text("选择一个分类") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
-                    .menuAnchor()
+                    .menuAnchor(MenuAnchorType.Dropdown) // 修复：使用新的 menuAnchor API
                     .fillMaxWidth()
             )
             ExposedDropdownMenu(
