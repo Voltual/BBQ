@@ -19,42 +19,41 @@ import cc.bbq.xq.KtorClient
 import cc.bbq.xq.AuthManager
 import java.io.IOException
 
-class MyLikesViewModel(private val context: Context) : ViewModel() { // 移除接口实现
+class MyLikesViewModel(private val context: Context) : ViewModel() {
     private val _posts = MutableStateFlow(emptyList<KtorClient.Post>())
-    val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow() // 移除 override
+    val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow()
     
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow() // 移除 override
-    // 添加下拉刷新状态
-    private val _isRefreshing = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    
     private val _errorMessage = MutableStateFlow("")
-    val errorMessage: StateFlow<String> = _errorMessage.asStateFlow() // 移除 override
+    val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
     
     private var currentPage = 1
     private val _totalPages = MutableStateFlow(1)
+    private val _isRefreshing = MutableStateFlow(false)
     val totalPages: StateFlow<Int> = _totalPages.asStateFlow()
     
     fun jumpToPage(page: Int) {
         if (page in 1..totalPages.value) {
-            // 新增：跳页时清空当前列表
             _posts.value = emptyList()
             currentPage = page
             loadLikesRecords()
         }
     }
 
-    fun loadInitialData() { // 移除 override
+    fun loadInitialData() {
         loadLikesRecords()
     }
 
-    fun loadNextPage() { // 移除 override
+    fun loadNextPage() {
         if (currentPage < totalPages.value && !_isLoading.value) {
             currentPage++
             loadLikesRecords()
         }
     }
 
-    fun refresh() { // 移除 override
+    fun refresh() {
         currentPage = 1
         loadLikesRecords()
     }
@@ -79,26 +78,30 @@ class MyLikesViewModel(private val context: Context) : ViewModel() { // 移除�
                 if (likesRecordsResult.isSuccess) {
                     likesRecordsResult.getOrNull()?.let { likesRecordsResponse ->
                         if (likesRecordsResponse.code == 1) {
-                            likesRecordsResponse.data?.let { data ->
-                                _totalPages.value = data.pagecount
-                                val newPosts = if (currentPage == 1) {
-                                    data.list
-                                } else {
-                                    _posts.value + data.list
-                                }
-                                
-                                _posts.value = newPosts
-                                _errorMessage.value = ""
+                            // 修复：直接访问 data，因为它是非空类型
+                            val data = likesRecordsResponse.data
+                            _totalPages.value = data.pagecount
+                            val newPosts = if (currentPage == 1) {
+                                data.list
+                            } else {
+                                _posts.value + data.list
                             }
+                            
+                            _posts.value = newPosts
+                            _errorMessage.value = ""
                         } else {
-                            _errorMessage.value = "操作失败: ${likesRecordsResponse.msg ?: "服务器错误"}"
+                            // 修复：正确处理非空字符串
+                            _errorMessage.value = "操作失败: ${if (likesRecordsResponse.msg.isNotEmpty()) likesRecordsResponse.msg else "服务器错误"}"
                         }
+                    } ?: run {
+                        _errorMessage.value = "加载失败: 响应为空"
                     }
                 } else {
-                     _errorMessage.value = "加载失败: ${likesRecordsResult.exceptionOrNull()?.message ?: "未知错误"}"
+                    val exceptionMessage = likesRecordsResult.exceptionOrNull()?.message
+                    _errorMessage.value = "加载失败: ${exceptionMessage ?: "未知错误"}"
                 }
             } catch (e: IOException) {
-                _errorMessage.value = "网络异常: ${e.message}"
+                _errorMessage.value = "网络异常: ${e.message ?: "未知错误"}"
             } finally {
                 _isLoading.value = false
             }

@@ -29,7 +29,6 @@ class FollowingPostsViewModel(private val context: Context) : ViewModel() {
     val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
 
     private var currentPage = 1
-    // 添加下拉刷新状态
     private val _isRefreshing = MutableStateFlow(false)
     private val _totalPages = MutableStateFlow(1)
     val totalPages: StateFlow<Int> = _totalPages.asStateFlow()
@@ -78,26 +77,30 @@ class FollowingPostsViewModel(private val context: Context) : ViewModel() {
                 if (followingPostsResult.isSuccess) {
                     followingPostsResult.getOrNull()?.let { followingPostsResponse ->
                         if (followingPostsResponse.code == 1) {
-                            followingPostsResponse.data?.let { data ->
-                                _totalPages.value = data.pagecount
-                                val newPosts = if (currentPage == 1) {
-                                    data.list
-                                } else {
-                                    _posts.value + data.list
-                                }
-
-                                _posts.value = newPosts
-                                _errorMessage.value = ""
+                            // 修复：直接访问 data，因为它是非空类型
+                            val data = followingPostsResponse.data
+                            _totalPages.value = data.pagecount
+                            val newPosts = if (currentPage == 1) {
+                                data.list
+                            } else {
+                                _posts.value + data.list
                             }
+
+                            _posts.value = newPosts
+                            _errorMessage.value = ""
                         } else {
-                            _errorMessage.value = "加载失败: ${followingPostsResponse.msg ?: "未知错误"}"
+                            // 修复：正确处理非空字符串
+                            _errorMessage.value = "加载失败: ${if (followingPostsResponse.msg.isNotEmpty()) followingPostsResponse.msg else "未知错误"}"
                         }
+                    } ?: run {
+                        _errorMessage.value = "加载失败: 响应为空"
                     }
                 } else {
-                    _errorMessage.value = "加载失败: ${followingPostsResult.exceptionOrNull()?.message ?: "未知错误"}"
+                    val exceptionMessage = followingPostsResult.exceptionOrNull()?.message
+                    _errorMessage.value = "加载失败: ${exceptionMessage ?: "未知错误"}"
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "网络错误: ${e.message}"
+                _errorMessage.value = "网络错误: ${e.message ?: "未知错误"}"
             } finally {
                 _isLoading.value = false
             }

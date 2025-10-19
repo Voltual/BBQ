@@ -16,44 +16,42 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import cc.bbq.xq.KtorClient
 
-class CommunityViewModel : ViewModel() { // 移除接口实现
+class CommunityViewModel : ViewModel() {
     private val _posts = MutableStateFlow(emptyList<KtorClient.Post>())
-    val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow() // 移除 override
+    val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow()
     
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow() // 移除 override
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
     
     private val _errorMessage = MutableStateFlow("")
-    val errorMessage: StateFlow<String> = _errorMessage.asStateFlow() // 移除 override
-    // 添加下拉刷新状态
+    val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
+    
     private val _isRefreshing = MutableStateFlow(false)
     
     private var currentPage = 1
     private val _totalPages = MutableStateFlow(1)
     val totalPages: StateFlow<Int> = _totalPages.asStateFlow()
     
-    // 新增跳页方法
-        fun jumpToPage(page: Int) {
+    fun jumpToPage(page: Int) {
         if (page in 1..totalPages.value) {
-            // 新增：跳页时清空当前列表
             _posts.value = emptyList()
             currentPage = page
             loadPosts()
         }
     }
 
-    fun loadInitialData() { // 移除 override
+    fun loadInitialData() {
         loadPosts()
     }
 
-    fun loadNextPage() { // 移除 override
+    fun loadNextPage() {
         if (currentPage < totalPages.value && !_isLoading.value) {
             currentPage++
             loadPosts()
         }
     }
 
-    fun refresh() { // 移除 override
+    fun refresh() {
         currentPage = 1
         loadPosts()
     }
@@ -73,26 +71,30 @@ class CommunityViewModel : ViewModel() { // 移除接口实现
                 if (postsResult.isSuccess) {
                     postsResult.getOrNull()?.let { postsResponse ->
                         if (postsResponse.code == 1) {
-                            postsResponse.data?.let { data ->
-                                _totalPages.value = data.pagecount
-                                val newPosts = if (currentPage == 1) {
-                                    data.list
-                                } else {
-                                    _posts.value + data.list
-                                }
-                                
-                                _posts.value = newPosts
-                                _errorMessage.value = ""
+                            // 修复：直接访问 data，因为它是非空类型
+                            val data = postsResponse.data
+                            _totalPages.value = data.pagecount
+                            val newPosts = if (currentPage == 1) {
+                                data.list
+                            } else {
+                                _posts.value + data.list
                             }
+                            
+                            _posts.value = newPosts
+                            _errorMessage.value = ""
                         } else {
-                            _errorMessage.value = "加载失败: ${postsResponse.msg ?: "未知错误"}"
+                            // 修复：正确处理非空字符串
+                            _errorMessage.value = "加载失败: ${if (postsResponse.msg.isNotEmpty()) postsResponse.msg else "未知错误"}"
                         }
+                    } ?: run {
+                        _errorMessage.value = "加载失败: 响应为空"
                     }
                 } else {
-                    _errorMessage.value = "加载失败: ${postsResult.exceptionOrNull()?.message ?: "未知错误"}"
+                    val exceptionMessage = postsResult.exceptionOrNull()?.message
+                    _errorMessage.value = "加载失败: ${exceptionMessage ?: "未知错误"}"
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "网络错误: ${e.message}"
+                _errorMessage.value = "网络错误: ${e.message ?: "未知错误"}"
             } finally {
                 _isLoading.value = false
             }

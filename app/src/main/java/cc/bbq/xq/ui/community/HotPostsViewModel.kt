@@ -28,7 +28,6 @@ class HotPostsViewModel : ViewModel() {
 
     private var currentPage = 1
     private val _totalPages = MutableStateFlow(1)
-    // 添加下拉刷新状态
     private val _isRefreshing = MutableStateFlow(false)
     val totalPages: StateFlow<Int> = _totalPages.asStateFlow()
 
@@ -72,26 +71,30 @@ class HotPostsViewModel : ViewModel() {
                 if (hotPostsResult.isSuccess) {
                     hotPostsResult.getOrNull()?.let { hotPostsResponse ->
                         if (hotPostsResponse.code == 1) {
-                            hotPostsResponse.data?.let { data ->
-                                _totalPages.value = data.pagecount
-                                val newPosts = if (currentPage == 1) {
-                                    data.list
-                                } else {
-                                    _posts.value + data.list
-                                }
-
-                                _posts.value = newPosts
-                                _errorMessage.value = ""
+                            // 修复：直接访问 data，因为它是非空类型
+                            val data = hotPostsResponse.data
+                            _totalPages.value = data.pagecount
+                            val newPosts = if (currentPage == 1) {
+                                data.list
+                            } else {
+                                _posts.value + data.list
                             }
+
+                            _posts.value = newPosts
+                            _errorMessage.value = ""
                         } else {
-                            _errorMessage.value = "加载失败: ${hotPostsResponse.msg ?: "未知错误"}"
+                            // 修复：正确处理非空字符串
+                            _errorMessage.value = "加载失败: ${if (hotPostsResponse.msg.isNotEmpty()) hotPostsResponse.msg else "未知错误"}"
                         }
+                    } ?: run {
+                        _errorMessage.value = "加载失败: 响应为空"
                     }
                 } else {
-                    _errorMessage.value = "加载失败: ${hotPostsResult.exceptionOrNull()?.message ?: "未知错误"}"
+                    val exceptionMessage = hotPostsResult.exceptionOrNull()?.message
+                    _errorMessage.value = "加载失败: ${exceptionMessage ?: "未知错误"}"
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "网络错误: ${e.message}"
+                _errorMessage.value = "网络错误: ${e.message ?: "未知错误"}"
             } finally {
                 _isLoading.value = false
             }
