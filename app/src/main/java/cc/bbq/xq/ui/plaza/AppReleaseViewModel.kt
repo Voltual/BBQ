@@ -33,6 +33,7 @@ import java.io.File
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
+import io.ktor.client.call.*
 
 enum class ApkUploadService(val displayName: String) {
     KEYUN("氪云"),
@@ -331,7 +332,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             )
 
             if (response.status.isSuccess()) {
-                val responseBody = response.body<KtorClient.UploadResponse>()
+                val responseBody: KtorClient.UploadResponse = response.body()
                 if (responseBody != null && (responseBody.code == 1 || responseBody.exists == 1) && !responseBody.downurl.isNullOrBlank()) {
                     withContext(Dispatchers.Main) {
                         _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
@@ -370,7 +371,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             )
 
             if (response.status.isSuccess()) {
-                val responseBody = response.body<KtorClient.WanyueyunUploadResponse>()
+                val responseBody: KtorClient.WanyueyunUploadResponse = response.body()
                 if (responseBody != null && responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
                     withContext(Dispatchers.Main) {
                         _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
