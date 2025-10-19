@@ -30,6 +30,9 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import io.ktor.client.request.forms.*
+import io.ktor.http.*
+import io.ktor.utils.io.*
 
 enum class ApkUploadService(val displayName: String) {
     KEYUN("氪云"),
