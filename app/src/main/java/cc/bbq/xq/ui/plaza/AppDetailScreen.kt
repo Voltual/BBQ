@@ -35,7 +35,7 @@ import cc.bbq.xq.KtorClient
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import cc.bbq.xq.RetrofitClient
+//import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.ui.*
 import cc.bbq.xq.ui.community.compose.CommentDialog
 import cc.bbq.xq.ui.community.compose.CommentItem

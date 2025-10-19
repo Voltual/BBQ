@@ -37,7 +37,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient
+//import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.data.DeviceNameDataStore
 import coil.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker

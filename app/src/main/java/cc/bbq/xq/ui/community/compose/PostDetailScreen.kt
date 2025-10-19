@@ -474,7 +474,7 @@ fun CommentDialog(
                     file.asRequestBody("image/*".toMediaTypeOrNull())
                 )
 
-                val response = RetrofitClient.uploadInstance.uploadImage(requestFile)
+//                val response = RetrofitClient.uploadInstance.uploadImage(requestFile)
 
                 withContext(Dispatchers.Main) {
                     showProgressDialog = false

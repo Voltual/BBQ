@@ -13,7 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
+//import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
 import cc.bbq.xq.KtorClient // 导入 KtorClient
 import cc.bbq.xq.ui.theme.ThemeManager
 import kotlinx.coroutines.Dispatchers

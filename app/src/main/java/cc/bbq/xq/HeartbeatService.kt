@@ -15,10 +15,12 @@ import android.content.Intent
 import android.os.IBinder
 import android.util.Log
 import kotlinx.coroutines.*
+import org.koin.android.ext.android.inject
 
 class HeartbeatService : Service() {
     private var heartbeatJob: Job? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val apiService: KtorClient.ApiService by inject() // Inject ApiService
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startHeartbeat()
@@ -27,19 +29,23 @@ class HeartbeatService : Service() {
 
     private fun startHeartbeat() {
         if (heartbeatJob?.isActive == true) return
-        
+
         heartbeatJob = scope.launch {
             while (true) {
                 Log.d("HEARTBEAT", "Starting new heartbeat cycle.")
-                
+
                 supervisorScope {
                     val userToken = AuthManager.getCredentials(this@HeartbeatService)?.third
 
                     if (!userToken.isNullOrBlank()) {
                         launch {
                             try {
-                                val response = RetrofitClient.instance.heartbeat(token = userToken)
-                                Log.d("HEARTBEAT", "User Account Heartbeat Status: ${response.code()}")
+                                val result = apiService.heartbeat(token = userToken)
+                                if (result.isSuccess) {
+                                    Log.d("HEARTBEAT", "User Account Heartbeat Successful")
+                                } else {
+                                    Log.e("HEARTBEAT", "User Account Heartbeat Failed: ${result.exceptionOrNull()?.message}")
+                                }
                             } catch (e: Exception) {
                                 Log.e("HEARTBEAT", "User Account Heartbeat Failed: ${e.message}")
                             }
