@@ -165,25 +165,6 @@ fun AppNavHost(
             )
         }
 
-        composable(route = CreatePost.route) {
-            val coroutineScope = rememberCoroutineScope()
-            PostCreateScreen(
-                viewModel = postCreateViewModel,
-                onBackClick = { navController.popBackStack() },
-                onSubmitClick = { _, _, _, _ ->
-                    coroutineScope.launch {
-                        // TODO: 将此逻辑移至 ViewModel
-                        navController.popBackStack()
-                    }
-                },
-                mode = "create",
-                refundAppName = "",
-                refundAppId = 0L,
-                refundVersionId = 0L,
-                refundPayMoney = 0
-            )
-        }
-
 composable(route = CreatePost.route) {
     PostCreateScreen(
         viewModel = postCreateViewModel,
