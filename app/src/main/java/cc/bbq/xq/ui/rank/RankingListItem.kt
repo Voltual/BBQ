@@ -26,12 +26,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 
 @Composable
 fun RankingListItem(
     ranking: Int,
-    user: RetrofitClient.models.RankingUser,
+    user: KtorClient.RankingUser,
     onClick: () -> Unit
 ) {
     // 使用 MaterialTheme 颜色

@@ -44,10 +44,29 @@ fun RankingListScreen(
         if (state.isLoading && state.rankingList.isEmpty()) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         } else if (state.error != null) {
-            Text(
-                text = "加载失败: ${state.error}",
-                modifier = Modifier.align(Alignment.Center)
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "加载失败",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = state.error ?: "未知错误",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = { viewModel.refreshRankingList() }) {
+                    Text("重试")
+                }
+            }
         } else if (state.rankingList.isEmpty()) {
             Text(
                 text = "暂无排名数据",

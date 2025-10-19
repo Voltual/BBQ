@@ -10,7 +10,7 @@ package cc.bbq.xq.ui.rank
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.KtorClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -19,7 +19,7 @@ data class RankingListState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val error: String? = null,
-    val rankingList: List<RetrofitClient.models.RankingUser> = emptyList(),
+    val rankingList: List<KtorClient.RankingUser> = emptyList(),
     val page: Int = 1,
     val limit: Int = 15,
     val hasMore: Boolean = true
@@ -30,6 +30,8 @@ class RankingListViewModel : ViewModel() {
     private val _state = MutableStateFlow(RankingListState())
     val state: StateFlow<RankingListState> = _state
 
+    private val apiService = KtorClient.ApiServiceImpl
+
     init {
         loadRankingList()
     }
@@ -38,13 +40,13 @@ class RankingListViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
             try {
-                val response = RetrofitClient.instance.getRankingList(
+                val result = apiService.getRankingList(
                     limit = _state.value.limit,
                     page = _state.value.page
                 )
-                if (response.isSuccessful) {
-                    val rankingResponse = response.body()
-                    if (rankingResponse?.code == 1) {
+                if (result.isSuccess) {
+                    val rankingResponse = result.getOrThrow()
+                    if (rankingResponse.code == 1) {
                         val rankingUserList = rankingResponse.data
                         _state.value = _state.value.copy(
                             isLoading = false,
@@ -54,13 +56,13 @@ class RankingListViewModel : ViewModel() {
                     } else {
                         _state.value = _state.value.copy(
                             isLoading = false,
-                            error = rankingResponse?.msg ?: "加载失败"
+                            error = rankingResponse.msg ?: "加载失败"
                         )
                     }
                 } else {
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        error = "网络错误: ${response.code()}"
+                        error = result.exceptionOrNull()?.message ?: "未知错误"
                     )
                 }
             } catch (e: Exception) {
@@ -76,13 +78,13 @@ class RankingListViewModel : ViewModel() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isRefreshing = true, error = null, page = 1)
             try {
-                val response = RetrofitClient.instance.getRankingList(
+                val result = apiService.getRankingList(
                     limit = _state.value.limit,
                     page = 1
                 )
-                if (response.isSuccessful) {
-                    val rankingResponse = response.body()
-                    if (rankingResponse?.code == 1) {
+                if (result.isSuccess) {
+                    val rankingResponse = result.getOrThrow()
+                    if (rankingResponse.code == 1) {
                         val rankingUserList = rankingResponse.data
                         _state.value = _state.value.copy(
                             isRefreshing = false,
@@ -93,13 +95,13 @@ class RankingListViewModel : ViewModel() {
                     } else {
                         _state.value = _state.value.copy(
                             isRefreshing = false,
-                            error = rankingResponse?.msg ?: "加载失败"
+                            error = rankingResponse.msg ?: "加载失败"
                         )
                     }
                 } else {
                     _state.value = _state.value.copy(
                         isRefreshing = false,
-                        error = "网络错误: ${response.code()}"
+                        error = result.exceptionOrNull()?.message ?: "未知错误"
                     )
                 }
             } catch (e: Exception) {
@@ -118,13 +120,13 @@ class RankingListViewModel : ViewModel() {
             _state.value = _state.value.copy(isLoading = true, error = null)
             try {
                 val nextPage = _state.value.page + 1
-                val response = RetrofitClient.instance.getRankingList(
+                val result = apiService.getRankingList(
                     limit = _state.value.limit,
                     page = nextPage
                 )
-                if (response.isSuccessful) {
-                    val rankingResponse = response.body()
-                    if (rankingResponse?.code == 1) {
+                if (result.isSuccess) {
+                    val rankingResponse = result.getOrThrow()
+                    if (rankingResponse.code == 1) {
                         val rankingUserList = rankingResponse.data
                         _state.value = _state.value.copy(
                             isLoading = false,
@@ -135,13 +137,13 @@ class RankingListViewModel : ViewModel() {
                     } else {
                         _state.value = _state.value.copy(
                             isLoading = false,
-                            error = rankingResponse?.msg ?: "加载失败"
+                            error = rankingResponse.msg ?: "加载失败"
                         )
                     }
                 } else {
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        error = "网络错误: ${response.code()}"
+                        error = result.exceptionOrNull()?.message ?: "未知错误"
                     )
                 }
             } catch (e: Exception) {
