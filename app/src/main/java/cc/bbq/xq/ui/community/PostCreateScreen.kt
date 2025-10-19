@@ -310,7 +310,7 @@ fun PostCreateScreen(
                     // 调用 ViewModel 的发帖方法
                     viewModel.createPost(
                         title = uiState.title,
-                        content = uiState.content,
+//                        content = uiState.content,
                         imageUrls = allImageUrls,
                         subsectionId = uiState.selectedSubsectionId,
                         bvNumber = bvNumber,
