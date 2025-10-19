@@ -21,6 +21,7 @@ import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.db.PostDraftRepository
 import cc.bbq.xq.util.FileUtil
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -154,13 +155,13 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     // 新增：发帖方法
     fun createPost(
         title: String,
-        content: String,
+        // 修复：移除未使用的 content 参数，使用 _uiState.value.content
         imageUrls: String,
         subsectionId: Int,
         bvNumber: String,
         tempDeviceName: String,
         mode: String,
-        refundAppName: String = "",
+        // 修复：移除未使用的 refundAppName 参数
         refundAppId: Long = 0L,
         refundVersionId: Long = 0L,
         refundPayMoney: Int = 0,
@@ -235,6 +236,8 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
         _postStatus.value = PostStatus.Idle
     }
 
+    // 修复：添加 FlowPreview 注解
+    @OptIn(FlowPreview::class)
     private fun observeAndAutoSave() {
         _uiState
             .debounce(1000)

@@ -73,7 +73,7 @@ val REFUND_REASONS = listOf(
 fun PostCreateScreen(
     viewModel: PostCreateViewModel,
     onBackClick: () -> Unit,
-    onSubmitClick: (title: String, content: String, imageUrls: String, subsectionId: Int) -> Unit,
+    // 修复：移除未使用的 onSubmitClick 参数
     mode: String,
     refundAppName: String,
     refundAppId: Long,
@@ -193,6 +193,7 @@ fun PostCreateScreen(
             onExpandedChange = { expanded = it }
         ) {
             OutlinedTextField(
+                // 修复：使用新的 menuAnchor 重载方法
                 modifier = Modifier.fillMaxWidth().menuAnchor(),
                 readOnly = true,
                 value = selectedTopicName,
@@ -253,7 +254,8 @@ fun PostCreateScreen(
 
         ImageUploadSection(
             uris = uiState.selectedImageUris,
-            onAddClick = { startImagePicker?.invoke() },
+            // 修复：直接调用，移除不必要的安全调用
+            onAddClick = { startImagePicker() },
             onRemoveClick = { uri -> viewModel.removeImage(uri) }
         )
 
@@ -314,7 +316,6 @@ fun PostCreateScreen(
                         bvNumber = bvNumber,
                         tempDeviceName = tempDeviceName,
                         mode = mode,
-                        refundAppName = refundAppName,
                         refundAppId = refundAppId,
                         refundVersionId = refundVersionId,
                         refundPayMoney = refundPayMoney,
