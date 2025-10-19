@@ -53,13 +53,15 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import cc.bbq.xq.AuthManager
-//import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.ui.*
 import cc.bbq.xq.ui.community.PostDetailViewModel
 import cc.bbq.xq.ui.compose.LinkifyText
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
+import io.ktor.http.*
+import io.ktor.http.content.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -468,23 +470,28 @@ fun CommentDialog(
                     }
                 }
 
-                val requestFile = MultipartBody.Part.createFormData(
-                    "file",
-                    file.name,
-                    file.asRequestBody("image/*".toMediaTypeOrNull())
+                val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
+                    url = "api.php",
+                    formData = formData {
+                        append("file", file.readBytes(), Headers.build {
+                            append(HttpHeaders.ContentType, "image/*")
+                            append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                        })
+                    }
                 )
-
-                val response = RetrofitClient.uploadInstance.uploadImage(requestFile)
 
                 withContext(Dispatchers.Main) {
                     showProgressDialog = false
-                    if (response.isSuccessful && (response.body()?.code == 0 || response.body()?.code == 1)) {
-                        response.body()?.downurl?.let { url ->
-                            onSuccess(url)
+                    if (response.status.isSuccess()) {
+                        val responseBody = response.body<KtorClient.UploadResponse>()
+                        if (responseBody != null && (responseBody.code == 1 || responseBody.code == 0) && !responseBody.downurl.isNullOrBlank()) {
+                            onSuccess(responseBody.downurl)
                             Toast.makeText(context, "图片上传成功", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "上传失败: ${responseBody?.msg}", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        Toast.makeText(context, "上传失败: ${response.body()?.msg}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "上传失败: 网络错误 ${response.status}", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
