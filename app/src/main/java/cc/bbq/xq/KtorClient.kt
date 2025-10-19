@@ -36,12 +36,8 @@ object KtorClient {
     private const val SOCKET_TIMEOUT = 30000L
 
     // Ktor HttpClient 实例
-val httpClient = HttpClient(OkHttp) {
-    initConfig(this)
-    defaultRequest {
-        header(HttpHeaders.Accept, ContentType.Application.Json.toString())
-    }
-}
+    // 注意：这里不再直接初始化，而是通过 Koin 提供实例
+    //lateinit var httpClient: HttpClient
     // 上传专用客户端
     val uploadHttpClient = HttpClient(OkHttp) {
         defaultRequest {

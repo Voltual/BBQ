@@ -53,7 +53,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient
+//import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.ui.*
 import cc.bbq.xq.ui.community.PostDetailViewModel
 import cc.bbq.xq.ui.compose.LinkifyText

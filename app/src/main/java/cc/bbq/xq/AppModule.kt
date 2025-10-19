@@ -28,35 +28,51 @@ import cc.bbq.xq.ui.user.MyPostsViewModel
 import cc.bbq.xq.ui.user.UserDetailViewModel
 import cc.bbq.xq.ui.settings.storage.StoreManagerViewModel // 导入 StoreManagerViewModel
 import cc.bbq.xq.data.StorageSettingsDataStore // 导入 StorageSettingsDataStore
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.android.ext.koin.androidApplication
+import org.koin.core.module.dsl.single
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val appModule = module {
+    // HttpClient instance
+    single {
+        HttpClient(OkHttp) {
+            KtorClient.initConfig(this)
+        }
+    }
+
+    // ApiService instance
+    single<KtorClient.ApiService> {
+        KtorClient.ApiServiceImpl(get()) // Inject HttpClient
+    }
+
     // ViewModel definitions
-    viewModel { LoginViewModel(androidApplication()) }
-    viewModel { BillingViewModel(androidApplication()) }
+    viewModel { LoginViewModel(androidApplication(), get()) } // Inject ApiService
+    viewModel { BillingViewModel(androidApplication(), get()) } // Inject ApiService
     viewModel { CommunityViewModel() }
-    viewModel { FollowingPostsViewModel(androidApplication()) }
-    viewModel { HotPostsViewModel() }
-    viewModel { MyLikesViewModel(androidApplication()) }
+    viewModel { FollowingPostsViewModel(androidApplication(), get()) } // Inject ApiService
+    viewModel { HotPostsViewModel(get()) } // Inject ApiService
+    viewModel { MyLikesViewModel(androidApplication(), get()) } // Inject ApiService
     viewModel { LogViewModel(androidApplication()) }
-    viewModel { MessageViewModel(androidApplication()) }
-    viewModel { AppDetailComposeViewModel(androidApplication()) }
-    viewModel { AppReleaseViewModel(androidApplication()) }
-    viewModel { (initialMode: Boolean) -> PlazaViewModel(androidApplication(), initialMode) }
+    viewModel { MessageViewModel(androidApplication(), get()) } // Inject ApiService
+    viewModel { AppDetailComposeViewModel(androidApplication(), get()) } // Inject ApiService
+    viewModel { AppReleaseViewModel(androidApplication(), get()) } // Inject ApiService
+    viewModel { (initialMode: Boolean) -> PlazaViewModel(androidApplication(), initialMode, get()) } // Inject ApiService
     viewModel { PlayerViewModel(androidApplication()) }
-    viewModel { SearchViewModel() }
-    viewModel { UserListViewModel(androidApplication()) }
-    viewModel { PostCreateViewModel(androidApplication()) }
-    viewModel { MyPostsViewModel() }
-    viewModel { PaymentViewModel(androidApplication()) }
-    viewModel { UserDetailViewModel(androidApplication()) }
+    viewModel { SearchViewModel(get()) } // Inject ApiService
+    viewModel { UserListViewModel(androidApplication(), get()) } // Inject ApiService
+    viewModel { PostCreateViewModel(androidApplication(), get()) } // Inject ApiService
+    viewModel { MyPostsViewModel(get()) } // Inject ApiService
+    viewModel { PaymentViewModel(androidApplication(), get()) } // Inject ApiService
+    viewModel { UserDetailViewModel(androidApplication(), get()) } // Inject ApiService
     viewModel { StoreManagerViewModel(androidApplication()) } // 添加 StoreManagerViewModel
 
     // Singletons (if needed)
     single { AuthManager }
-    single { RetrofitClient.instance }
+    //移除 RetrofitClient.instance
+    //single { RetrofitClient.instance }
     single { BBQApplication.instance.database }
     single { BBQApplication.instance.processedPostsDataStore }
     single { BBQApplication.instance.searchHistoryDataStore }
