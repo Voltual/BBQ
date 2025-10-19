@@ -52,7 +52,7 @@ fun StoreManagerScreen(
                 )
             }
         }
-
+/*
         BBQCard(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -76,3 +76,4 @@ fun StoreManagerScreen(
         }
     }
 }
+*/
