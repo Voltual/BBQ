@@ -421,8 +421,8 @@ fun MainComposeApp() {
 
                 AppNavHost(
                     navController = navController,
-                    modifier = Modifier.padding(contentPadding),
-                    restartAppCallback = restartAppCallback
+                    modifier = Modifier.padding(contentPadding)//,
+//                    restartAppCallback = restartAppCallback
                 )
             }
         )
