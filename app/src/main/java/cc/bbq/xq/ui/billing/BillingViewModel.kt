@@ -52,35 +52,37 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
                 if (billingResult.isSuccess) {
                     billingResult.getOrNull()?.let { billingResponse ->
                         if (billingResponse.code == 1) {
-                            billingResponse.data?.let { data ->
-                                _state.value = BillingState(
-                                    billings = data.list,
-                                    currentPage = 1,
-                                    totalPages = data.pagecount,
-                                    isLoading = false
-                                )
-                            } ?: run {
-                                _state.value = _state.value.copy(
-                                    error = "加载账单失败: 数据为空",
-                                    isLoading = false
-                                )
-                            }
+                            // 修复：直接访问 data，因为它是非空类型
+                            val data = billingResponse.data
+                            _state.value = BillingState(
+                                billings = data.list,
+                                currentPage = 1,
+                                totalPages = data.pagecount,
+                                isLoading = false
+                            )
                         } else {
                             _state.value = _state.value.copy(
                                 error = billingResponse.msg ?: "加载账单失败",
                                 isLoading = false
                             )
                         }
+                    } ?: run {
+                        // 修复：当 billingResult.getOrNull() 为 null 时的处理
+                        _state.value = _state.value.copy(
+                            error = "加载账单失败: 响应为空",
+                            isLoading = false
+                        )
                     }
                 } else {
+                    val exceptionMessage = billingResult.exceptionOrNull()?.message
                     _state.value = _state.value.copy(
-                        error = billingResult.exceptionOrNull()?.message ?: "加载账单失败",
+                        error = if (exceptionMessage != null) "加载账单失败: $exceptionMessage" else "加载账单失败",
                         isLoading = false
                     )
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
-                    error = "网络错误: ${e.message}",
+                    error = "网络错误: ${e.message ?: "未知错误"}",
                     isLoading = false
                 )
             }
@@ -106,35 +108,37 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
                 if (billingResult.isSuccess) {
                     billingResult.getOrNull()?.let { billingResponse ->
                         if (billingResponse.code == 1) {
-                            billingResponse.data?.let { data ->
-                                _state.value = _state.value.copy(
-                                    billings = _state.value.billings + data.list,
-                                    currentPage = nextPage,
-                                    totalPages = data.pagecount,
-                                    isLoading = false
-                                )
-                            } ?: run {
-                                _state.value = _state.value.copy(
-                                    error = "加载更多失败: 数据为空",
-                                    isLoading = false
-                                )
-                            }
+                            // 修复：直接访问 data，因为它是非空类型
+                            val data = billingResponse.data
+                            _state.value = _state.value.copy(
+                                billings = _state.value.billings + data.list,
+                                currentPage = nextPage,
+                                totalPages = data.pagecount,
+                                isLoading = false
+                            )
                         } else {
                             _state.value = _state.value.copy(
                                 error = billingResponse.msg ?: "加载更多失败",
                                 isLoading = false
                             )
                         }
+                    } ?: run {
+                        // 修复：当 billingResult.getOrNull() 为 null 时的处理
+                        _state.value = _state.value.copy(
+                            error = "加载更多失败: 响应为空",
+                            isLoading = false
+                        )
                     }
                 } else {
+                    val exceptionMessage = billingResult.exceptionOrNull()?.message
                     _state.value = _state.value.copy(
-                        error = billingResult.exceptionOrNull()?.message ?: "加载更多失败",
+                        error = if (exceptionMessage != null) "加载更多失败: $exceptionMessage" else "加载更多失败",
                         isLoading = false
                     )
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
-                    error = "网络错误: ${e.message}",
+                    error = "网络错误: ${e.message ?: "未知错误"}",
                     isLoading = false
                 )
             }
