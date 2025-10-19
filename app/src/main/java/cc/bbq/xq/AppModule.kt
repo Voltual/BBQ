@@ -91,3 +91,4 @@ val appModule = module {
         }
     }
 }
+}
