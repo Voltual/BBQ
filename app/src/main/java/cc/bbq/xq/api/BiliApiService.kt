@@ -22,7 +22,7 @@ object BiliApiManager {
         defaultRequest {
             url(BILI_API_BASE_URL)
             header(HttpHeaders.UserAgent, USER_AGENT_WEB)
-            header(HttpHeaders.Referer, "https://www.bilibili.com/")
+            header(HttpHeaders.Referrer, "https://www.bilibili.com/")
             header(HttpHeaders.Accept, "application/json")
         }
 
@@ -121,8 +121,10 @@ object BiliApiManager {
     }
 
     private class BiliApiServiceImpl : BiliApiService {
-        private const val MAX_RETRIES = 3
-        private const val RETRY_DELAY = 1000L
+        companion object {
+            const val MAX_RETRIES = 3
+            const val RETRY_DELAY = 1000L
+        }
 
         /**
          * 安全地执行 Ktor 请求，并处理异常和重试
