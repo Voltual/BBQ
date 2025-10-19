@@ -24,8 +24,6 @@ import kotlinx.serialization.json.JsonObject
 import java.io.IOException
 import io.ktor.utils.io.*
 import io.ktor.http.content.*
-import cc.bbq.xq.network.SuperCachePlugin // 导入 SuperCachePlugin
-import cc.bbq.xq.network.noCache // 导入 noCache 函数
 
 object KtorClient {
     private const val BASE_URL = "http://apk.xiaoqu.online/"
@@ -43,7 +41,6 @@ val httpClient = HttpClient(OkHttp) {
     defaultRequest {
         header(HttpHeaders.Accept, ContentType.Application.Json.toString())
     }
-    install(SuperCachePlugin) // 安装 SuperCachePlugin
 }
     // 上传专用客户端
     val uploadHttpClient = HttpClient(OkHttp) {
