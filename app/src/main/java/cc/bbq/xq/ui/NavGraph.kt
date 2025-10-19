@@ -74,8 +74,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun AppNavHost(
     navController: NavHostController,
-    modifier: Modifier = Modifier,
-    restartAppCallback: (() -> Unit)? = null
+    modifier: Modifier = Modifier//,
+//    restartAppCallback: (() -> Unit)? = null
 ) {
    // val context = LocalContext.current
 //    val density = LocalDensity.current
