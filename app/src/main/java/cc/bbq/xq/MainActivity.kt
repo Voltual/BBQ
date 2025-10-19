@@ -157,45 +157,55 @@ private fun tryAutoLogin(
     CoroutineScope(Dispatchers.IO).launch {
         try {
             val deviceId = AuthManager.getDeviceId(context)
-            val response = RetrofitClient.instance.login(
+            val result = KtorClient.ApiServiceImpl.login(
                 username = username,
                 password = password,
                 device = deviceId
             )
 
             withContext(Dispatchers.Main) {
-                if (response.isSuccessful) {
-                    val body = response.body()
-                    if (body != null && body.code == 1) {
-                        val loginData = body.data
-                        if (loginData != null) {
-                            AuthManager.saveCredentials(
-                                context,
-                                username,
-                                password,
-                                loginData.usertoken,
-                                loginData.id
-                            )
+                when {
+                    result.isSuccess -> {
+                        val loginResponse = result.getOrNull()
+                        if (loginResponse != null && loginResponse.code == 1) {
+                            val loginData = loginResponse.data
+                            if (loginData != null) {
+                                AuthManager.saveCredentials(
+                                    context,
+                                    username,
+                                    password,
+                                    loginData.usertoken,
+                                    loginData.id
+                                )
+                                // 登录成功，不需要额外导航，因为已经在主页面
+                            } else {
+                                AuthManager.clearCredentials(context)
+                                Toast.makeText(context, "登录数据为空", Toast.LENGTH_SHORT).show()
+                                navController.navigate(Login.route)
+                            }
                         } else {
                             AuthManager.clearCredentials(context)
-                            Toast.makeText(context, "登录数据为空", Toast.LENGTH_SHORT).show()
+                            val errorMsg = loginResponse?.msg ?: "登录失败"
+                            Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
                             navController.navigate(Login.route)
                         }
-                    } else {
+                    }
+                    result.isFailure -> {
                         AuthManager.clearCredentials(context)
-                        val errorMsg = body?.msg ?: "登录失败"
+                        val exception = result.exceptionOrNull()
+                        val errorMsg = when (exception) {
+                            is IOException -> {
+                                when {
+                                    exception.message?.contains("429") == true -> "请求太频繁"
+                                    exception.message?.contains("500") == true -> "服务器错误"
+                                    else -> "网络错误: ${exception.message}"
+                                }
+                            }
+                            else -> "登录异常: ${exception?.message ?: "未知错误"}"
+                        }
                         Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
                         navController.navigate(Login.route)
                     }
-                } else {
-                    AuthManager.clearCredentials(context)
-                    val errorMsg = when (response.code()) {
-                        429 -> "请求太频繁"
-                        500 -> "服务器错误"
-                        else -> "网络错误: ${response.code()}"
-                    }
-                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                    navController.navigate(Login.route)
                 }
             }
         } catch (e: Exception) {

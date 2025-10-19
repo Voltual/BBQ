@@ -459,51 +459,51 @@ fun CommentDialog(
     val coroutineScope = rememberCoroutineScope()
 
     fun uploadImage(uri: Uri, onSuccess: (String) -> Unit) {
-        showProgressDialog = true
-        progressMessage = "上传图片中..."
+    showProgressDialog = true
+    progressMessage = "上传图片中..."
 
-        coroutineScope.launch(Dispatchers.IO) {
-            try {
-                val inputStream = context.contentResolver.openInputStream(uri)
-                val file = File.createTempFile("upload_", ".jpg", context.cacheDir).apply {
-                    outputStream().use { output ->
-                        inputStream?.copyTo(output)
+    coroutineScope.launch(Dispatchers.IO) {
+        try {
+            val inputStream = context.contentResolver.openInputStream(uri)
+            val file = File.createTempFile("upload_", ".jpg", context.cacheDir).apply {
+                outputStream().use { output ->
+                    inputStream?.copyTo(output)
+                }
+            }
+
+            val response = KtorClient.uploadHttpClient.post("api.php") {
+                setBody(MultiPartFormDataContent(
+                    formData {
+                        append("file", file.readBytes(), Headers.build {
+                            append(HttpHeaders.ContentType, "image/*")
+                            append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                        })
                     }
-                }
+                ))
+            }
 
-                val response = KtorClient.uploadHttpClient.post("api.php") {
-                    setBody(MultiPartFormDataContent(
-                        formData {
-                            append("file", file.readBytes(), Headers.build {
-                                append(HttpHeaders.ContentType, "image/*")
-                                append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                            })
-                        }
-                    ))
-                }
-
-                withContext(Dispatchers.Main) {
-                    showProgressDialog = false
-                    if (response.status.isSuccess()) {
-                        val responseBody = response.body<KtorClient.UploadResponse>()
-                        if (responseBody != null && (responseBody.code == 1 || responseBody.code == 0) && !responseBody.downurl.isNullOrBlank()) {
-                            onSuccess(responseBody.downurl)
-                            Toast.makeText(context, "图片上传成功", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "上传失败: ${responseBody?.msg}", Toast.LENGTH_SHORT).show()
-                        }
+            withContext(Dispatchers.Main) {
+                showProgressDialog = false
+                if (response.status.isSuccess()) {
+                    val responseBody: KtorClient.UploadResponse = response.body()
+                    if (responseBody != null && (responseBody.code == 1 || responseBody.code == 0) && !responseBody.downurl.isNullOrBlank()) {
+                        onSuccess(responseBody.downurl)
+                        Toast.makeText(context, "图片上传成功", Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(context, "上传失败: 网络错误 ${response.status}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "上传失败: ${responseBody?.msg}", Toast.LENGTH_SHORT).show()
                     }
+                } else {
+                    Toast.makeText(context, "上传失败: 网络错误 ${response.status}", Toast.LENGTH_SHORT).show()
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    showProgressDialog = false
-                    Toast.makeText(context, "上传错误: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                showProgressDialog = false
+                Toast.makeText(context, "上传错误: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
+}
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()

@@ -56,7 +56,7 @@ val appModule = module {
 
     // Singletons (if needed)
     single { AuthManager }
-    single { RetrofitClient.instance }
+//    single { RetrofitClient.instance }
     single { BBQApplication.instance.database }
     single { BBQApplication.instance.processedPostsDataStore }
     single { BBQApplication.instance.searchHistoryDataStore }
