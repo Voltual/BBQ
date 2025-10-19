@@ -13,7 +13,6 @@ package cc.bbq.xq.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.BBQApplication
-//import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.KtorClient // 导入 KtorClient
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -150,7 +149,6 @@ class SearchViewModel : ViewModel() {
     }
 
     private suspend fun searchPosts(loadMore: Boolean = false) {
-        //val response = apiService.searchPosts( // 使用 KtorClient
         val response = KtorClient.ApiServiceImpl.searchPosts(
             query = _query.value, 
             page = currentPage, 
@@ -158,7 +156,7 @@ class SearchViewModel : ViewModel() {
         )
         
         response.onSuccess { result ->
-            result.data?.let { data ->
+            result.data.let { data ->
                 _totalPages.value = data.pagecount
                 _hasMoreData.value = currentPage < data.pagecount
                 

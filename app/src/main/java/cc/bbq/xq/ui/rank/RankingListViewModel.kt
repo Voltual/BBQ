@@ -85,7 +85,7 @@ class RankingListViewModel : ViewModel() {
                     } else {
                         _state.value = _state.value.copy(
                             isLoading = false,
-                            error = rankingResponse.msg ?: "加载失败"
+                            error = rankingResponse.msg
                         )
                     }
                 } else {
@@ -145,7 +145,7 @@ class RankingListViewModel : ViewModel() {
                     } else {
                         _state.value = _state.value.copy(
                             isRefreshing = false,
-                            error = rankingResponse.msg ?: "加载失败"
+                            error = rankingResponse.msg
                         )
                     }
                 } else {
@@ -208,7 +208,7 @@ class RankingListViewModel : ViewModel() {
                     } else {
                         _state.value = _state.value.copy(
                             isLoading = false,
-                            error = rankingResponse.msg ?: "加载失败"
+                            error = rankingResponse.msg
                         )
                     }
                 } else {
