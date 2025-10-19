@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_license">GNU General Public License v3.0</string>
-    <string name="app_name">BBQ</string>
+    <string name="app_name">OpenQu</string>
     <string name="reply_dialog_title">回复评论</string>
     <string name="reply_hint">输入回复内容</string>
     <string name="send_button">发送</string>

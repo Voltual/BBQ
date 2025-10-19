@@ -15,8 +15,8 @@ android {
         applicationId = "cc.bbq.xq" // 修正包名以匹配项目
         minSdk = 21
         targetSdk = 34
-        versionCode = 311
-        versionName = "10.7-QUBOT" // 更新版本名以作区分
+        versionCode = 332
+        versionName = "11.0" // 更新版本名以作区分
         multiDexEnabled = true
         buildConfigField("String", "LICENSE", "\"GPLv3\"")
         resourceConfigurations.add("zh-rCN")
@@ -29,7 +29,7 @@ android {
         abi {
             isEnable = true
             reset()
-            include("arm64-v8a")
+            include("armeabi-v7a", "arm64-v8a")
             isUniversalApk = false
         }
     }
@@ -111,7 +111,7 @@ dependencies {
      // 用于颜色提取
     implementation("androidx.palette:palette-ktx:1.0.0")
     
-    // ===== 新增：ROOM 数据库依赖 =====
+    // ===== ROOM 数据库依赖 =====
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version") // Kotlin Coroutines 支持
