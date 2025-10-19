@@ -555,6 +555,13 @@ val httpClient = HttpClient(OkHttp) {
         val data: List<RankingUser>,
         val timestamp: Long
     )
+    
+    @kotlinx.serialization.Serializable
+data class AppCategory(
+    val categoryId: Int?,
+    val subCategoryId: Int?,
+    val categoryName: String
+)
 
     // 上传响应模型
     @kotlinx.serialization.Serializable
@@ -565,6 +572,13 @@ val httpClient = HttpClient(OkHttp) {
         val downurl: String?,
         val viewurl: String?
     )
+    
+    @kotlinx.serialization.Serializable
+data class WanyueyunUploadResponse(
+    val code: Int,
+    val msg: String,
+    val data: String?
+)
     
     // **NEW**: Helper object to handle JSON conversion
     object JsonConverter {

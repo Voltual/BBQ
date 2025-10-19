@@ -17,7 +17,6 @@ import androidx.lifecycle.AndroidViewModel
 import cc.bbq.xq.KtorClient
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.util.ApkInfo
 import cc.bbq.xq.util.ApkParser
 import kotlinx.coroutines.Dispatchers
@@ -159,9 +158,6 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                     val tempFileName = generateUniqueFileName("intro", "jpg")
                     val tempFile = uriToTempFile(context, uri, tempFileName)
                     tempFile?.let {
-                        // **THE FINAL, ULTIMATE FIX**: The illegal `withContext` wrapper is removed.
-                        // The UI update now happens directly inside the lambda, as `uploadToKeyun`
-                        // guarantees this callback is already on the Main thread.
                         uploadToKeyun(it, "image/*", "介绍图") { url ->
                             if (introductionImageUrls.size < MAX_INTRO_IMAGES) {
                                 introductionImageUrls.add(url)
@@ -181,36 +177,36 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun populateFromAppDetail(appDetail: KtorClient.AppDetail) { // 改为 KtorClient 模型
-    isUpdateMode.value = true
-    appId = appDetail.id
-    appVersionId = appDetail.apps_version_id
+    fun populateFromAppDetail(appDetail: KtorClient.AppDetail) {
+        isUpdateMode.value = true
+        appId = appDetail.id
+        appVersionId = appDetail.apps_version_id
 
-    appName.value = appDetail.appname
-    apkDownloadUrl.value = appDetail.download ?: ""
+        appName.value = appDetail.appname
+        apkDownloadUrl.value = appDetail.download ?: ""
 
-    val explainLines = appDetail.app_explain?.split("\n")
-    val pkgNameLine = explainLines?.find { it.startsWith("包名：") }
-    packageName.value = pkgNameLine?.substringAfter("包名：")?.trim() ?: ""
+        val explainLines = appDetail.app_explain?.split("\n")
+        val pkgNameLine = explainLines?.find { it.startsWith("包名：") }
+        packageName.value = pkgNameLine?.substringAfter("包名：")?.trim() ?: ""
 
-    versionName.value = appDetail.version
-    appVersion.value = appDetail.version
-    appSize.value = appDetail.app_size.replace("MB", "").trim()
-    appIntroduce.value = appDetail.app_introduce?.replace("<br>", "\n") ?: ""
-    appExplain.value = appDetail.app_explain ?: ""
-    isPay.value = appDetail.is_pay
-    payMoney.value = if (appDetail.pay_money > 0) appDetail.pay_money.toString() else ""
-    selectedCategoryIndex.value = categories.indexOfFirst {
-        it.categoryId == appDetail.category_id && it.subCategoryId == appDetail.sub_category_id
-    }.takeIf { it != -1 } ?: 0
+        versionName.value = appDetail.version
+        appVersion.value = appDetail.version
+        appSize.value = appDetail.app_size.replace("MB", "").trim()
+        appIntroduce.value = appDetail.app_introduce?.replace("<br>", "\n") ?: ""
+        appExplain.value = appDetail.app_explain ?: ""
+        isPay.value = appDetail.is_pay
+        payMoney.value = if (appDetail.pay_money > 0) appDetail.pay_money.toString() else ""
+        selectedCategoryIndex.value = categories.indexOfFirst {
+            it.categoryId == appDetail.category_id && it.subCategoryId == appDetail.sub_category_id
+        }.takeIf { it != -1 } ?: 0
 
-    iconUrl.value = appDetail.app_icon
-    localIconUri.value = null
-    introductionImageUrls.clear()
-    appDetail.app_introduction_image_array?.let {
-        introductionImageUrls.addAll(it)
+        iconUrl.value = appDetail.app_icon
+        localIconUri.value = null
+        introductionImageUrls.clear()
+        appDetail.app_introduction_image_array?.let {
+            introductionImageUrls.addAll(it)
+        }
     }
-}
 
     fun releaseApp(onSuccess: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -235,8 +231,8 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                 val selectedCategory = categories[selectedCategoryIndex.value]
                 val introImagesString = introductionImageUrls.take(MAX_INTRO_IMAGES).joinToString(",")
 
-                val response = if (isUpdateMode.value) {
-                    RetrofitClient.instance.updateApp(
+                val result = if (isUpdateMode.value) {
+                    KtorClient.ApiServiceImpl.updateApp(
                         usertoken = token,
                         apps_id = appId,
                         appname = appName.value,
@@ -253,7 +249,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                         sub_category_id = selectedCategory.subCategoryId!!
                     )
                 } else {
-                    RetrofitClient.instance.releaseApp(
+                    KtorClient.ApiServiceImpl.releaseApp(
                         usertoken = token,
                         appname = appName.value,
                         icon = iconUrl.value,
@@ -270,11 +266,12 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                     )
                 }
 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    _processFeedback.value = Result.success(response.body()?.msg ?: "${action}成功, 等待审核")
+                if (result.isSuccess && result.getOrNull()?.code == 1) {
+                    _processFeedback.value = Result.success(result.getOrNull()?.msg ?: "${action}成功, 等待审核")
                     withContext(Dispatchers.Main) { onSuccess() }
                 } else {
-                    _processFeedback.value = Result.failure(Throwable(response.body()?.msg ?: "${action}失败"))
+                    val errorMsg = result.exceptionOrNull()?.message ?: result.getOrNull()?.msg ?: "${action}失败"
+                    _processFeedback.value = Result.failure(Throwable(errorMsg))
                 }
             } catch (e: Exception) {
                 _processFeedback.value = Result.failure(e)
@@ -284,7 +281,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-        fun deleteApp(onSuccess: () -> Unit) {
+    fun deleteApp(onSuccess: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             val token = AuthManager.getCredentials(context)?.third
             if (token == null) {
@@ -294,20 +291,21 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                 _processFeedback.value = Result.failure(Throwable("错误: 应用ID无效，无法删除")); return@launch
             }
 
-            isReleasing.value = true // Reuse releasing flag for loading state
+            isReleasing.value = true
             _processFeedback.value = Result.success("正在删除应用...")
             try {
-                val response = RetrofitClient.instance.deleteApp(
+                val result = KtorClient.ApiServiceImpl.deleteApp(
                     usertoken = token,
                     apps_id = appId,
                     app_version_id = appVersionId
                 )
 
-                if (response.isSuccessful && response.body()?.code == 1) {
-                    _processFeedback.value = Result.success(response.body()?.msg ?: "删除成功")
+                if (result.isSuccess && result.getOrNull()?.code == 1) {
+                    _processFeedback.value = Result.success(result.getOrNull()?.msg ?: "删除成功")
                     withContext(Dispatchers.Main) { onSuccess() }
                 } else {
-                    _processFeedback.value = Result.failure(Throwable(response.body()?.msg ?: "删除失败"))
+                    val errorMsg = result.exceptionOrNull()?.message ?: result.getOrNull()?.msg ?: "删除失败"
+                    _processFeedback.value = Result.failure(Throwable(errorMsg))
                 }
             } catch (e: Exception) {
                 _processFeedback.value = Result.failure(e)
@@ -319,12 +317,18 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
         try {
-            val requestFile = file.asRequestBody(mediaType.toMediaTypeOrNull())
-            val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
-            val response = RetrofitClient.uploadInstance.uploadImage(body)
+            val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
+                url = "api.php",
+                formData = formData {
+                    append("file", file.readBytes(), Headers.build {
+                        append(HttpHeaders.ContentType, mediaType)
+                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                    })
+                }
+            )
 
-            if (response.isSuccessful) {
-                val responseBody = response.body()
+            if (response.status.isSuccess()) {
+                val responseBody = response.body<KtorClient.UploadResponse>()
                 if (responseBody != null && (responseBody.code == 1 || responseBody.exists == 1) && !responseBody.downurl.isNullOrBlank()) {
                     withContext(Dispatchers.Main) {
                         _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
@@ -337,7 +341,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                 }
             } else {
                 withContext(Dispatchers.Main){
-                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 网络错误 ${response.code()}"))
+                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 网络错误 ${response.status}"))
                 }
             }
         } catch (e: Exception) {
@@ -351,14 +355,19 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
         try {
-            val requestFile = file.asRequestBody("application/vnd.android.package-archive".toMediaTypeOrNull())
-            val body = MultipartBody.Part.createFormData("file", file.name, requestFile)
-            val apiName = "小趣API".toRequestBody("text/plain".toMediaTypeOrNull())
-            
-            val response = RetrofitClient.wanyueyunUploadInstance.uploadFile(apiName, body)
+            val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
+                url = "upload",
+                formData = formData {
+                    append("Api", "小趣API")
+                    append("file", file.readBytes(), Headers.build {
+                        append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                    })
+                }
+            )
 
-            if (response.isSuccessful) {
-                val responseBody = response.body()
+            if (response.status.isSuccess()) {
+                val responseBody = response.body<KtorClient.WanyueyunUploadResponse>()
                 if (responseBody != null && responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
                     withContext(Dispatchers.Main) {
                         _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
@@ -371,7 +380,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                 }
             } else {
                 withContext(Dispatchers.Main){
-                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): 网络错误 ${response.code()}"))
+                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): 网络错误 ${response.status}"))
                 }
             }
         } catch (e: Exception) {

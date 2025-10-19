@@ -5,7 +5,7 @@ package cc.bbq.xq.ui.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.BBQApplication
-import cc.bbq.xq.RetrofitClient
+//import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.KtorClient // 导入 KtorClient
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
