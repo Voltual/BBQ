@@ -258,7 +258,7 @@ fun LogListItem(
     onToggleSelection: () -> Unit,
     onStartSelection: () -> Unit
 ) {
-    val isDarkTheme = ThemeManager.isAppDarkTheme ?: isSystemInDarkTheme()
+    val isDarkTheme = ThemeManager.isAppDarkTheme
     val statusColor = if (log.status == "SUCCESS") {
         if (isDarkTheme) billing_income_dark else billing_income
     } else {

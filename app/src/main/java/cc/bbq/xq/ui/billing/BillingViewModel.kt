@@ -61,8 +61,9 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
                                 isLoading = false
                             )
                         } else {
+                            // 修复：移除不必要的 Elvis 操作符，因为 billingResponse.msg 是非空字符串
                             _state.value = _state.value.copy(
-                                error = billingResponse.msg ?: "加载账单失败",
+                                error = billingResponse.msg,
                                 isLoading = false
                             )
                         }
@@ -117,8 +118,9 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
                                 isLoading = false
                             )
                         } else {
+                            // 修复：移除不必要的 Elvis 操作符，因为 billingResponse.msg 是非空字符串
                             _state.value = _state.value.copy(
-                                error = billingResponse.msg ?: "加载更多失败",
+                                error = billingResponse.msg,
                                 isLoading = false
                             )
                         }

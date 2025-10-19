@@ -121,7 +121,7 @@ fun BBQBackgroundCard(
     onClick: (() -> Unit)? = null,
     border: BorderStroke? = null,
     shape: Shape = AppShapes.medium,
-    backgroundAlpha: Float = 0.1f,
+//    backgroundAlpha: Float = 0.1f,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current

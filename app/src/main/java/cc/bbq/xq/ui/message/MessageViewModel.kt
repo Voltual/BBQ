@@ -71,7 +71,8 @@ class MessageViewModel(application: Application) : AndroidViewModel(application)
                 if (messageNotificationsResult.isSuccess) {
                     messageNotificationsResult.getOrNull()?.let { messageNotificationsResponse ->
                         if (messageNotificationsResponse.code == 1) {
-                            messageNotificationsResponse.data?.let { data ->
+                            // 修复：移除不必要的安全调用，直接使用 messageNotificationsResponse.data
+                            messageNotificationsResponse.data.let { data ->
                                 _state.value = MessageState(
                                     messages = data.list,
                                     currentPage = page,
@@ -79,18 +80,19 @@ class MessageViewModel(application: Application) : AndroidViewModel(application)
                                     isInitialized = true,
                                     isLoading = false // 修复：加载完成
                                 )
-                            } ?: run {
-                                _state.value = _state.value.copy(
-                                    error = "加载失败: 数据为空",
-                                    isLoading = false
-                                )
                             }
                         } else {
+                            // 修复：移除不必要的 Elvis 操作符，因为 messageNotificationsResponse.msg 是非空字符串
                             _state.value = _state.value.copy(
                                 error = "加载失败: ${messageNotificationsResponse.msg}",
                                 isLoading = false
                             )
                         }
+                    } ?: run {
+                        _state.value = _state.value.copy(
+                            error = "加载失败: 响应为空",
+                            isLoading = false
+                        )
                     }
                 } else {
                     _state.value = _state.value.copy(
