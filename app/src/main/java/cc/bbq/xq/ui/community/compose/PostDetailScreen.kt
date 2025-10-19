@@ -59,8 +59,9 @@ import cc.bbq.xq.ui.compose.LinkifyText
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
+import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.http.*
-import io.ktor.http.content.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -470,15 +471,16 @@ fun CommentDialog(
                     }
                 }
 
-                val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
-                    url = "api.php",
-                    formData = formData {
-                        append("file", file.readBytes(), Headers.build {
-                            append(HttpHeaders.ContentType, "image/*")
-                            append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                        })
-                    }
-                )
+                val response = KtorClient.uploadHttpClient.post("api.php") {
+                    setBody(MultiPartFormDataContent(
+                        formData {
+                            append("file", file.readBytes(), Headers.build {
+                                append(HttpHeaders.ContentType, "image/*")
+                                append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                            })
+                        }
+                    ))
+                }
 
                 withContext(Dispatchers.Main) {
                     showProgressDialog = false
