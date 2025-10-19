@@ -57,10 +57,30 @@ class RankingListViewModel : ViewModel() {
                     val rankingResponse = result.getOrThrow()
                     if (rankingResponse.code == 1) {
                         val rankingUserList = rankingResponse.data
+                        // 验证数据完整性
+                        val validatedList = rankingUserList.map { user ->
+                            // 确保当前排序类型对应的字段有值
+                            when (_state.value.sortType) {
+                                SortType.MONEY -> {
+                                    if (user.money == null) {
+                                        user.copy(money = 0)
+                                    } else {
+                                        user
+                                    }
+                                }
+                                SortType.EXP -> {
+                                    if (user.exp == null) {
+                                        user.copy(exp = 0)
+                                    } else {
+                                        user
+                                    }
+                                }
+                            }
+                        }
                         _state.value = _state.value.copy(
                             isLoading = false,
-                            rankingList = rankingUserList,
-                            hasMore = rankingUserList.size == _state.value.limit
+                            rankingList = validatedList,
+                            hasMore = validatedList.size == _state.value.limit
                         )
                     } else {
                         _state.value = _state.value.copy(
@@ -97,10 +117,29 @@ class RankingListViewModel : ViewModel() {
                     val rankingResponse = result.getOrThrow()
                     if (rankingResponse.code == 1) {
                         val rankingUserList = rankingResponse.data
+                        // 验证数据完整性
+                        val validatedList = rankingUserList.map { user ->
+                            when (_state.value.sortType) {
+                                SortType.MONEY -> {
+                                    if (user.money == null) {
+                                        user.copy(money = 0)
+                                    } else {
+                                        user
+                                    }
+                                }
+                                SortType.EXP -> {
+                                    if (user.exp == null) {
+                                        user.copy(exp = 0)
+                                    } else {
+                                        user
+                                    }
+                                }
+                            }
+                        }
                         _state.value = _state.value.copy(
                             isRefreshing = false,
-                            rankingList = rankingUserList,
-                            hasMore = rankingUserList.size == _state.value.limit,
+                            rankingList = validatedList,
+                            hasMore = validatedList.size == _state.value.limit,
                             page = 1
                         )
                     } else {
@@ -141,10 +180,29 @@ class RankingListViewModel : ViewModel() {
                     val rankingResponse = result.getOrThrow()
                     if (rankingResponse.code == 1) {
                         val rankingUserList = rankingResponse.data
+                        // 验证数据完整性
+                        val validatedList = rankingUserList.map { user ->
+                            when (_state.value.sortType) {
+                                SortType.MONEY -> {
+                                    if (user.money == null) {
+                                        user.copy(money = 0)
+                                    } else {
+                                        user
+                                    }
+                                }
+                                SortType.EXP -> {
+                                    if (user.exp == null) {
+                                        user.copy(exp = 0)
+                                    } else {
+                                        user
+                                    }
+                                }
+                            }
+                        }
                         _state.value = _state.value.copy(
                             isLoading = false,
-                            rankingList = _state.value.rankingList + rankingUserList,
-                            hasMore = rankingUserList.size == _state.value.limit,
+                            rankingList = _state.value.rankingList + validatedList,
+                            hasMore = validatedList.size == _state.value.limit,
                             page = nextPage
                         )
                     } else {

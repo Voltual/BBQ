@@ -102,8 +102,8 @@ fun RankingListItem(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = when (sortType) {
-                            SortType.MONEY -> user.money.toString()
-                            SortType.EXP -> user.exp.toString()
+                            SortType.MONEY -> (user.money ?: 0).toString()
+                            SortType.EXP -> (user.exp ?: 0).toString()
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
