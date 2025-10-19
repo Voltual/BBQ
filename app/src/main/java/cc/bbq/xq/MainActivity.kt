@@ -42,6 +42,7 @@ import cc.bbq.xq.ui.CrashLogActivity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import cc.bbq.xq.data.db.LogEntry
+import java.io.IOException // 导入 IOException
 
 class MainActivity : ComponentActivity() {
 
