@@ -88,7 +88,8 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                         val post = response.data
                         _postDetail.value = post
 
-                        post?.let {
+                        // 修复：直接访问 post，因为它是非空类型
+                        post.let {
                             browseHistoryRepository.addHistory(
                                 BrowseHistory(
                                     postId = it.id,
@@ -102,10 +103,12 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                             _commentCount.value = it.comment.toIntOrNull() ?: 0
                         }
                     } else {
-                        _errorMessage.value = "加载失败: ${response.msg ?: "未知错误"}"
+                        // 修复：直接访问 msg，因为它是非空类型
+                        _errorMessage.value = "加载失败: ${response.msg}"
                     }
                 } else {
-                    _errorMessage.value = "加载失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
+                    val exceptionMessage = result.exceptionOrNull()?.message
+                    _errorMessage.value = "加载失败: ${exceptionMessage ?: "未知错误"}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
@@ -130,8 +133,9 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                 if (result.isSuccess) {
                     val response = result.getOrThrow()
                     if (response.code == 1) {
-                        val newComments = response.data.list ?: emptyList()
-                        val totalPages = response.data.pagecount ?: 1
+                        // 修复：直接访问 data.list 和 data.pagecount，因为它们是非空类型
+                        val newComments = response.data.list
+                        val totalPages = response.data.pagecount
 
                         _totalCommentPages.value = totalPages
                         _hasMoreComments.value = page < totalPages
@@ -149,7 +153,8 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                         _errorMessage.value = "加载评论失败: ${response.msg}"
                     }
                 } else {
-                    _errorMessage.value = "加载评论失败: ${result.exceptionOrNull()?.message}"
+                    val exceptionMessage = result.exceptionOrNull()?.message
+                    _errorMessage.value = "加载评论失败: ${exceptionMessage ?: "未知错误"}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "加载评论失败: ${e.message}"
@@ -201,10 +206,11 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                             _likeCount.value + 1
                         }
                     } else {
-                        _errorMessage.value = "操作失败: ${response.msg ?: "未知错误"}"
+                        _errorMessage.value = "操作失败: ${response.msg}"
                     }
                 } else {
-                    _errorMessage.value = "操作失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
+                    val exceptionMessage = result.exceptionOrNull()?.message
+                    _errorMessage.value = "操作失败: ${exceptionMessage ?: "未知错误"}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "操作失败: ${e.message}"
@@ -255,10 +261,11 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                         closeCommentDialog()
                         closeReplyDialog()
                     } else {
-                        _errorMessage.value = "提交失败: ${response.msg ?: "未知错误"}"
+                        _errorMessage.value = "提交失败: ${response.msg}"
                     }
                 } else {
-                    _errorMessage.value = "提交失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
+                    val exceptionMessage = result.exceptionOrNull()?.message
+                    _errorMessage.value = "提交失败: ${exceptionMessage ?: "未知错误"}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "提交失败: ${e.message}"
@@ -283,10 +290,11 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                     if (response.code == 1) {
                         _deleteSuccess.value = true
                     } else {
-                        _errorMessage.value = "删除失败: ${response.msg ?: "未知错误"}"
+                        _errorMessage.value = "删除失败: ${response.msg}"
                     }
                 } else {
-                    _errorMessage.value = "删除失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
+                    val exceptionMessage = result.exceptionOrNull()?.message
+                    _errorMessage.value = "删除失败: ${exceptionMessage ?: "未知错误"}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "删除失败: ${e.message}"
@@ -311,10 +319,11 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                         postDetail.value?.id?.let { loadComments(it) }
                         _commentCount.value = maxOf(0, _commentCount.value - 1)
                     } else {
-                        _errorMessage.value = "删除失败: ${response.msg ?: "未知错误"}"
+                        _errorMessage.value = "删除失败: ${response.msg}"
                     }
                 } else {
-                    _errorMessage.value = "删除失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
+                    val exceptionMessage = result.exceptionOrNull()?.message
+                    _errorMessage.value = "删除失败: ${exceptionMessage ?: "未知错误"}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "删除失败: ${e.message}"

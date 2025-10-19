@@ -97,7 +97,7 @@ fun SwitchWithText(
 fun PostDetailScreen(
     postId: Long,
     navController: NavController,
-    onBack: () -> Unit,
+    // 修复：移除未使用的 onBack 参数
     onPostDeleted: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -121,7 +121,6 @@ fun PostDetailScreen(
     }
 
     var showShareDialog by remember { mutableStateOf(false) }
-    // 修复：将 showMoreOptions 状态移到 PostDetailScreen 内部
     var showMoreOptions by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
@@ -171,7 +170,7 @@ fun PostDetailScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background), // 设置整体背景色
+                .background(MaterialTheme.colorScheme.background),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             state = listState
         ) {
@@ -181,7 +180,7 @@ fun PostDetailScreen(
                         .fillMaxWidth()
                         .padding(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant, // 使用 surfaceVariant 作为卡片背景
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 ) {
@@ -218,7 +217,6 @@ fun PostDetailScreen(
                                 )
                             }
                             
-                            // 修复：将下拉菜单状态移到 PostDetailScreen 内部，并正确集成
                             Spacer(Modifier.weight(1f))
                             Box {
                                 IconButton(
@@ -227,7 +225,6 @@ fun PostDetailScreen(
                                     Icon(Icons.Default.MoreVert, "更多")
                                 }
                                 
-                                // 下拉菜单直接与按钮关联
                                 DropdownMenu(
                                     expanded = showMoreOptions,
                                     onDismissRequest = { showMoreOptions = false }
@@ -247,7 +244,8 @@ fun PostDetailScreen(
                                                 val destination = PaymentForPost(
                                                     postId = it.id,
                                                     postTitle = it.title,
-                                                    previewContent = it.content?.take(30) ?: "",
+                                                    // 修复：移除不必要的安全调用和 Elvis 运算符
+                                                    previewContent = it.content.take(30),
                                                     authorName = it.nickname,
                                                     authorAvatar = it.usertx,
                                                     postTime = it.create_time_ago
@@ -442,7 +440,6 @@ fun PostDetailScreen(
     }
 }
 
-// CommentDialog 和 CommentItem 函数保持不变...
 @Composable
 fun CommentDialog(
     hint: String,
@@ -487,11 +484,13 @@ fun CommentDialog(
                 showProgressDialog = false
                 if (response.status.isSuccess()) {
                     val responseBody: KtorClient.UploadResponse = response.body()
-                    if (responseBody != null && (responseBody.code == 1 || responseBody.code == 0) && !responseBody.downurl.isNullOrBlank()) {
+                    // 修复：移除不必要的 null 检查，因为 response.body() 返回非空类型
+                    if ((responseBody.code == 1 || responseBody.code == 0) && !responseBody.downurl.isNullOrBlank()) {
                         onSuccess(responseBody.downurl)
                         Toast.makeText(context, "图片上传成功", Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(context, "上传失败: ${responseBody?.msg}", Toast.LENGTH_SHORT).show()
+                        // 修复：直接访问 msg，因为它是非空类型
+                        Toast.makeText(context, "上传失败: ${responseBody.msg}", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(context, "上传失败: 网络错误 ${response.status}", Toast.LENGTH_SHORT).show()
@@ -527,7 +526,7 @@ fun CommentDialog(
                 .padding(16.dp),
             shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant, // 对话框也使用 surfaceVariant
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         ) {
@@ -665,7 +664,7 @@ fun CommentDialog(
 
 @Composable
 fun CommentItem(
-    comment: KtorClient.Comment, // 改为 KtorClient 模型
+    comment: KtorClient.Comment,
     navController: NavController,
     onReply: () -> Unit,
     onDelete: () -> Unit,

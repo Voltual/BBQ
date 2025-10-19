@@ -12,8 +12,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-//import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
-import cc.bbq.xq.KtorClient // 导入 KtorClient
+import cc.bbq.xq.KtorClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,9 +22,10 @@ import kotlinx.coroutines.Dispatchers
 
 class PaymentViewModel(application: Application) : AndroidViewModel(application) {
 
-// 新增状态：是否正在加载余额
+    // 新增状态：是否正在加载余额
     private val _isLoadingBalance = MutableStateFlow(false)
     val isLoadingBalance: StateFlow<Boolean> = _isLoadingBalance.asStateFlow()
+    
     // 支付信息状态
     private val _paymentInfo = MutableStateFlow<PaymentInfo?>(null)
     val paymentInfo: StateFlow<PaymentInfo?> = _paymentInfo
@@ -50,7 +50,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
     
     fun getDownloadUrl(): String? = _downloadUrl
     
-// 设置支付信息（更新参数）
+    // 设置支付信息（更新参数）
     fun setPaymentInfo(
         type: PaymentType,
         appId: Long = 0L,
@@ -95,10 +95,6 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                 
                 // 使用 KtorClient 发起请求
                 val response = withContext(Dispatchers.IO) {
-                    //RetrofitClient.instance.getPostDetail(
-                    //    token = token,
-                    //    postId = postId
-                    //)
                     KtorClient.ApiServiceImpl.getPostDetail(
                         token = token,
                         postId = postId
@@ -110,12 +106,12 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                     _paymentInfo.value = PaymentInfo(
                         type = PaymentType.POST_REWARD,
                         postId = postId,
-                        postTitle = post?.title ?: "",
-                        previewContent = post?.content?.take(30) ?: "",
+                        postTitle = post.title,
+                        previewContent = post.content.take(30),
                         locked = false,
-                        authorName = post?.nickname ?: "",
-                        authorAvatar = post?.usertx ?: "",
-                        postTime = post?.create_time_ago ?: ""
+                        authorName = post.nickname,
+                        authorAvatar = post.usertx,
+                        postTime = post.create_time_ago
                     )
                 }.onFailure { error ->
                     _errorMessage.value = "加载帖子失败: ${error.message}"
@@ -141,10 +137,6 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                 
                 // 使用 KtorClient 发起请求
                 val response = withContext(Dispatchers.IO) {
-                    //RetrofitClient.instance.getUserInformation(
-                    //    userId = credentials.fourth,
-                    //    token = credentials.third
-                    //)
                     KtorClient.ApiServiceImpl.getUserInformation(
                         userId = credentials.fourth,
                         token = credentials.third
@@ -152,7 +144,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                 }
                 
                 response.onSuccess { result ->
-                    _coinsBalance.value = result.data?.money ?: 0
+                    _coinsBalance.value = result.data.money
                 }.onFailure { error ->
                     _errorMessage.value = "获取余额失败: ${error.message}"
                 }
@@ -185,7 +177,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                         response.onSuccess { result ->
                             val appDetail = result.data
                             _verificationResult.value = 
-                                "验证成功: ${appDetail?.appname} (¥${appDetail?.pay_money})"
+                                "验证成功: ${appDetail.appname} (¥${appDetail.pay_money})"
                         }.onFailure { error ->
                             _errorMessage.value = "应用验证失败: ${error.message}"
                         }
@@ -200,7 +192,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                         response.onSuccess { result ->
                             val post = result.data
                             _verificationResult.value = 
-                                "验证成功: ${post?.title}"
+                                "验证成功: ${post.title}"
                         }.onFailure { error ->
                             _errorMessage.value = "帖子验证失败: ${error.message}"
                         }
@@ -231,13 +223,6 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                 // 使用 KtorClient 发起请求
                 val response = when (info.type) {
                     PaymentType.APP_PURCHASE -> {
-                        //RetrofitClient.instance.payForApp(
-                        //    token = credentials.third,
-                        //    appsId = info.appId,
-                        //    appsVersionId = info.versionId,
-                        //    money = amount,
-                        //    type = 0 // 硬币支付
-                        //)
                         KtorClient.ApiServiceImpl.payForApp(
                             token = credentials.third,
                             appsId = info.appId,
@@ -247,12 +232,6 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                         )
                     }
                     PaymentType.POST_REWARD -> {
-                        //RetrofitClient.instance.rewardPost(
-                        //    token = credentials.third,
-                        //    postId = info.postId,
-                        //    money = amount,
-                        //    payment = 0 // 硬币支付
-                        //)
                         KtorClient.ApiServiceImpl.rewardPost(
                             token = credentials.third,
                             postId = info.postId,

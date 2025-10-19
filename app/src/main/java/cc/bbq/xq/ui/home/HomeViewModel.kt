@@ -80,7 +80,7 @@ class HomeViewModel : ViewModel() {
                 }
                 
                 response.onSuccess { result ->
-                    result.data?.let { userData ->
+                    result.data.let { userData ->
                         // 计算时间差（创建时间到上次签到时间）
                         val daysDiff = calculateDaysDiff(
                             userData.create_time, 
@@ -106,7 +106,7 @@ class HomeViewModel : ViewModel() {
                             dataLoadState = DataLoadState.Loaded
                         )
                     }
-                }.onFailure { error ->
+                }.onFailure { _ ->
                     uiState.value = uiState.value.copy(
                         isLoading = false,
                         dataLoadState = DataLoadState.Error
@@ -175,9 +175,9 @@ class HomeViewModel : ViewModel() {
                     // 重新加载用户数据（强制刷新）
                     refreshUserData(context)
                 }
-            }.onFailure { error ->
+            }.onFailure { _ ->
                 uiState.value = uiState.value.copy(
-                    signStatusMessage = "签到失败: ${error.message}",
+                    signStatusMessage = "签到失败: 网络请求错误",
                     isLoading = false
                 )
             }
