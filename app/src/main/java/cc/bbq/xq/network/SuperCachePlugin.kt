@@ -14,124 +14,103 @@ import cc.bbq.xq.BBQApplication
 import cc.bbq.xq.data.StorageSettingsDataStore
 import cc.bbq.xq.data.db.NetworkCacheEntry
 import kotlinx.coroutines.flow.first
-import io.ktor.client.plugins.api.* // 导入 api
-import io.ktor.http.Headers
-import io.ktor.client.content.toByteArray
+import io.ktor.client.plugins.api.*
 import io.ktor.client.request.forms.FormDataContent
-import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.utils.io.charsets.Charsets
-import io.ktor.util.encodeBase64
 
-val SuperCachePlugin = createClientPlugin("SuperCachePlugin") {
-
-    val cacheDao = BBQApplication.instance.database.networkCacheDao()
-    val storageSettingsDataStore = StorageSettingsDataStore(BBQApplication.instance)
-
-    // 生成唯一的请求 Key
-    fun generateRequestKey(request: HttpRequestData): String {
-        val keyBuilder = StringBuilder()
-        keyBuilder.append(request.method.value).append("_")
-        keyBuilder.append(request.url.toString())
-
-        // 将请求体的内容也加入到 key 的计算中，以区分 POST 请求
-        request.body?.let { body ->
-            if (body is FormDataContent) {
-                val formDataString = body.formData.formUrlEncode()
-                keyBuilder.append("_").append(formDataString)
-            } else if (body is OutgoingContent.ByteArrayContent) {
-                keyBuilder.append("_").append(String(body.bytes(), Charsets.UTF_8))
-            } else if (body is OutgoingContent.ReadChannelContent) {
-                 val channel = body.readFrom()
-                val bytes = runBlocking { channel.toByteArray() }
-                keyBuilder.append("_").append(String(bytes, Charsets.UTF_8))
-            }
-        }
-
-        // 使用 MD5 哈希来确保 key 的长度是固定的，并且是唯一的
-        return md5(keyBuilder.toString())
+val SuperCachePlugin = createClientPlugin(
+    name = "SuperCachePlugin",
+    createConfiguration = ::PluginConfig
+) {
+    
+    class PluginConfig {
+        // 可添加插件配置项
     }
 
-    fun md5(input: String): String {
+    private val cacheDao = BBQApplication.instance.database.networkCacheDao()
+    private val storageSettingsDataStore = StorageSettingsDataStore(BBQApplication.instance)
+
+    // MD5哈希函数
+    private fun md5(input: String): String {
         val digest = MessageDigest.getInstance("MD5")
         val result = digest.digest(input.toByteArray(Charsets.UTF_8))
         return result.joinToString("") { "%02x".format(it) }
     }
 
-    pluginConfig {
-        // You can define configuration properties here if needed
+    // 生成唯一的请求Key
+    private fun generateRequestKey(request: HttpRequestBuilder): String {
+        val keyBuilder = StringBuilder().apply {
+            append(request.method.value).append("_")
+            append(request.url.buildString())
+            
+            // 处理请求体
+            when (val body = request.body) {
+                is FormDataContent -> append("_").append(body.formData.formUrlEncode())
+                is OutgoingContent.ByteArrayContent -> append("_").append(String(body.bytes(), Charsets.UTF_8))
+                is OutgoingContent.ReadChannelContent -> {
+                    val channel = body.readFrom()
+                    val bytes = runBlocking { channel.toByteArray() }
+                    append("_").append(String(bytes, Charsets.UTF_8))
+                }
+            }
+        }
+        return md5(keyBuilder.toString())
     }
 
+    // 请求拦截
     onRequest { request, _ ->
-        val noCacheAnnotation = request.attributes.getOrNull(AttributeKey<Boolean>("NoCache"))
-        if (noCacheAnnotation == true) {
-            println("[SKIP] Request for ${request.url} has @NoCache, proceeding without cache.")
+        val noCache = request.attributes.getOrNull(AttributeKey<Boolean>("NoCache")) ?: false
+        if (noCache) {
+            println("[SKIP] Request for ${request.url} has @NoCache")
             return@onRequest
         }
-        // --- 2. 检查“超级缓存模式”是否开启 ---
-        // runBlocking 在这里是可接受的，因为拦截器本身在 I/O 线程上运行，
-        // 且我们需要同步地决定是走网络还是走缓存。
-        val isCacheModeEnabled = runBlocking { storageSettingsDataStore.isSuperCacheEnabledFlow.first() }
 
-        // --- 3. 生成唯一的请求 Key ---
-        val requestKey = generateRequestKey(request.data)
+        val isCacheModeEnabled = runBlocking { 
+            storageSettingsDataStore.isSuperCacheEnabledFlow.first() 
+        }
 
         if (isCacheModeEnabled) {
             println("[CACHE MODE] Intercepting request for ${request.url}")
+            val requestKey = generateRequestKey(request)
             val cachedResponse = runBlocking { cacheDao.getCache(requestKey) }
 
             if (cachedResponse != null) {
                 println("[CACHE HIT] Found cache for key: $requestKey")
-                // 从数据库构建一个伪造的成功响应
-                request.body(TextContent(
+                request.body = TextContent(
                     cachedResponse.responseJson,
                     ContentType.Application.Json
-                ))
-                
-               return@onRequest
+                )
             } else {
                 println("[CACHE MISS] No cache found for key: $requestKey")
-                // 在缓存模式下，如果未命中，则返回一个特定的“客户端错误”，告知上层无可用离线数据
-
-                val errorBody = """{"code":400,"msg":"缓存未命中","data":[],"timestamp":0}"""
-                 request.body(TextContent(
-                    errorBody,
+                request.body = TextContent(
+                    """{"code":400,"msg":"缓存未命中","data":[],"timestamp":0}""",
                     ContentType.Application.Json,
                     HttpStatusCode.BadRequest
-                ))
-                return@onRequest
+                )
             }
-        }else{
-            // 如果缓存模式未开启，则不进行任何处理，直接执行网络请求
-            return@onRequest
         }
     }
 
+    // 响应拦截
     onResponse { response ->
         val request = response.request
-        val noCacheAnnotation = request.attributes.getOrNull(AttributeKey<Boolean>("NoCache"))
-        if (noCacheAnnotation == true) {
-            println("[SKIP] Response for ${request.url} has @NoCache, proceeding without cache.")
+        val noCache = request.attributes.getOrNull(AttributeKey<Boolean>("NoCache")) ?: false
+        if (noCache || !response.status.isSuccess()) {
             return@onResponse
         }
-        // --- 3. 生成唯一的请求 Key ---
-        val requestKey = generateRequestKey(response.request.requestData)
 
-        if (response.status.isSuccess()) {
-            val responseBody = response.bodyAsText()
-            //val responseBytes = responseBody.toByteArray()
-            //val responseString = String(responseBytes, Charsets.UTF_8)
-            val responseString = responseBody
-
-            println("[CACHE WRITE] Caching successful response for key: $requestKey")
-            runBlocking {
-                cacheDao.insert(NetworkCacheEntry(requestKey, responseString))
+        val requestKey = generateRequestKey(response.request)
+        runBlocking {
+            response.bodyAsText()?.let { responseBody ->
+                println("[CACHE WRITE] Caching response for key: $requestKey")
+                cacheDao.insert(NetworkCacheEntry(requestKey, responseBody))
             }
         }
     }
 }
 
-// Extension function to easily mark requests as not cacheable
+// 标记请求不缓存
 fun HttpRequestBuilder.noCache() {
     attributes.put(AttributeKey("NoCache"), true)
 }
