@@ -118,8 +118,9 @@ fun AppDetailScreen(
                     viewModel.deleteAppComment(commentId)
                 },
                 onUpdateClick = {
-                    appDetail?.let {
-                        val appDetailJson = RetrofitClient.JsonConverter.toJson(it)
+                    appDetail?.let { detail ->
+                        // 使用 KtorClient 的 JsonConverter
+                        val appDetailJson = KtorClient.JsonConverter.toJson(detail)
                         navController.navigate(UpdateAppRelease(appDetailJson).createRoute())
                     }
                 },

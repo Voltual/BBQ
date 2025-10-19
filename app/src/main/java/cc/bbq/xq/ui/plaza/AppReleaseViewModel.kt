@@ -14,6 +14,7 @@ import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
+import cc.bbq.xq.KtorClient
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.RetrofitClient
