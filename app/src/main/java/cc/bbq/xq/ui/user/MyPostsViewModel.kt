@@ -107,7 +107,7 @@ class MyPostsViewModel : ViewModel() {
                 if (postsResult.isSuccess) {
                     postsResult.getOrNull()?.let { postsResponse ->
                         if (postsResponse.code == 1) {
-                            postsResponse.data?.let { data ->
+                            postsResponse.data.let { data ->
                                 _totalPages.value = data.pagecount
                                 val newPosts = if (currentPage == 1) {
                                     data.list
@@ -118,7 +118,7 @@ class MyPostsViewModel : ViewModel() {
                                 _posts.value = newPosts
                             }
                         } else {
-                            _errorMessage.value = "加载失败: ${postsResponse.msg ?: "未知错误"}"
+                            _errorMessage.value = "加载失败: ${postsResponse.msg}"
                         }
                     }
                 } else {

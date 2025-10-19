@@ -86,14 +86,18 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
                 when (val response = result.getOrNull()) {
                     is KtorClient.UserInformationResponse -> {
                         if (response.code == 1) {
-                            response.data?.let {
-                                _userData.postValue(it)
-                                _errorMessage.postValue("")
-                            } ?: run {
-                                _errorMessage.postValue("用户数据为空")
+                            // 修复：移除不必要的安全调用，直接使用 response.data
+                            response.data.let { data ->
+                                if (data != null) {
+                                    _userData.postValue(data)
+                                    _errorMessage.postValue("")
+                                } else {
+                                    _errorMessage.postValue("用户数据为空")
+                                }
                             }
                         } else {
-                            _errorMessage.postValue("加载失败: ${response.msg ?: "未知错误"}")
+                            // 修复：移除不必要的 Elvis 操作符，因为 response.msg 是非空字符串
+                            _errorMessage.postValue("加载失败: ${response.msg}")
                         }
                     }
                     else -> {

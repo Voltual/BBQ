@@ -86,6 +86,8 @@ fun RankingListScreen(
             if (state.isLoading && state.rankingList.isEmpty()) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (state.error != null) {
+                // 修复智能转换问题：将错误消息提取到局部变量
+                val errorMessage = state.error
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -100,7 +102,7 @@ fun RankingListScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = state.error,
+                        text = errorMessage,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
