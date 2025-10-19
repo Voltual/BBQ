@@ -14,9 +14,13 @@ import cc.bbq.xq.BBQApplication
 import cc.bbq.xq.data.StorageSettingsDataStore
 import cc.bbq.xq.data.db.NetworkCacheEntry
 import kotlinx.coroutines.flow.first
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonElement
+import io.ktor.client.plugins.api.* // 导入 api
+import io.ktor.http.Headers
+import io.ktor.client.content.toByteArray
+import io.ktor.client.request.forms.FormDataContent
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
+import io.ktor.utils.io.charsets.Charsets
 
 val SuperCachePlugin = createClientPlugin("SuperCachePlugin") {
 
@@ -49,19 +53,23 @@ val SuperCachePlugin = createClientPlugin("SuperCachePlugin") {
         return result.joinToString("") { "%02x".format(it) }
     }
 
-    on(BeforeSend) { request ->
+    pluginConfig {
+        // You can define configuration properties here if needed
+    }
+
+    onRequest { request, _ ->
         val noCacheAnnotation = request.attributes.getOrNull(AttributeKey<Boolean>("NoCache"))
         if (noCacheAnnotation == true) {
             println("[SKIP] Request for ${request.url} has @NoCache, proceeding without cache.")
-            return@on
+            return@onRequest
         }
-            // --- 2. 检查“超级缓存模式”是否开启 ---
+        // --- 2. 检查“超级缓存模式”是否开启 ---
         // runBlocking 在这里是可接受的，因为拦截器本身在 I/O 线程上运行，
         // 且我们需要同步地决定是走网络还是走缓存。
         val isCacheModeEnabled = runBlocking { storageSettingsDataStore.isSuperCacheEnabledFlow.first() }
-        
-            // --- 3. 生成唯一的请求 Key ---
-        val requestKey = generateRequestKey(request)
+
+        // --- 3. 生成唯一的请求 Key ---
+        val requestKey = generateRequestKey(request.data)
 
         if (isCacheModeEnabled) {
             println("[CACHE MODE] Intercepting request for ${request.url}")
@@ -70,45 +78,46 @@ val SuperCachePlugin = createClientPlugin("SuperCachePlugin") {
             if (cachedResponse != null) {
                 println("[CACHE HIT] Found cache for key: $requestKey")
                 // 从数据库构建一个伪造的成功响应
-                 val body = TextContent(
+                val body = TextContent(
                     cachedResponse.responseJson,
                     ContentType.Application.Json
                 )
-                return@on body
+                request.body(body)
             } else {
                 println("[CACHE MISS] No cache found for key: $requestKey")
                 // 在缓存模式下，如果未命中，则返回一个特定的“客户端错误”，告知上层无可用离线数据
-                
-                 val errorBody = """{"code":400,"msg":"缓存未命中","data":[],"timestamp":0}"""
-                    val body = TextContent(
+
+                val errorBody = """{"code":400,"msg":"缓存未命中","data":[],"timestamp":0}"""
+                val body = TextContent(
                     errorBody,
                     ContentType.Application.Json,
                     HttpStatusCode.BadRequest
                 )
-                 return@on body
+                request.body(body)
             }
         }
     }
-    
-        on(ResponseReceived){response ->
+
+    onResponse { response ->
         val request = response.request
         val noCacheAnnotation = request.attributes.getOrNull(AttributeKey<Boolean>("NoCache"))
         if (noCacheAnnotation == true) {
             println("[SKIP] Response for ${request.url} has @NoCache, proceeding without cache.")
-            return@on
+            return@onResponse
         }
-                // --- 3. 生成唯一的请求 Key ---
-        val requestKey = generateRequestKey(request)
-        
-            if (response.status.isSuccess()) {
-            val responseBody = response.bodyAsChannel()
-            val responseBytes = responseBody.toByteArray()
-            val responseString = String(responseBytes, Charsets.UTF_8)
+        // --- 3. 生成唯一的请求 Key ---
+        val requestKey = generateRequestKey(request.request)
+
+        if (response.status.isSuccess()) {
+            val responseBody = response.body<String>()
+            //val responseBytes = responseBody.toByteArray()
+            //val responseString = String(responseBytes, Charsets.UTF_8)
+            val responseString = responseBody
 
             println("[CACHE WRITE] Caching successful response for key: $requestKey")
-                runBlocking {
-                    cacheDao.insert(NetworkCacheEntry(requestKey, responseString))
-                }
+            runBlocking {
+                cacheDao.insert(NetworkCacheEntry(requestKey, responseString))
+            }
         }
     }
 }
