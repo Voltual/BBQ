@@ -53,7 +53,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import cc.bbq.xq.AuthManager
-//import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.ui.*
 import cc.bbq.xq.ui.community.PostDetailViewModel
 import cc.bbq.xq.ui.compose.LinkifyText
@@ -68,6 +67,8 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+import org.koin.androidx.compose.inject
+import java.io.InputStream
 
 @Composable
 fun SwitchWithText(
@@ -99,6 +100,7 @@ fun PostDetailScreen(
 ) {
     val viewModel: PostDetailViewModel = viewModel()
     val context = LocalContext.current
+    val apiService: KtorClient.ApiService by inject()
 
     val postDetail by viewModel.postDetail.collectAsState()
     val comments by viewModel.comments.collectAsState()
@@ -213,7 +215,7 @@ fun PostDetailScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            
+
                             // 修复：将下拉菜单状态移到 PostDetailScreen 内部，并正确集成
                             Spacer(Modifier.weight(1f))
                             Box {
@@ -222,7 +224,7 @@ fun PostDetailScreen(
                                 ) {
                                     Icon(Icons.Default.MoreVert, "更多")
                                 }
-                                
+
                                 // 下拉菜单直接与按钮关联
                                 DropdownMenu(
                                     expanded = showMoreOptions,
@@ -454,6 +456,7 @@ fun CommentDialog(
     var progressMessage by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
+    val apiService: KtorClient.ApiService by inject()
 
     fun uploadImage(uri: Uri, onSuccess: (String) -> Unit) {
         showProgressDialog = true
@@ -461,30 +464,32 @@ fun CommentDialog(
 
         coroutineScope.launch(Dispatchers.IO) {
             try {
-                val inputStream = context.contentResolver.openInputStream(uri)
-                val file = File.createTempFile("upload_", ".jpg", context.cacheDir).apply {
-                    outputStream().use { output ->
-                        inputStream?.copyTo(output)
-                    }
+                val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+                val file = inputStream?.let {
+                    FileUtil.createTempFileFromStream(context.cacheDir, it, "upload_", ".jpg")
                 }
 
-                val requestFile = MultipartBody.Part.createFormData(
-                    "file",
-                    file.name,
-                    file.asRequestBody("image/*".toMediaTypeOrNull())
-                )
+                if (file == null) {
+                    withContext(Dispatchers.Main) {
+                        showProgressDialog = false
+                        Toast.makeText(context, "无法创建临时文件", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
 
-//                val response = RetrofitClient.uploadInstance.uploadImage(requestFile)
+                val fileBytes = file.readBytes()
+
+                val uploadResult = uploadImageKtor(fileBytes, file.name)
 
                 withContext(Dispatchers.Main) {
                     showProgressDialog = false
-                    if (response.isSuccessful && (response.body()?.code == 0 || response.body()?.code == 1)) {
-                        response.body()?.downurl?.let { url ->
+                    if (uploadResult.isSuccess) {
+                        uploadResult.getOrNull()?.let { url ->
                             onSuccess(url)
                             Toast.makeText(context, "图片上传成功", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        Toast.makeText(context, "上传失败: ${response.body()?.msg}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "上传失败: ${uploadResult.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
@@ -495,6 +500,31 @@ fun CommentDialog(
             }
         }
     }
+private suspend fun uploadImageKtor(fileBytes: ByteArray, fileName: String): Result<String> {
+    return withContext(Dispatchers.IO) {
+        try {
+            val response: HttpResponse = KtorClient.uploadHttpClient.post("api.php") {
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("file", fileBytes, Headers.build {
+                                append(HttpHeaders.ContentType, "image/jpeg") // 根据实际文件类型设置
+                                append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                            })
+                        }
+                    )
+                )
+            }
+
+            val responseBody = response.bodyAsText()
+            // 使用 Ktor 客户端的响应体获取图片 URL
+            val imageUrl = responseBody.substringAfter("\"viewurl\":\"").substringBefore("\"").trim()
+            Result.success(imageUrl)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -629,15 +659,15 @@ fun CommentDialog(
                     Button(
                         onClick = {
                             onSubmit(commentText, if (includeImage) imageUrl else null)
-                    },
-                    enabled = commentText.isNotEmpty()
-                ) {
-                    Text("提交")
+                        },
+                        enabled = commentText.isNotEmpty()
+                    ) {
+                        Text("提交")
+                    }
                 }
             }
         }
     }
-}
 
     if (showProgressDialog) {
         AlertDialog(

@@ -10,8 +10,6 @@
 package cc.bbq.xq.ui.community
 
 import android.app.Application
-import io.ktor.client.request.post // 添加这个导入
-import io.ktor.client.request.setBody // 添加这个导入
 import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
@@ -32,10 +30,13 @@ import io.ktor.utils.io.*
 import io.ktor.http.content.*
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.HttpResponse
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
-class PostCreateViewModel(application: Application) : AndroidViewModel(application) {
+class PostCreateViewModel(application: Application) : AndroidViewModel(application), KoinComponent {
 
     private val draftRepository = PostDraftRepository()
+    private val apiService: KtorClient.ApiService by inject() // Inject ApiService
 
     private val _uiState = MutableStateFlow(PostCreateUiState())
     val uiState: StateFlow<PostCreateUiState> = _uiState.asStateFlow()
@@ -66,6 +67,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     fun onSubsectionChange(newId: Int) { _uiState.update { it.copy(selectedSubsectionId = newId) } }
     fun onImageUrlsChange(urls: String) { _uiState.update { it.copy(imageUrls = urls) } }
 
+    
     fun uploadImage(uri: Uri) {
         viewModelScope.launch {
             _uiState.update { it.copy(showProgressDialog = true, progressMessage = "上传图片中...") }
@@ -168,7 +170,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     ) {
         viewModelScope.launch {
             _postStatus.value = PostStatus.Loading
-            
+
             try {
                 val credentials = AuthManager.getCredentials(getApplication())
                 if (credentials == null) {
@@ -177,7 +179,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 }
 
                 val token = credentials.third
-                
+
                 // 构建最终内容
                 val finalContent = if (mode == "refund") {
                     val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
@@ -199,7 +201,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
                 val finalSubsectionId = if (mode == "refund") 21 else subsectionId
 
-                val createPostResult = KtorClient.ApiServiceImpl.createPost(
+                val createPostResult = apiService.createPost(
                     appid = 1,
                     token = token,  // 这里使用参数名 token，而不是 usertoken
                     title = title,

@@ -77,4 +77,17 @@ val appModule = module {
     single { BBQApplication.instance.processedPostsDataStore }
     single { BBQApplication.instance.searchHistoryDataStore }
     single { StorageSettingsDataStore(androidApplication()) } // 添加 StorageSettingsDataStore
+    single {
+    HttpClient(OkHttp) {
+       defaultRequest {
+            url(KtorClient.UPLOAD_BASE_URL)
+        }
+        install(ContentNegotiation) {
+            json(Json {
+                ignoreUnknownKeys = true
+                isLenient = true
+                explicitNulls = false
+            })
+        }
+    }
 }
