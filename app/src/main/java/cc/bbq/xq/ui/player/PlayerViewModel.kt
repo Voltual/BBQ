@@ -5,8 +5,7 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
-
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 
 package cc.bbq.xq.ui.player
 
@@ -65,17 +64,28 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    // ... loadVideoData 和 decompress 方法保持不变 ...
     fun loadVideoData(bvid: String) {
         viewModelScope.launch {
             _playerUiState.value = PlayerUiState.Loading
             try {
-                val infoResponse = BiliApiManager.instance.getVideoInfo(bvid)
-                val videoData = infoResponse.body()?.data
-                val page = videoData?.pages?.firstOrNull()
+                val infoResult = BiliApiManager.instance.getVideoInfo(bvid)
+                
+                if (infoResult.isFailure) {
+                    _playerUiState.value = PlayerUiState.Error("获取视频信息失败: ${infoResult.exceptionOrNull()?.message}")
+                    return@launch
+                }
 
-                if (!infoResponse.isSuccessful || videoData == null || page == null) {
-                    _playerUiState.value = PlayerUiState.Error("获取视频信息失败: ${infoResponse.body()?.message}")
+                val videoInfo = infoResult.getOrThrow()
+                if (videoInfo.code != 0 || videoInfo.data == null) {
+                    _playerUiState.value = PlayerUiState.Error("获取视频信息失败: ${videoInfo.message}")
+                    return@launch
+                }
+
+                val videoData = videoInfo.data
+                val page = videoData.pages.firstOrNull()
+
+                if (page == null) {
+                    _playerUiState.value = PlayerUiState.Error("未找到视频分页信息")
                     return@launch
                 }
 
@@ -86,19 +96,32 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
                 val playUrlJob = launch {
                     try {
-                        val playUrlResponse = BiliApiManager.instance.getPlayUrl(bvid, cid)
-                        playUrl = playUrlResponse.body()?.data?.durl?.firstOrNull()?.url
-                        if (playUrl == null) { errorMsg = "获取播放地址失败" }
-                    } catch (e: Exception) { errorMsg = "获取播放地址网络错误: ${e.message}" }
+                        val playUrlResult = BiliApiManager.instance.getPlayUrl(bvid, cid)
+                        if (playUrlResult.isSuccess) {
+                            val playUrlResponse = playUrlResult.getOrThrow()
+                            if (playUrlResponse.code == 0) {
+                                playUrl = playUrlResponse.data?.durl?.firstOrNull()?.url
+                            } else {
+                                errorMsg = "获取播放地址失败: ${playUrlResponse.message}"
+                            }
+                        } else {
+                            errorMsg = "获取播放地址网络错误: ${playUrlResult.exceptionOrNull()?.message}"
+                        }
+                    } catch (e: Exception) { 
+                        errorMsg = "获取播放地址异常: ${e.message}" 
+                    }
                 }
 
                 val danmakuJob = launch {
                     try {
-                        val danmakuResponse = BiliApiManager.instance.getDanmaku(cid)
-                        if (danmakuResponse.isSuccessful && danmakuResponse.body() != null) {
-                            danmakuData = decompress(danmakuResponse.body()!!.bytes())
+                        val danmakuResult = BiliApiManager.instance.getDanmaku(cid)
+                        if (danmakuResult.isSuccess) {
+                            danmakuData = decompress(danmakuResult.getOrThrow())
                         }
-                    } catch (e: Exception) { /* 弹幕加载失败不是致命错误 */ }
+                        // 弹幕加载失败不是致命错误，静默处理
+                    } catch (e: Exception) { 
+                        // 弹幕加载失败不是致命错误
+                    }
                 }
 
                 playUrlJob.join()
@@ -113,7 +136,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 } else {
                     _playerUiState.value = PlayerUiState.Error(errorMsg ?: "未知错误")
                 }
-            } catch (e: Exception) { _playerUiState.value = PlayerUiState.Error("网络请求失败: ${e.message}") }
+            } catch (e: Exception) { 
+                _playerUiState.value = PlayerUiState.Error("网络请求失败: ${e.message}") 
+            }
         }
     }
 

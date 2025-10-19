@@ -1,121 +1,189 @@
 package cc.bbq.xq.api
 
-// **REMOVED**: 移除了 AuthManager 的导入（因为我懒得更新AuthManage）
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import okhttp3.OkHttpClient
-import okhttp3.ResponseBody
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
-import retrofit2.http.GET
-import retrofit2.http.Query
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.engine.okhttp.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import java.io.IOException
 
 object BiliApiManager {
     private const val BILI_API_BASE_URL = "https://api.bilibili.com/"
     private const val USER_AGENT_WEB = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-    private val moshi: Moshi = Moshi.Builder()
-        .add(KotlinJsonAdapterFactory())
-        .build()
+    // Ktor HttpClient for Bilibili API
+    private val httpClient = HttpClient(OkHttp) {
+        defaultRequest {
+            url(BILI_API_BASE_URL)
+            header(HttpHeaders.UserAgent, USER_AGENT_WEB)
+            header(HttpHeaders.Referer, "https://www.bilibili.com/")
+            header(HttpHeaders.Accept, "application/json")
+        }
 
-    val instance: BiliApiService by lazy {
-        val client = OkHttpClient.Builder()
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-                    .addHeader("User-Agent", USER_AGENT_WEB)
-                    .addHeader("Referer", "https://www.bilibili.com/")
-                    // **REMOVED**: 移除了对 Cookie 的依赖
-                    .build()
-                chain.proceed(request)
-            }
-            .build()
+        install(ContentNegotiation) {
+            json(Json {
+                ignoreUnknownKeys = true
+                isLenient = true
+                explicitNulls = false
+            })
+        }
 
-        Retrofit.Builder()
-            .baseUrl(BILI_API_BASE_URL)
-            .client(client)
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .build()
-            .create(BiliApiService::class.java)
+        install(Logging) {
+            logger = Logger.DEFAULT
+            level = LogLevel.HEADERS
+        }
+
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30000L
+            connectTimeoutMillis = 30000L
+            socketTimeoutMillis = 30000L
+        }
     }
 
+    val instance: BiliApiService = BiliApiServiceImpl()
+
+    // 模型类使用 kotlinx.serialization
     object models {
         // 视频信息响应 (对应 /x/web-interface/view)
-        @JsonClass(generateAdapter = true)
+        @Serializable
         data class BiliVideoInfoResponse(
-            @Json(name = "code") val code: Int,
-            @Json(name = "message") val message: String,
-            @Json(name = "data") val data: VideoData?
+            val code: Int,
+            val message: String,
+            val data: VideoData? = null
         )
 
-        @JsonClass(generateAdapter = true)
+        @Serializable
         data class VideoData(
-            @Json(name = "bvid") val bvid: String,
-            @Json(name = "aid") val aid: Long,
-            @Json(name = "title") val title: String,
-            @Json(name = "pic") val cover: String,
-            @Json(name = "duration") val duration: Int,
-            @Json(name = "owner") val owner: Owner,
-            @Json(name = "pages") val pages: List<VideoPage>
+            val bvid: String,
+            val aid: Long,
+            val title: String,
+            val pic: String,
+            val duration: Int,
+            val owner: Owner,
+            val pages: List<VideoPage>
         )
 
-        @JsonClass(generateAdapter = true)
+        @Serializable
         data class Owner(
-            @Json(name = "mid") val mid: Long,
-            @Json(name = "name") val name: String,
-            @Json(name = "face") val avatar: String
+            val mid: Long,
+            val name: String,
+            val face: String
         )
 
-        @JsonClass(generateAdapter = true)
+        @Serializable
         data class VideoPage(
-            @Json(name = "cid") val cid: Long,
-            @Json(name = "part") val part: String,
-            @Json(name = "duration") val duration: Int
+            val cid: Long,
+            val part: String,
+            val duration: Int
         )
 
         // 视频播放地址响应 (对应 /x/player/playurl)
-        @JsonClass(generateAdapter = true)
+        @Serializable
         data class BiliPlayUrlResponse(
-            @Json(name = "code") val code: Int,
-            @Json(name = "message") val message: String,
-            @Json(name = "data") val data: PlayUrlData?
+            val code: Int,
+            val message: String,
+            val data: PlayUrlData? = null
         )
 
-        @JsonClass(generateAdapter = true)
+        @Serializable
         data class PlayUrlData(
-            @Json(name = "durl") val durl: List<DashUrl>?
+            val durl: List<DashUrl>? = null
         )
 
-        @JsonClass(generateAdapter = true)
+        @Serializable
         data class DashUrl(
-            @Json(name = "url") val url: String,
-            @Json(name = "size") val size: Long,
-            @Json(name = "backup_url") val backupUrl: List<String>?
+            val url: String,
+            val size: Long,
+            val backup_url: List<String>? = null
         )
     }
 
     interface BiliApiService {
         // 获取视频详细信息（最重要的是cid）
-        @GET("x/web-interface/view")
-        suspend fun getVideoInfo(
-            @Query("bvid") bvid: String
-        ): Response<models.BiliVideoInfoResponse>
+        suspend fun getVideoInfo(bvid: String): Result<models.BiliVideoInfoResponse>
 
         // 获取视频播放地址
-        @GET("x/player/playurl")
         suspend fun getPlayUrl(
-            @Query("bvid") bvid: String,
-            @Query("cid") cid: Long,
-            @Query("qn") quality: Int = 80, // 80=1080P, 64=720P, 32=480P, 16=360P
-            @Query("fnval") fnval: Int = 1 // 1=flv, 16=DASH
-        ): Response<models.BiliPlayUrlResponse>
+            bvid: String,
+            cid: Long,
+            quality: Int = 80, // 80=1080P, 64=720P, 32=480P, 16=360P
+            fnval: Int = 1 // 1=flv, 16=DASH
+        ): Result<models.BiliPlayUrlResponse>
 
-        // 获取弹幕，返回原始数据体，因为它是压缩的XML
-        @GET("x/v1/dm/list.so")
-        suspend fun getDanmaku(
-            @Query("oid") cid: Long
-        ): Response<ResponseBody>
+        // 获取弹幕，返回原始字节数据
+        suspend fun getDanmaku(cid: Long): Result<ByteArray>
+    }
+
+    private class BiliApiServiceImpl : BiliApiService {
+        private const val MAX_RETRIES = 3
+        private const val RETRY_DELAY = 1000L
+
+        /**
+         * 安全地执行 Ktor 请求，并处理异常和重试
+         */
+        private suspend inline fun <reified T> safeApiCall(block: suspend () -> T): Result<T> {
+            var attempts = 0
+            while (attempts < MAX_RETRIES) {
+                try {
+                    val result = block()
+                    return Result.success(result)
+                } catch (e: IOException) {
+                    attempts++
+                    if (attempts >= MAX_RETRIES) {
+                        return Result.failure(IOException("Request failed after $MAX_RETRIES attempts: ${e.message}"))
+                    }
+                    kotlinx.coroutines.delay(RETRY_DELAY)
+                } catch (e: Exception) {
+                    return Result.failure(e)
+                }
+            }
+            return Result.failure(IOException("Request failed after $MAX_RETRIES attempts"))
+        }
+
+        override suspend fun getVideoInfo(bvid: String): Result<models.BiliVideoInfoResponse> {
+            return safeApiCall {
+                httpClient.get("x/web-interface/view") {
+                    parameter("bvid", bvid)
+                }.body()
+            }
+        }
+
+        override suspend fun getPlayUrl(
+            bvid: String,
+            cid: Long,
+            quality: Int,
+            fnval: Int
+        ): Result<models.BiliPlayUrlResponse> {
+            return safeApiCall {
+                httpClient.get("x/player/playurl") {
+                    parameter("bvid", bvid)
+                    parameter("cid", cid)
+                    parameter("qn", quality)
+                    parameter("fnval", fnval)
+                }.body()
+            }
+        }
+
+        override suspend fun getDanmaku(cid: Long): Result<ByteArray> {
+            return safeApiCall {
+                // 弹幕接口返回的是 XML 格式的压缩数据，我们需要原始字节
+                httpClient.get("x/v1/dm/list.so") {
+                    parameter("oid", cid)
+                }.body<ByteArray>()
+            }
+        }
+    }
+
+    /**
+     * 关闭 HttpClient（在应用退出时调用）
+     */
+    fun close() {
+        httpClient.close()
     }
 }
