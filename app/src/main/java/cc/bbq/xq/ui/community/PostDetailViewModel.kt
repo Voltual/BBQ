@@ -18,10 +18,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 
-class PostDetailViewModel(application: Application) : AndroidViewModel(application), KoinComponent {
+class PostDetailViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _postDetail = MutableStateFlow<KtorClient.PostDetail?>(null)
     val postDetail: StateFlow<KtorClient.PostDetail?> = _postDetail.asStateFlow()
@@ -72,7 +70,6 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
     val hasMoreComments: StateFlow<Boolean> = _hasMoreComments.asStateFlow()
 
     private val browseHistoryRepository = BrowseHistoryRepository()
-    private val apiService: KtorClient.ApiService by inject() // Inject ApiService
 
     fun loadPostDetail(postId: Long) {
         viewModelScope.launch {
@@ -80,7 +77,7 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                 val context = getApplication<Application>().applicationContext
                 val credentials = AuthManager.getCredentials(context)!!
 
-                val result = apiService.getPostDetail(
+                val result = KtorClient.ApiServiceImpl.getPostDetail(
                     token = credentials.third,
                     postId = postId
                 )
@@ -124,7 +121,7 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
 
         viewModelScope.launch {
             try {
-                val result = apiService.getPostComments(
+                val result = KtorClient.ApiServiceImpl.getPostComments(
                     postId = postId,
                     limit = 20,
                     page = page
@@ -144,7 +141,7 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                         } else {
                             _comments.value + newComments
                         }
-
+                        
                         if (page != _currentCommentPage.value) {
                             _currentCommentPage.value = page
                         }
@@ -189,7 +186,7 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                 val context = getApplication<Application>().applicationContext
                 val credentials = AuthManager.getCredentials(context)!!
 
-                val result = apiService.likePost(
+                val result = KtorClient.ApiServiceImpl.likePost(
                     token = credentials.third,
                     postId = postId
                 )
@@ -242,7 +239,7 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
                 val postId = postDetail.value?.id ?: return@launch
                 val parentId = _currentReplyComment.value?.id ?: 0L
 
-                val result = apiService.postComment(
+                val result = KtorClient.ApiServiceImpl.postComment(
                     token = credentials.third,
                     content = content,
                     postId = postId,
@@ -276,7 +273,7 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
             val credentials = AuthManager.getCredentials(context)!!
 
             try {
-                val result = apiService.deletePost(
+                val result = KtorClient.ApiServiceImpl.deletePost(
                     token = credentials.third,
                     postId = postId
                 )
@@ -303,7 +300,7 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
             val credentials = AuthManager.getCredentials(context)!!
 
             try {
-                val result = apiService.deleteComment(
+                val result = KtorClient.ApiServiceImpl.deleteComment(
                     token = credentials.third,
                     commentId = commentId
                 )
