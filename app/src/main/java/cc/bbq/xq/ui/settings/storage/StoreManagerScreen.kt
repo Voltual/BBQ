@@ -23,7 +23,8 @@ fun StoreManagerScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val isSuperCacheEnabled by viewModel.isSuperCacheEnabled.collectAsState()
+    // 注释掉超级缓存状态
+    // val isSuperCacheEnabled by viewModel.isSuperCacheEnabled.collectAsState()
 
     Column(
         modifier = Modifier
@@ -52,7 +53,9 @@ fun StoreManagerScreen(
                 )
             }
         }
-/*
+
+        // 注释掉超级缓存开关部分
+        /*
         BBQCard(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -74,6 +77,6 @@ fun StoreManagerScreen(
                 }
             }
         }
+        */
     }
 }
-*/

@@ -3,7 +3,7 @@
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9.23-7F52FF.svg?logo=kotlin)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-1.6.8-4285F4.svg?logo=jetpackcompose)
-![Version](https://img.shields.io/badge/Version-9.1-brightgreen.svg)
+![Version](https://img.shields.io/badge/Version-10.7--QUBOT-brightgreen.svg)
 
 **小趣空间第三方客户端 (BBQ)** 是对原 iApp 版本 "小趣空间" 的一次彻底的现代化重构。本项目旨在利用当前主流的 Android 开发技术栈，为用户提供一个更流畅、更美观、功能更完善的社区和资源分享平台。
 
@@ -23,13 +23,15 @@
 
 - **模块化设计**: 项目代码按功能模块进行组织，例如 `ui/community`、`ui/user`、`ui/plaza` 等，每个模块都包含其独立的 `Activity`、`ViewModel` 和 `Screen`。`data` 包负责本地数据持久化，`api` 包定义网络服务，结构清晰，易于扩展和维护。
 
+- **多平台就绪的网络层**: 采用 **Ktor Client** 作为 HTTP 客户端，配合 **kotlinx.serialization** 进行 JSON 序列化，为未来的 Kotlin Multiplatform 多平台开发做好准备。
+
 ## 功能特性 ✨
 
-本项目不仅复刻了原版的核心功能，还在此基础上进行了扩展和优化。
+本项目不仅复刻了原版的核心功能，还在此基础上进行了扩展和优化(我忘记了了很多，下面功能特性是随便写着玩的)
 
 - **社区系统**:
   - **帖子浏览**: 支持热点、关注、社区等多种模式的帖子列表，实现下拉刷新和滚动到底部自动加载更多。
-  - **帖子详情**: 富文本内容展示，支持代码、链接、图片和视频的解析与交互。
+  - **帖子详情**: 富文本内容展示，支持链接、图片和视频的解析与交互。
   - **发帖与互动**: 支持创建图文并茂的帖子，实现点赞、评论、回复、删除、分享等全套互动功能。
   - **内容搜索**: 帖子搜索功能，并记录搜索历史。
 
@@ -74,15 +76,18 @@
   - [MVVM (Model-View-ViewModel)](https://developer.android.com/jetpack/guide)
   - [Repository Pattern](https://developer.android.com/jetpack/guide/data-layer)
 - **网络请求**:
-  - [Retrofit2](https://square.github.io/retrofit/) (Type-safe HTTP client)
-  - [OkHttp3](https://square.github.io/okhttp/) (HTTP client)
-  - [Moshi](https://github.com/square/moshi) (JSON serialization)
+  - [Ktor Client](https://ktor.io/docs/client.html) (Multiplatform HTTP client)
+  - [OkHttp3](https://square.github.io/okhttp/) (HTTP client engine for Android)
+  - [kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization) (JSON serialization)
 - **异步编程**: [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-overview.html) & [Flow](https://kotlinlang.org/docs/flow.html)
-- **本地存储**: [Jetpack DataStore (Preferences)](https://developer.android.com/topic/libraries/architecture/datastore)
+- **本地存储**: 
+  - [Jetpack DataStore (Preferences)](https://developer.android.com/topic/libraries/architecture/datastore)
+  - [Room Database](https://developer.android.com/training/data/room) (SQLite ORM)
 - **导航**: [Navigation Compose](https://developer.android.com/jetpack/compose/navigation)
 - **图片加载**: [Coil (Coroutine Image Loader)](https://coil-kt.github.io/coil/)
 - **视频播放**: [ijkplayer](https://github.com/bilibili/ijkplayer)
 - **弹幕**: [DanmakuFlameMaster](https://github.com/bilibili/DanmakuFlameMaster)
+- **依赖注入**: [Koin](https://insert-koin.io/) (Dependency Injection)
 - **其他**:
   - [ImagePicker](https://github.com/Dhaval2404/ImagePicker) (图片选择与裁剪)
   - [PhotoView](https://github.com/chrisbanes/PhotoView) (图片手势缩放)
