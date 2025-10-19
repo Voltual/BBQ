@@ -15,6 +15,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+// 排序类型枚举
+enum class SortType(val displayName: String, val apiValue: String) {
+    MONEY("硬币排行", "money"),
+    EXP("经验排行", "exp")
+}
+
 data class RankingListState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
@@ -22,7 +28,8 @@ data class RankingListState(
     val rankingList: List<KtorClient.RankingUser> = emptyList(),
     val page: Int = 1,
     val limit: Int = 15,
-    val hasMore: Boolean = true
+    val hasMore: Boolean = true,
+    val sortType: SortType = SortType.MONEY // 默认硬币排行
 )
 
 class RankingListViewModel : ViewModel() {
@@ -41,6 +48,8 @@ class RankingListViewModel : ViewModel() {
             _state.value = _state.value.copy(isLoading = true, error = null)
             try {
                 val result = apiService.getRankingList(
+                    sort = _state.value.sortType.apiValue,
+                    sortOrder = "desc",
                     limit = _state.value.limit,
                     page = _state.value.page
                 )
@@ -79,6 +88,8 @@ class RankingListViewModel : ViewModel() {
             _state.value = _state.value.copy(isRefreshing = true, error = null, page = 1)
             try {
                 val result = apiService.getRankingList(
+                    sort = _state.value.sortType.apiValue,
+                    sortOrder = "desc",
                     limit = _state.value.limit,
                     page = 1
                 )
@@ -121,6 +132,8 @@ class RankingListViewModel : ViewModel() {
             try {
                 val nextPage = _state.value.page + 1
                 val result = apiService.getRankingList(
+                    sort = _state.value.sortType.apiValue,
+                    sortOrder = "desc",
                     limit = _state.value.limit,
                     page = nextPage
                 )
@@ -152,6 +165,18 @@ class RankingListViewModel : ViewModel() {
                     error = "加载异常: ${e.message}"
                 )
             }
+        }
+    }
+
+    // 切换排序方式
+    fun changeSortType(sortType: SortType) {
+        if (_state.value.sortType != sortType) {
+            _state.value = _state.value.copy(
+                sortType = sortType,
+                page = 1,
+                rankingList = emptyList()
+            )
+            loadRankingList()
         }
     }
 }

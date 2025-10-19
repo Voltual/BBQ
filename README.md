@@ -17,21 +17,21 @@
 
 - **100% 声明式UI (Jetpack Compose)**: 整个应用的 UI 层完全由 **Jetpack Compose** 构建。相较于传统的 XML 布局，Compose 提供了更直观、更灵活的 UI 开发体验。项目广泛使用了 Material 3 设计语言，实现了动态主题、组件化和响应式布局。
 
+- **Kotlin 优先的网络层 (Ktor)**: 网络层彻底拥抱 Kotlin 生态，采用 **Ktor Client** 替代了传统的 Retrofit。Ktor 提供了一流的协程支持，使得异步网络请求的编写如同同步代码一样简洁直观。配合 `kotlinx.serialization` 进行高效的 JSON 序列化/反序列化，不仅消除了 R8/ProGuard 混淆带来的潜在问题，还显著减小了最终 APK 的体积（从约 9MB 降至约 6.5MB），并为未来的 Kotlin Multiplatform (KMP)(你可以简单理解为多平台开发) 扩展铺平了道路。
+
 - **先进的并发模型 (Kotlin Coroutines)**: 所有异步操作，如网络请求、数据库访问，均通过 **Kotlin 协程** 在 `viewModelScope` 中进行管理。这确保了主线程的流畅性，避免了回调地狱，使异步代码如同步代码般易于读写。
 
 - **响应式编程 (Kotlin Flow)**: `ViewModel` 中的数据状态通过 **StateFlow** 对外暴露，UI 层使用 `collectAsState` 进行订阅。这种响应式数据流确保了数据驱动UI的模式，当数据发生变化时，UI 会自动、高效地更新，保证了数据的一致性。
 
 - **模块化设计**: 项目代码按功能模块进行组织，例如 `ui/community`、`ui/user`、`ui/plaza` 等，每个模块都包含其独立的 `Activity`、`ViewModel` 和 `Screen`。`data` 包负责本地数据持久化，`api` 包定义网络服务，结构清晰，易于扩展和维护。
 
-- **多平台就绪的网络层**: 采用 **Ktor Client** 作为 HTTP 客户端，配合 **kotlinx.serialization** 进行 JSON 序列化，为未来的 Kotlin Multiplatform 多平台开发做好准备。
-
 ## 功能特性 ✨
 
-本项目不仅复刻了原版的核心功能，还在此基础上进行了扩展和优化(我忘记了了很多，下面功能特性是随便写着玩的)
+本项目不仅复刻了原版的核心功能，还在此基础上进行了扩展和优化。(我忘记了了很多，下面功能特性是随便写着玩的，请以实际体验为准)
 
 - **社区系统**:
   - **帖子浏览**: 支持热点、关注、社区等多种模式的帖子列表，实现下拉刷新和滚动到底部自动加载更多。
-  - **帖子详情**: 富文本内容展示，支持链接、图片和视频的解析与交互。
+  - **帖子详情**: 富文本内容展示，支持代码、链接、图片和视频的解析与交互。
   - **发帖与互动**: 支持创建图文并茂的帖子，实现点赞、评论、回复、删除、分享等全套互动功能。
   - **内容搜索**: 帖子搜索功能，并记录搜索历史。
 
@@ -76,18 +76,15 @@
   - [MVVM (Model-View-ViewModel)](https://developer.android.com/jetpack/guide)
   - [Repository Pattern](https://developer.android.com/jetpack/guide/data-layer)
 - **网络请求**:
-  - [Ktor Client](https://ktor.io/docs/client.html) (Multiplatform HTTP client)
-  - [OkHttp3](https://square.github.io/okhttp/) (HTTP client engine for Android)
-  - [kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization) (JSON serialization)
+  - **[Ktor Client](https://ktor.io/)** (Kotlin 原生异步 HTTP 客户端)
+  - [OkHttp](https://square.github.io/okhttp/) (作为 Ktor 的引擎)
+  - **[kotlinx.serialization](https://github.com/Kotlin/kotlinx.serialization)** (Kotlin 多平台序列化框架)
 - **异步编程**: [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-overview.html) & [Flow](https://kotlinlang.org/docs/flow.html)
-- **本地存储**: 
-  - [Jetpack DataStore (Preferences)](https://developer.android.com/topic/libraries/architecture/datastore)
-  - [Room Database](https://developer.android.com/training/data/room) (SQLite ORM)
+- **本地存储**: [Jetpack DataStore (Preferences)](https://developer.android.com/topic/libraries/architecture/datastore)
 - **导航**: [Navigation Compose](https://developer.android.com/jetpack/compose/navigation)
 - **图片加载**: [Coil (Coroutine Image Loader)](https://coil-kt.github.io/coil/)
 - **视频播放**: [ijkplayer](https://github.com/bilibili/ijkplayer)
 - **弹幕**: [DanmakuFlameMaster](https://github.com/bilibili/DanmakuFlameMaster)
-- **依赖注入**: [Koin](https://insert-koin.io/) (Dependency Injection)
 - **其他**:
   - [ImagePicker](https://github.com/Dhaval2404/ImagePicker) (图片选择与裁剪)
   - [PhotoView](https://github.com/chrisbanes/PhotoView) (图片手势缩放)

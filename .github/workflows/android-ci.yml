@@ -1,12 +1,10 @@
-name: Android Release Build
+name: Android CI
 
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
-  release:
-    types: [published]
+  issues:
+    types: [opened]
 
 jobs:
   build:
@@ -48,33 +46,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@v1
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug
 
-      - name: Build Release with Gradle
-        run: |
-          ./gradlew assembleRelease
-          ./gradlew bundleRelease
-
-      - name: Upload Release APK artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: app-debug
           path: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/bundle/release/*.aab
-          retention-days: 30
-
-      - name: Upload to GitHub Releases
-        if: github.event_name == 'release'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: app/build/outputs/apk/release/app-release.apk
-          asset_name: app-release.apk
-          asset_content_type: application/vnd.android.package-archive
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/bundle/debug/*.aab
+          retention-days: 7
 
       # 仅在构建成功时缓存，避免缓存错误
       - name: Save Gradle cache

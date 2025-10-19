@@ -553,6 +553,7 @@ val httpClient = HttpClient(OkHttp) {
         val nickname: String,
         val usertx: String,
         val money: Int,
+        val exp: Int, // 添加经验字段
         val title: List<String>?,
         val badge: List<JsonObject>?
     )

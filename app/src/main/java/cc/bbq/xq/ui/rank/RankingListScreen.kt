@@ -25,7 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import cc.bbq.xq.ui.UserDetail
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RankingListScreen(
     navController: NavController,
@@ -36,84 +36,128 @@ fun RankingListScreen(
     val refreshing = state.isRefreshing
     val pullRefreshState = rememberPullRefreshState(refreshing, { viewModel.refreshRankingList() })
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .pullRefresh(pullRefreshState)
-    ) {
-        if (state.isLoading && state.rankingList.isEmpty()) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        } else if (state.error != null) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "加载失败",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = state.error ?: "未知错误",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { viewModel.refreshRankingList() }) {
-                    Text("重试")
-                }
-            }
-        } else if (state.rankingList.isEmpty()) {
-            Text(
-                text = "暂无排名数据",
-                modifier = Modifier.align(Alignment.Center)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                state = listState,
-                contentPadding = PaddingValues(bottom = 8.dp)
-            ) {
-                itemsIndexed(state.rankingList) { index, user ->
-                    RankingListItem(
-                        ranking = index + 1,
-                        user = user,
-                        onClick = {
-                            // 使用 NavController 导航
-                            navController.navigate(UserDetail(user.id).createRoute())
-                        }
-                    )
+    // 下拉菜单状态
+    var expanded by remember { mutableStateOf(false) }
 
-                    if (index == state.rankingList.size - 1 && state.hasMore && !state.isLoading) {
-                        SideEffect {
-                            viewModel.loadNextRankingList()
-                        }
-                    }
-                }
+    Column(modifier = Modifier.fillMaxSize()) {
+        // 排序选择器
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                TextField(
+                    value = state.sortType.displayName,
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                )
 
-                if (state.isLoading) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    SortType.values().forEach { sortType ->
+                        DropdownMenuItem(
+                            text = { Text(sortType.displayName) },
+                            onClick = {
+                                viewModel.changeSortType(sortType)
+                                expanded = false
+                            }
+                        )
                     }
                 }
             }
         }
 
-        PullRefreshIndicator(
-            refreshing,
-            pullRefreshState,
-            Modifier.align(Alignment.TopCenter)
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pullRefresh(pullRefreshState)
+        ) {
+            if (state.isLoading && state.rankingList.isEmpty()) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else if (state.error != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "加载失败",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = state.error ?: "未知错误",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { viewModel.refreshRankingList() }) {
+                        Text("重试")
+                    }
+                }
+            } else if (state.rankingList.isEmpty()) {
+                Text(
+                    text = "暂无排名数据",
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState,
+                    contentPadding = PaddingValues(bottom = 8.dp)
+                ) {
+                    itemsIndexed(state.rankingList) { index, user ->
+                        RankingListItem(
+                            ranking = index + 1,
+                            user = user,
+                            sortType = state.sortType, // 传递排序类型用于显示正确的数值
+                            onClick = {
+                                // 使用 NavController 导航
+                                navController.navigate(UserDetail(user.id).createRoute())
+                            }
+                        )
+
+                        if (index == state.rankingList.size - 1 && state.hasMore && !state.isLoading) {
+                            SideEffect {
+                                viewModel.loadNextRankingList()
+                            }
+                        }
+                    }
+
+                    if (state.isLoading) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
+                }
+            }
+
+            PullRefreshIndicator(
+                refreshing,
+                pullRefreshState,
+                Modifier.align(Alignment.TopCenter)
+            )
+        }
     }
 }
