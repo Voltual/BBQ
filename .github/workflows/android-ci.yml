@@ -48,9 +48,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@v1
-
       - name: Build Release with Gradle
         run: |
           ./gradlew assembleRelease

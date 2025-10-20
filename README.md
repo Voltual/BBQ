@@ -3,7 +3,6 @@
 ![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9.23-7F52FF.svg?logo=kotlin)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-1.6.8-4285F4.svg?logo=jetpackcompose)
-![Version](https://img.shields.io/badge/Version-10.7--QUBOT-brightgreen.svg)
 
 **小趣空间第三方客户端 (OpenQu)** 是对原 iApp 版本 "小趣空间" 的一次彻底的现代化重构。本项目旨在利用当前主流的 Android 开发技术栈，为用户提供一个更流畅、更美观、功能更完善的社区和资源分享平台。
 
@@ -92,3 +91,7 @@
 ## 项目结构
 
 项目采用清晰的、基于功能的模块化包结构，便于维护和扩展。
+
+特别鸣谢：
+感谢同属GPLv3项目的哔哩终端，因为播放器部分借鉴的哔哩终端的Java代码
+感谢同是开发第三方前端的如能的“三方小趣”的经验榜实现，我通过抓包借鉴了其api请求参数
