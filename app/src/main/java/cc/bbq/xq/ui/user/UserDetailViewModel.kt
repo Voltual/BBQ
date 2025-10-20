@@ -86,15 +86,9 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
                 when (val response = result.getOrNull()) {
                     is KtorClient.UserInformationResponse -> {
                         if (response.code == 1) {
-                            // 修复：移除不必要的安全调用，直接使用 response.data
-                            response.data.let { data ->
-                                if (data != null) {
-                                    _userData.postValue(data)
-                                    _errorMessage.postValue("")
-                                } else {
-                                    _errorMessage.postValue("用户数据为空")
-                                }
-                            }
+                            // 修复：移除总是为 true 的条件检查，因为 response.data 是非空的
+                            _userData.postValue(response.data)
+                            _errorMessage.postValue("")
                         } else {
                             // 修复：移除不必要的 Elvis 操作符，因为 response.msg 是非空字符串
                             _errorMessage.postValue("加载失败: ${response.msg}")
