@@ -72,7 +72,8 @@ fun SharedPostItem(
             Spacer(modifier = Modifier.height(8.dp))
             Text(post.content, style = MaterialTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
             
-            post.img_url?.takeIf { it.isNotEmpty() }?.firstOrNull()?.let { imageUrl =>
+            // 修复语法错误：使用正确的 lambda 表达式语法
+            post.img_url?.takeIf { it.isNotEmpty() }?.firstOrNull()?.let { imageUrl ->
                 Spacer(modifier = Modifier.height(12.dp))
                 Image(
                     painter = rememberAsyncImagePainter(model = imageUrl),
