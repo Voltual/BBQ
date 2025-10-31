@@ -51,15 +51,16 @@ jobs:
       - name: Build Release with Gradle
         run: |
           ./gradlew assembleRelease
-          ./gradlew bundleRelease
 
       # 为每次构建创建唯一的版本名称
       - name: Get version info
         id: version
         run: |
-          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
           SHORT_SHA=${GITHUB_SHA:0:8}
-          echo "BUILD_VERSION=auto-build-${TIMESTAMP}-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          BUILD_NAME="auto-build-$(date +%Y%m%d_%H%M%S)-${SHORT_SHA}"
+          echo "BUILD_VERSION=${BUILD_NAME}" >> $GITHUB_OUTPUT
+          echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
 
       # 自动创建 Release 并上传 APK（仅在推送到 master 时）
       - name: Create Release and Upload APK
@@ -70,25 +71,17 @@ jobs:
           name: "Auto Build ${{ steps.version.outputs.BUILD_VERSION }}"
           body: |
             自动构建版本 - ${{ steps.version.outputs.BUILD_VERSION }}
+            
+            构建信息:
             - 提交: ${{ github.sha }}
             - 触发于: ${{ github.event.head_commit.message }}
-            - 构建时间: ${{ fromJSON(steps.version.outputs.TIMESTAMP) }}
+            - 构建时间: ${{ steps.version.outputs.TIMESTAMP }}
+            
+            此版本为自动构建的预发布版本。
           draft: false
           prerelease: true
           files: |
             app/build/outputs/apk/release/*.apk
-            app/build/outputs/bundle/release/*.aab
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 手动发布 Release 时的上传（保持原有逻辑）
-      - name: Upload to GitHub Releases on Manual Release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/bundle/release/*.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
