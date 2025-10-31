@@ -53,29 +53,49 @@ jobs:
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: Upload Release APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release
-          path: |
-            app/build/outputs/apk/release/*.apk
-          retention-days: 30
+      # 为每次构建创建唯一的版本名称
+      - name: Get version info
+        id: version
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          SHORT_SHA=${GITHUB_SHA:0:8}
+          echo "BUILD_VERSION=auto-build-${TIMESTAMP}-${SHORT_SHA}" >> $GITHUB_OUTPUT
 
-      - name: Upload to GitHub Releases
-        if: github.event_name == 'release'
-        uses: actions/upload-release-asset@v1
+      # 自动创建 Release 并上传 APK（仅在推送到 master 时）
+      - name: Create Release and Upload APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.BUILD_VERSION }}
+          name: "Auto Build ${{ steps.version.outputs.BUILD_VERSION }}"
+          body: |
+            自动构建版本 - ${{ steps.version.outputs.BUILD_VERSION }}
+            - 提交: ${{ github.sha }}
+            - 触发于: ${{ github.event.head_commit.message }}
+            - 构建时间: ${{ fromJSON(steps.version.outputs.TIMESTAMP) }}
+          draft: false
+          prerelease: true
+          files: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 手动发布 Release 时的上传（保持原有逻辑）
+      - name: Upload to GitHub Releases on Manual Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: app/build/outputs/apk/release/app-release.apk
-          asset_name: app-release.apk
-          asset_content_type: application/vnd.android.package-archive
+          files: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # 仅在构建成功时缓存，避免缓存错误
       - name: Save Gradle cache
-        uses: actions/cache@v3
         if: ${{ success() }}
+        uses: actions/cache@v3
         with:
           path: |
             ~/.gradle/caches
