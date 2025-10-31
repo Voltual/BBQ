@@ -8,6 +8,10 @@ on:
   release:
     types: [published]
 
+# 设置权限
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,7 +40,6 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 简化缓存 Key
       - name: Gradle Cache
         uses: actions/cache@v3
         with:
@@ -52,7 +55,6 @@ jobs:
         run: |
           ./gradlew assembleRelease
 
-      # 为每次构建创建唯一的版本名称
       - name: Get version info
         id: version
         run: |
@@ -62,7 +64,7 @@ jobs:
           echo "BUILD_VERSION=${BUILD_NAME}" >> $GITHUB_OUTPUT
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
 
-      # 自动创建 Release 并上传 APK（仅在推送到 master 时）
+      # 自动创建 Release 并上传 APK
       - name: Create Release and Upload APK
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v1
@@ -85,7 +87,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 仅在构建成功时缓存，避免缓存错误
       - name: Save Gradle cache
         if: ${{ success() }}
         uses: actions/cache@v3
