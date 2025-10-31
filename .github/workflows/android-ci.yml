@@ -8,7 +8,6 @@ on:
   release:
     types: [published]
 
-# 设置权限
 permissions:
   contents: write
 
@@ -64,8 +63,8 @@ jobs:
           echo "BUILD_VERSION=${BUILD_NAME}" >> $GITHUB_OUTPUT
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
 
-      # 自动创建 Release 并上传 APK
-      - name: Create Release and Upload APK
+      # 创建草稿 Release，这样后续可以继续上传文件
+      - name: Create Draft Release and Upload APK
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v1
         with:
@@ -79,9 +78,10 @@ jobs:
             - 触发于: ${{ github.event.head_commit.message }}
             - 构建时间: ${{ steps.version.outputs.TIMESTAMP }}
             
-            此版本为自动构建的预发布版本。
-          draft: false
-          prerelease: true
+            此版本为自动构建的草稿版本，包含未签名的 APK 文件。
+            下载后请手动签名。
+          draft: true  # 关键修改：创建草稿而不是正式发布
+          prerelease: false
           files: |
             app/build/outputs/apk/release/*.apk
         env:
