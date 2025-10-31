@@ -50,9 +50,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build Release with Gradle
+      - name: Build  with Gradle
         run: |
-          ./gradlew assembleRelease
+          ./gradlew assembleDebug
 
       - name: Get version info
         id: version
