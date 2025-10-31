@@ -20,24 +20,24 @@ import java.io.IOException
 class MyPostsViewModel : ViewModel() {
     private val _posts = MutableStateFlow(emptyList<KtorClient.Post>())
     val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow()
-    
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    
+
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
-    
+
     private var currentPage = 1
     private val _totalPages = MutableStateFlow(1)
     val totalPages: StateFlow<Int> = _totalPages.asStateFlow()
     // 添加下拉刷新状态
     private val _isRefreshing = MutableStateFlow(false)
     private var userId: Long = -1L
-    
+
     // 添加状态跟踪
     private var _isInitialized = false
     private var _currentUserId: Long = -1L
-    
+
     fun setUserId(userId: Long) {
         // 只有当用户ID真正改变时才重置状态
         if (this._currentUserId != userId) {
@@ -48,14 +48,14 @@ class MyPostsViewModel : ViewModel() {
             loadDataIfNeeded()
         }
     }
-    
+
     private fun resetState() {
         _posts.value = emptyList()
         currentPage = 1
         _totalPages.value = 1
         _errorMessage.value = ""
     }
-    
+
     // 内部方法：只在需要时加载数据
     private fun loadDataIfNeeded() {
         if (!_isInitialized && userId != -1L && !_isLoading.value) {
@@ -63,7 +63,7 @@ class MyPostsViewModel : ViewModel() {
             loadData()
         }
     }
-    
+
     fun jumpToPage(page: Int) {
         if (page in 1.._totalPages.value) {
             _posts.value = emptyList()
@@ -92,18 +92,18 @@ class MyPostsViewModel : ViewModel() {
 
     private fun loadData() {
         if (_isLoading.value || userId == -1L) return
-        
+
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = ""
-            
+
             try {
                 val postsResult = KtorClient.ApiServiceImpl.getPostsList(
                     limit = PAGE_SIZE,
                     page = currentPage,
                     userId = userId
                 )
-                
+
                 if (postsResult.isSuccess) {
                     postsResult.getOrNull()?.let { postsResponse ->
                         if (postsResponse.code == 1) {
@@ -114,8 +114,11 @@ class MyPostsViewModel : ViewModel() {
                                 } else {
                                     _posts.value + data.list
                                 }
-                                
-                                _posts.value = newPosts
+
+                                // 数据去重
+                                val distinctPosts = newPosts.distinctBy { it.postid }
+
+                                _posts.value = distinctPosts
                             }
                         } else {
                             _errorMessage.value = "加载失败: ${postsResponse.msg}"
@@ -131,7 +134,7 @@ class MyPostsViewModel : ViewModel() {
             }
         }
     }
-    
+
     companion object {
         private const val PAGE_SIZE = 10
     }

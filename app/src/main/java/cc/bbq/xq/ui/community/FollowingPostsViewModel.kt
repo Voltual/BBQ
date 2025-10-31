@@ -86,7 +86,10 @@ class FollowingPostsViewModel(private val context: Context) : ViewModel() {
                                 _posts.value + data.list
                             }
 
-                            _posts.value = newPosts
+                            // 数据去重
+                            val distinctPosts = newPosts.distinctBy { it.postid }
+
+                            _posts.value = distinctPosts
                             _errorMessage.value = ""
                         } else {
                             // 修复：正确处理非空字符串

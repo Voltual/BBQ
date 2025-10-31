@@ -22,18 +22,18 @@ import java.io.IOException
 class MyLikesViewModel(private val context: Context) : ViewModel() {
     private val _posts = MutableStateFlow(emptyList<KtorClient.Post>())
     val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow()
-    
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    
+
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
-    
+
     private var currentPage = 1
     private val _totalPages = MutableStateFlow(1)
     private val _isRefreshing = MutableStateFlow(false)
     val totalPages: StateFlow<Int> = _totalPages.asStateFlow()
-    
+
     fun jumpToPage(page: Int) {
         if (page in 1..totalPages.value) {
             _posts.value = emptyList()
@@ -60,11 +60,11 @@ class MyLikesViewModel(private val context: Context) : ViewModel() {
 
     private fun loadLikesRecords() {
         if (_isLoading.value) return
-        
+
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = ""
-            
+
             try {
                 val credentials = AuthManager.getCredentials(context)
                 val token = credentials?.third ?: ""
@@ -74,7 +74,7 @@ class MyLikesViewModel(private val context: Context) : ViewModel() {
                     limit = PAGE_SIZE,
                     page = currentPage
                 )
-                
+
                 if (likesRecordsResult.isSuccess) {
                     likesRecordsResult.getOrNull()?.let { likesRecordsResponse ->
                         if (likesRecordsResponse.code == 1) {
@@ -86,8 +86,11 @@ class MyLikesViewModel(private val context: Context) : ViewModel() {
                             } else {
                                 _posts.value + data.list
                             }
-                            
-                            _posts.value = newPosts
+
+                            // 数据去重
+                            val distinctPosts = newPosts.distinctBy { it.postid }
+
+                            _posts.value = distinctPosts
                             _errorMessage.value = ""
                         } else {
                             // 修复：正确处理非空字符串
