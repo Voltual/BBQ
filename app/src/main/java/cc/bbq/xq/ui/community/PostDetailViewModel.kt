@@ -115,6 +115,12 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
+    //刷新评论方法
+    fun refreshComments(postId: Long) {
+    _currentCommentPage.value = 1
+    _comments.value = emptyList()
+    loadComments(postId, 1)
+}
 
     fun loadComments(postId: Long, page: Int = 1) {
         if (_isLoadingComments.value) return

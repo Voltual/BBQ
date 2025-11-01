@@ -249,6 +249,14 @@ fun PostDetailScreen(
                                                     showShareDialog = true
                                                 }
                                             )
+                                            // 添加“刷新评论”菜单项
+                                    DropdownMenuItem(
+                                        text = { Text("刷新评论") },
+                                        onClick = {
+                                            showMoreOptions = false
+                                            viewModel.refreshComments(postId)
+                                        }
+                                    )
                                             DropdownMenuItem(
                                                 text = { Text("打赏") },
                                                 onClick = {
@@ -467,6 +475,8 @@ fun CommentDialog(
     var imageUrl by remember { mutableStateOf<String?>(null) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var showProgressDialog by remember { mutableStateOf(false) }
+    // 新增：发送状态
+    var isSubmitting by remember { mutableStateOf(false) }
     var progressMessage by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
@@ -652,11 +662,15 @@ fun CommentDialog(
 
                     Button(
                         onClick = {
+                            // 提交前设置发送状态为 true
+                            isSubmitting = true
                             onSubmit(commentText, if (includeImage) imageUrl else null)
-                    },
-                    enabled = commentText.isNotEmpty()
-                ) {
-                    Text("提交")
+                        },
+                        // 根据发送状态禁用按钮
+                        enabled = commentText.isNotEmpty() && !isSubmitting
+                    ) {
+                        // 根据发送状态显示不同的文本
+                        Text(if (isSubmitting) "发送中..." else "提交")
                 }
             }
         }
@@ -674,6 +688,15 @@ fun CommentDialog(
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    // 监听 ViewModel 的 errorMessage，发送失败后重置发送状态
+    val viewModel: PostDetailViewModel = viewModel()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    LaunchedEffect(errorMessage) {
+        if (errorMessage.isNotEmpty()) {
+            isSubmitting = false
+        }
     }
 }
 
