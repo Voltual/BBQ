@@ -21,6 +21,9 @@ import cc.bbq.xq.AuthManager
 import cc.bbq.xq.util.ApkInfo
 import cc.bbq.xq.util.ApkParser
 import kotlinx.coroutines.Dispatchers
+import io.ktor.utils.io.core.Input
+import io.ktor.utils.io.core.readBytes
+import java.io.FileInputStream
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.joinAll
@@ -326,10 +329,10 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             url = "api.php",
             formData = formData {
                 // 使用 InputProvider 包装 file.inputStream() 实现流式传输
-                append("file", InputProvider { file.inputStream() }, Headers.build {
-    append(HttpHeaders.ContentType, mediaType)
-    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-})
+                append("file", Input.fromFile(file), Headers.build {
+                    append(HttpHeaders.ContentType, mediaType)
+                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                })
             }
         )
 
@@ -367,11 +370,10 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             url = "upload",
             formData = formData {
                 append("Api", "小趣API")
-                // 使用 InputProvider 包装 file.inputStream() 实现流式传输
-                append("file", InputProvider { file.inputStream() }, Headers.build {
-    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
-    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-})
+                append("file", Input.fromFile(file), Headers.build {
+                    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                })
             }
         )
 
