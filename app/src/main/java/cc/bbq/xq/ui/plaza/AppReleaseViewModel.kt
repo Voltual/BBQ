@@ -30,6 +30,8 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.streams.readChannel
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import io.ktor.client.request.forms.*
@@ -328,7 +330,7 @@ private suspend fun uploadToKeyun(file: File, mediaType: String = "application/o
             url = "api.php",
             formData = formData {
                 val stream = file.inputStream()
-                append("file", ByteReadChannel(stream.asInput()), Headers.build {
+                append("file", stream.readChannel(), Headers.build {
                     append(HttpHeaders.ContentType, mediaType)
                     append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
                 })
@@ -368,7 +370,7 @@ private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
             formData = formData {
                 val stream = file.inputStream()
                 append("Api", "小趣API")
-                append("file", ByteReadChannel(stream.asInput()), Headers.build {
+                append("file", stream.readChannel(), Headers.build {
                     append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
                     append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
                 })
