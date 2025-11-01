@@ -277,6 +277,7 @@ val httpClient = HttpClient(OkHttp) {
         val fanscount: String,
         val postcount: String,
         val likecount: String,
+        val exp: Int,
         val create_time: String = "",
         val signlasttime: String = "",
         val series_days: Int = 0
