@@ -369,30 +369,49 @@ private suspend fun uploadToKeyun(
                         val footerBytes = footer.toByteArray()
                         val channel = fis.toByteReadChannel()
 
-                        return object : ByteReadChannel {
+                        return object : ByteReadChannel(true) {
                             var headerSent = false
                             var footerSent = false
-                            
-                            override fun readAvailable(dst: ByteArray, offset: Int, length: Int): Int {
+
+                            override suspend fun readAvailable(dst: ChunkBuffer): Int {
                                 if (!headerSent) {
-                                    System.arraycopy(headerBytes, 0, dst, offset, headerBytes.size)
+                                    val bytesToCopy = minOf(dst.remaining, headerBytes.size)
+                                    dst.writeFully(headerBytes, 0, bytesToCopy)
                                     headerSent = true
-                                    return headerBytes.size
-                                }
-                                
-                                val bytesRead = channel.readAvailable(dst, offset, length)
-                                if (bytesRead > 0) {
-                                    return bytesRead
+                                    return bytesToCopy
                                 }
 
-                                if (!footerSent) {
-                                    System.arraycopy(footerBytes, 0, dst, offset, footerBytes.size)
+                                if (channel.isClosedForRead && !footerSent) {
+                                   val bytesToCopy = minOf(dst.remaining, footerBytes.size)
+                                    dst.writeFully(footerBytes, 0, bytesToCopy)
                                     footerSent = true
-                                    return footerBytes.size
+                                    return bytesToCopy
                                 }
-                                return -1
+
+                                if(footerSent) return -1
+
+                                return try {
+                                    val buffer = ByteArray(dst.remaining)
+                                    val bytesRead = fis.read(buffer)
+                                    if (bytesRead == -1) {
+                                        val bytesToCopy = minOf(dst.remaining, footerBytes.size)
+                                        dst.writeFully(footerBytes, 0, bytesToCopy)
+                                        footerSent = true
+                                        return bytesToCopy
+                                    }
+                                    dst.writeFully(buffer, 0, bytesRead)
+                                    bytesRead
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    -1
+                                }
                             }
 
+                            override fun cancel(cause: Throwable?): Boolean {
+                                fis.close()
+                                return channel.cancel(cause)
+                            }
+                            
                             override fun close() {
                                 super.close()
                                 fis.close()
@@ -434,7 +453,7 @@ private suspend fun uploadToKeyun(
         file: File,
         onSuccess: (String) -> Unit
     ) {
-        try {
+       try {
             val response = KtorClient.wanyueyunUploadHttpClient.post("upload") {
                 val boundary = "===" + System.currentTimeMillis().toString() + "==="
                 val partName = "file"
@@ -465,34 +484,54 @@ private suspend fun uploadToKeyun(
                         val footerBytes = footer.toByteArray()
                         val channel = fis.toByteReadChannel()
 
-                        return object : ByteReadChannel {
+                        return object : ByteReadChannel(true) {
                             var headerSent = false
                             var apiHeaderSent = false  // Api 参数的 Header 是否发送的标志
                             var footerSent = false
-                            
-                            override fun readAvailable(dst: ByteArray, offset: Int, length: Int): Int {
+
+                            override suspend fun readAvailable(dst: ChunkBuffer): Int {
                                 if (!headerSent) {
-                                    System.arraycopy(headerBytes, 0, dst, offset, headerBytes.size)
+                                    val bytesToCopy = minOf(dst.remaining, headerBytes.size)
+                                    dst.writeFully(headerBytes, 0, bytesToCopy)
                                     headerSent = true
-                                    return headerBytes.size
+                                    return bytesToCopy
                                 }
                                 if (!apiHeaderSent) {  // 发送 Api 参数的 Header
-                                    System.arraycopy(apiHeaderBytes, 0, dst, offset, apiHeaderBytes.size)
+                                    val bytesToCopy = minOf(dst.remaining, apiHeaderBytes.size)
+                                    dst.writeFully(apiHeaderBytes, 0, bytesToCopy)
                                     apiHeaderSent = true
-                                    return apiHeaderBytes.size
-                                }
-                                
-                                val bytesRead = channel.readAvailable(dst, offset, length)
-                                if (bytesRead > 0) {
-                                    return bytesRead
+                                    return bytesToCopy
                                 }
 
-                                if (!footerSent) {
-                                    System.arraycopy(footerBytes, 0, dst, offset, footerBytes.size)
+                                if (channel.isClosedForRead && !footerSent) {
+                                   val bytesToCopy = minOf(dst.remaining, footerBytes.size)
+                                    dst.writeFully(footerBytes, 0, bytesToCopy)
                                     footerSent = true
-                                    return footerBytes.size
+                                    return bytesToCopy
                                 }
-                                return -1
+
+                                if(footerSent) return -1
+
+                                return try {
+                                    val buffer = ByteArray(dst.remaining)
+                                    val bytesRead = fis.read(buffer)
+                                    if (bytesRead == -1) {
+                                        val bytesToCopy = minOf(dst.remaining, footerBytes.size)
+                                        dst.writeFully(footerBytes, 0, bytesToCopy)
+                                        footerSent = true
+                                        return bytesToCopy
+                                    }
+                                    dst.writeFully(buffer, 0, bytesRead)
+                                    bytesRead
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    -1
+                                }
+                            }
+
+                            override fun cancel(cause: Throwable?): Boolean {
+                                fis.close()
+                                return channel.cancel(cause)
                             }
 
                             override fun close() {
@@ -531,8 +570,6 @@ private suspend fun uploadToKeyun(
             file.delete()
         }
     }
-
-
 
     fun clearProcessFeedback() {
         _processFeedback.value = null
