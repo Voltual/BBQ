@@ -372,45 +372,6 @@ private suspend fun uploadToKeyun(file: File, mediaType: String = "application/o
 }
 
 @OptIn(InternalAPI::class)
-private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
-    try {
-        val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
-            url = "api.php",
-            formData = formData {
-                append("file", createStreamInputProvider(file), Headers.build {
-                    append(HttpHeaders.ContentType, mediaType)
-                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                })
-            }
-        )
-
-        if (response.status.isSuccess()) {
-            val responseBody: KtorClient.UploadResponse = response.body()
-            if ((responseBody.code == 1 || responseBody.exists == 1) && !responseBody.downurl.isNullOrBlank()) {
-                withContext(Dispatchers.Main) {
-                    _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
-                    onSuccess(responseBody.downurl)
-                }
-            } else {
-                withContext(Dispatchers.Main){
-                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${responseBody.msg}"))
-                }
-            }
-        } else {
-            withContext(Dispatchers.Main){
-                _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 网络错误 ${response.status}"))
-            }
-        }
-    } catch (e: Exception) {
-        withContext(Dispatchers.Main){
-            _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${e.message}"))
-        }
-    } finally {
-        file.delete()
-    }
-}
-
-@OptIn(InternalAPI::class)
 private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
     try {
         val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
