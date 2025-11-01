@@ -92,10 +92,6 @@ fun AppReleaseScreen(
     }
     
     val isUpdateMode by viewModel.isUpdateMode
-    
-    val navigateToImagePreview: (String) -> Unit = { url ->
-        navController.navigate(ImagePreview(url).createRoute())
-    }
 
     Box(modifier = modifier.fillMaxSize()) {
         val isAnyTaskRunning = viewModel.isApkUploading.value || viewModel.isIconUploading.value || viewModel.isIntroImagesUploading.value || viewModel.isReleasing.value
