@@ -11,6 +11,7 @@ package cc.bbq.xq.ui.community
 import android.app.Activity
 import android.net.Uri
 import android.os.Build
+import cc.bbq.xq.data.DeviceNameDataStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.NavController
