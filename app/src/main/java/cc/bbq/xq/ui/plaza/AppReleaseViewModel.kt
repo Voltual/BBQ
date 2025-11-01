@@ -387,7 +387,7 @@ private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
                 append("Api", "小趣API")
                 // 使用 InputProvider 替代 Input
                 append("file", createInputFromFile(file), Headers.build {
-    append(HttpHeaders.ContentType, mediaType)
+    append(HttpHeaders.ContentType)
     append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
 })
             }
