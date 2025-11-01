@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import io.ktor.utils.io.core.Input
 import io.ktor.utils.io.core.readBytes
 import java.io.FileInputStream
+import io.ktor.util.InternalAPI
 import io.ktor.utils.io.streams.asInput
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -324,6 +325,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+@OptIn(InternalAPI::class)
     private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
     try {
         val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
@@ -363,6 +365,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     }
 }
 
+@OptIn(InternalAPI::class)
 private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
     try {
         val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
