@@ -11,46 +11,42 @@ package cc.bbq.xq.ui.plaza
 import android.app.Application
 import android.content.Context
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
-import cc.bbq.xq.KtorClient
 import androidx.lifecycle.viewModelScope
+import cc.bbq.xq.AppCategory
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.util.ApkInfo
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.util.ApkParser
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
-import io.ktor.client.request.forms.*
-import io.ktor.http.*
-import io.ktor.utils.io.*
-import io.ktor.client.call.*
-import io.ktor.utils.io.*
-import io.ktor.utils.io.jvm.javaio.*
-import java.io.File
-import java.nio.channels.FileChannel
-import java.nio.file.StandardOpenOption
-import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
-import io.ktor.http.*
-import io.ktor.utils.io.*
+import java.io.FileInputStream
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.client.statement.body
+import io.ktor.http.isSuccess
+import io.ktor.http.content.OutgoingContent
+import io.ktor.http.content.ByteArrayContent
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.jvm.javaio.toByteReadChannel
-import kotlinx.coroutines.Dispatchers
-import java.io.File
-import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
+import java.nio.channels.FileChannel
+import io.ktor.client.plugins.*
 
 fun File.readChannel(): ByteReadChannel {
-    return FileChannel.open(this.toPath(), StandardOpenOption.READ).toByteReadChannel(context = Dispatchers.IO)
+    val inputStream = FileInputStream(this)
+    return inputStream.toByteReadChannel(context = Dispatchers.IO)
 }
 
 enum class ApkUploadService(val displayName: String) {
@@ -342,16 +338,34 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
     try {
         val response = KtorClient.uploadHttpClient.post("api.php") {
-            val byteReadChannel = file.readChannel()
             setBody(
-                MultiPartFormDataContent(
-                    formData {
-                        append("file", byteReadChannel, Headers.build {
+                object : OutgoingContent.ByteArrayContent() {
+                    override val contentType = ContentType.MultiPart.FormData
+
+                    override suspend fun prepareContent(): ByteArray {
+                        val boundary = generateBoundary()
+                        val partHeaders = Headers.build {
                             append(HttpHeaders.ContentType, mediaType)
                             append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                        })
+                        }.flattenEntries().joinToString("\r\n") { "${it.first}: ${it.second}" }
+
+                        val body = buildString {
+                            append("--$boundary\r\n")
+                            append("$partHeaders\r\n\r\n")
+
+                            val inputStream = FileInputStream(file)
+                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                            var bytesRead: Int
+                            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                                append(String(buffer, 0, bytesRead)) // 将读取的数据追加到字符串
+                            }
+                            inputStream.close()
+
+                            append("\r\n--$boundary--\r\n")
+                        }.toByteArray()
+                        return body
                     }
-                )
+                }
             )
         }
 
@@ -384,17 +398,36 @@ private suspend fun uploadToKeyun(file: File, mediaType: String = "application/o
 private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
     try {
         val response = KtorClient.wanyueyunUploadHttpClient.post("upload") {
-            val byteReadChannel = file.readChannel()
             setBody(
-                MultiPartFormDataContent(
-                    formData {
-                        append("Api", "小趣API")
-                        append("file", byteReadChannel, Headers.build {
+                object : OutgoingContent.ByteArrayContent() {
+                    override val contentType = ContentType.MultiPart.FormData
+
+                    override suspend fun prepareContent(): ByteArray {
+                        val boundary = generateBoundary()
+                        val partHeaders = Headers.build {
                             append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
                             append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                        })
+                            // 添加 "Api=小趣API" 参数
+                            append("Api", "小趣API")
+
+                        }.flattenEntries().joinToString("\r\n") { "${it.first}: ${it.second}" }
+
+                        val body = buildString {
+                            append("--$boundary\r\n")
+                            append("$partHeaders\r\n\r\n")
+                            val inputStream = FileInputStream(file)
+                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                            var bytesRead: Int
+                            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                                append(String(buffer, 0, bytesRead)) // 将读取的数据追加到字符串
+                            }
+                            inputStream.close()
+
+                            append("\r\n--$boundary--\r\n")
+                        }.toByteArray()
+                        return body
                     }
-                )
+                }
             )
         }
 
@@ -422,6 +455,9 @@ private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
     } finally {
         file.delete()
     }
+}
+private fun generateBoundary(): String {
+    return "===" + System.currentTimeMillis().toString() + "==="
 }
 
     fun clearProcessFeedback() {
