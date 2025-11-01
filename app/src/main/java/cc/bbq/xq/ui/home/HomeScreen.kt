@@ -457,7 +457,7 @@ private fun FunctionCardSection(
 
             FunctionItem(
                 icon = R.drawable.ic_menu_settings,
-                label = "设置",
+                label = "主题设置",
                 onClick = onSettingsClick
             )
 
