@@ -11,43 +11,27 @@ package cc.bbq.xq.ui.plaza
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.*
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import cc.bbq.xq.AppCategory
-import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
+import cc.bbq.xq.KtorClient.AppCategory
+import cc.bbq.xq.AuthManager
 import cc.bbq.xq.util.ApkParser
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import java.io.File
 import java.io.FileInputStream
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.Headers
-import io.ktor.http.HttpHeaders
-import io.ktor.client.statement.body
-import io.ktor.http.isSuccess
-import io.ktor.http.content.OutgoingContent
-import io.ktor.http.content.ByteArrayContent
-import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.jvm.javaio.toByteReadChannel
-import java.nio.file.StandardOpenOption
-import java.nio.channels.FileChannel
-import io.ktor.client.plugins.*
-
-fun File.readChannel(): ByteReadChannel {
-    val inputStream = FileInputStream(this)
-    return inputStream.toByteReadChannel(context = Dispatchers.IO)
-}
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+import io.ktor.http.content.*
+import io.ktor.utils.io.*
+import io.ktor.utils.io.jvm.javaio.*
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 enum class ApkUploadService(val displayName: String) {
     KEYUN("氪云"),
@@ -335,127 +319,91 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     // 修改uploadToKeyun 和 uploadToWanyueyun 方法为流式传输
 
-private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
-    try {
-        val response = KtorClient.uploadHttpClient.post("api.php") {
-            setBody(
-                object : OutgoingContent.ByteArrayContent() {
-                    override val contentType = ContentType.MultiPart.FormData
-
-                    override suspend fun prepareContent(): ByteArray {
-                        val boundary = generateBoundary()
-                        val partHeaders = Headers.build {
-                            append(HttpHeaders.ContentType, mediaType)
-                            append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                        }.flattenEntries().joinToString("\r\n") { "${it.first}: ${it.second}" }
-
-                        val body = buildString {
-                            append("--$boundary\r\n")
-                            append("$partHeaders\r\n\r\n")
-
-                            val inputStream = FileInputStream(file)
-                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                            var bytesRead: Int
-                            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                                append(String(buffer, 0, bytesRead)) // 将读取的数据追加到字符串
-                            }
-                            inputStream.close()
-
-                            append("\r\n--$boundary--\r\n")
-                        }.toByteArray()
-                        return body
-                    }
+private suspend fun uploadToKeyun(
+        file: File, 
+        mediaType: String = "application/octet-stream", 
+        contextMessage: String = "文件", 
+        onSuccess: (String) -> Unit
+    ) {
+        try {
+            val byteReadChannel = FileInputStream(file).toByteReadChannel()
+            
+            val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
+                url = "api.php",
+                formData = formData {
+                    append("file", byteReadChannel, Headers.build {
+                        append(HttpHeaders.ContentType, mediaType)
+                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                    })
                 }
             )
-        }
 
-        if (response.status.isSuccess()) {
-            val responseBody: KtorClient.UploadResponse = response.body()
-            if ((responseBody.code == 1 || responseBody.exists == 1) && !responseBody.downurl.isNullOrBlank()) {
-                withContext(Dispatchers.Main) {
-                    _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
-                    onSuccess(responseBody.downurl)
-                }
-            } else {
-                withContext(Dispatchers.Main){
-                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${responseBody.msg}"))
-                }
-            }
-        } else {
-            withContext(Dispatchers.Main){
-                _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 网络错误 ${response.status}"))
-            }
-        }
-    } catch (e: Exception) {
-        withContext(Dispatchers.Main){
-            _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${e.message}"))
-        }
-    } finally {
-        file.delete()
-    }
-}
-
-private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
-    try {
-        val response = KtorClient.wanyueyunUploadHttpClient.post("upload") {
-            setBody(
-                object : OutgoingContent.ByteArrayContent() {
-                    override val contentType = ContentType.MultiPart.FormData
-
-                    override suspend fun prepareContent(): ByteArray {
-                        val boundary = generateBoundary()
-                        val partHeaders = Headers.build {
-                            append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
-                            append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                            // 添加 "Api=小趣API" 参数
-                            append("Api", "小趣API")
-
-                        }.flattenEntries().joinToString("\r\n") { "${it.first}: ${it.second}" }
-
-                        val body = buildString {
-                            append("--$boundary\r\n")
-                            append("$partHeaders\r\n\r\n")
-                            val inputStream = FileInputStream(file)
-                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                            var bytesRead: Int
-                            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                                append(String(buffer, 0, bytesRead)) // 将读取的数据追加到字符串
-                            }
-                            inputStream.close()
-
-                            append("\r\n--$boundary--\r\n")
-                        }.toByteArray()
-                        return body
+            if (response.status.isSuccess()) {
+                val responseBody = response.body<KtorClient.UploadResponse>()
+                if ((responseBody.code == 1 || responseBody.exists == 1) && !responseBody.downurl.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) {
+                        _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
+                        onSuccess(responseBody.downurl)
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${responseBody.msg}"))
                     }
                 }
-            )
-        }
-
-        if (response.status.isSuccess()) {
-            val responseBody: KtorClient.WanyueyunUploadResponse = response.body()
-            if (responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
+            } else {
                 withContext(Dispatchers.Main) {
-                    _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
-                    onSuccess(responseBody.data)
+                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 网络错误 ${response.status}"))
+                }
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${e.message}"))
+            }
+        } finally {
+            file.delete()
+        }
+    }
+
+    private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
+        try {
+            val byteReadChannel = FileInputStream(file).toByteReadChannel()
+            
+            val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
+                url = "upload",
+                formData = formData {
+                    append("Api", "小趣API")
+                    append("file", byteReadChannel, Headers.build {
+                        append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                    })
+                }
+            )
+
+            if (response.status.isSuccess()) {
+                val responseBody = response.body<KtorClient.WanyueyunUploadResponse>()
+                if (responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) {
+                        _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
+                        onSuccess(responseBody.data)
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${responseBody.msg}"))
+                    }
                 }
             } else {
-                withContext(Dispatchers.Main){
-                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${responseBody.msg}"))
+                withContext(Dispatchers.Main) {
+                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): 网络错误 ${response.status}"))
                 }
             }
-        } else {
-            withContext(Dispatchers.Main){
-                _processFeedback.value = Result.failure(Throwable("APK (挽悦云): 网络错误 ${response.status}"))
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${e.message}"))
             }
+        } finally {
+            file.delete()
         }
-    } catch (e: Exception) {
-        withContext(Dispatchers.Main){
-            _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${e.message}"))
-        }
-    } finally {
-        file.delete()
     }
-}
 private fun generateBoundary(): String {
     return "===" + System.currentTimeMillis().toString() + "==="
 }
