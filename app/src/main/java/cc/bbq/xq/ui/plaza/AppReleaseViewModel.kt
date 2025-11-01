@@ -12,6 +12,8 @@ import android.app.Application
 import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.streams.asInput
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import cc.bbq.xq.KtorClient
@@ -318,13 +320,15 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
+ 
 
-    private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
+private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
     try {
         val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
             url = "api.php",
             formData = formData {
-                append("file", file.inputStream().asInput(), Headers.build {
+                val stream = file.inputStream()
+                append("file", ByteReadChannel(stream.asInput()), Headers.build {
                     append(HttpHeaders.ContentType, mediaType)
                     append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
                 })
@@ -362,8 +366,9 @@ private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
         val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
             url = "upload",
             formData = formData {
+                val stream = file.inputStream()
                 append("Api", "小趣API")
-                append("file", file.inputStream().asInput(), Headers.build {
+                append("file", ByteReadChannel(stream.asInput()), Headers.build {
                     append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
                     append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
                 })
