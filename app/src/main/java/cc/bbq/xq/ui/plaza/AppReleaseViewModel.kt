@@ -349,16 +349,59 @@ private suspend fun uploadToKeyun(
     ) {
         try {
             val response = KtorClient.uploadHttpClient.post("api.php") {
-                setBody(
-                    MultiPartFormDataContent(
-                        formData {
-                            append("file", FileChannelProvider(file), Headers.build {
-                                append(HttpHeaders.ContentType, mediaType)
-                                append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                            })
+                val boundary = "===" + System.currentTimeMillis().toString() + "==="
+                val partName = "file"
+                val filename = file.name
+
+                val body = object : OutgoingContent.ReadChannelContent() {
+                    override val contentType = ContentType.MultiPart.FormData.withParameter("boundary", boundary)
+                    override fun readFrom(): ByteReadChannel {
+                        val header = buildString {
+                            append("--$boundary\r\n")
+                            append("Content-Disposition: form-data; name=\"$partName\"; filename=\"$filename\"\r\n")
+                            append("Content-Type: $mediaType\r\n")
+                            append("\r\n")
                         }
-                    )
-                )
+                        val footer = "\r\n--$boundary--\r\n"
+
+                        val fis = FileInputStream(file)
+                        val headerBytes = header.toByteArray()
+                        val footerBytes = footer.toByteArray()
+                        val channel = fis.toByteReadChannel()
+
+                        return object : ByteReadChannel {
+                            var headerSent = false
+                            var footerSent = false
+                            
+                            override fun readAvailable(dst: ByteArray, offset: Int, length: Int): Int {
+                                if (!headerSent) {
+                                    System.arraycopy(headerBytes, 0, dst, offset, headerBytes.size)
+                                    headerSent = true
+                                    return headerBytes.size
+                                }
+                                
+                                val bytesRead = channel.readAvailable(dst, offset, length)
+                                if (bytesRead > 0) {
+                                    return bytesRead
+                                }
+
+                                if (!footerSent) {
+                                    System.arraycopy(footerBytes, 0, dst, offset, footerBytes.size)
+                                    footerSent = true
+                                    return footerBytes.size
+                                }
+                                return -1
+                            }
+
+                            override fun close() {
+                                super.close()
+                                fis.close()
+                                channel.cancel(null)
+                            }
+                        }
+                    }
+                }
+                setBody(body)
             }
 
             if (response.status.isSuccess()) {
@@ -387,20 +430,80 @@ private suspend fun uploadToKeyun(
         }
     }
 
-    private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
+    private suspend fun uploadToWanyueyun(
+        file: File,
+        onSuccess: (String) -> Unit
+    ) {
         try {
             val response = KtorClient.wanyueyunUploadHttpClient.post("upload") {
-                setBody(
-                    MultiPartFormDataContent(
-                        formData {
-                            append("Api", "小趣API")
-                            append("file", FileChannelProvider(file), Headers.build {
-                                append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
-                                append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                            })
+                val boundary = "===" + System.currentTimeMillis().toString() + "==="
+                val partName = "file"
+                val filename = file.name
+                val apiName = "小趣API" // 添加 Api 参数
+
+                val body = object : OutgoingContent.ReadChannelContent() {
+                    override val contentType = ContentType.MultiPart.FormData.withParameter("boundary", boundary)
+                    override fun readFrom(): ByteReadChannel {
+                        val header = buildString {
+                            append("--$boundary\r\n")
+                            append("Content-Disposition: form-data; name=\"$partName\"; filename=\"$filename\"\r\n")
+                            append("Content-Type: application/vnd.android.package-archive\r\n") // Correct Content-Type
+                            append("\r\n")
                         }
-                    )
-                )
+                        val apiHeader = buildString {  // 添加 Api 参数的 Header
+                            append("--$boundary\r\n")
+                            append("Content-Disposition: form-data; name=\"Api\"\r\n")
+                            append("\r\n")
+                            append(apiName)  // Api 参数的值
+                            append("\r\n")
+                        }
+                        val footer = "\r\n--$boundary--\r\n"
+
+                        val fis = FileInputStream(file)
+                        val headerBytes = header.toByteArray()
+                        val apiHeaderBytes = apiHeader.toByteArray()  // Api 参数的 Header 转换为 Byte 数组
+                        val footerBytes = footer.toByteArray()
+                        val channel = fis.toByteReadChannel()
+
+                        return object : ByteReadChannel {
+                            var headerSent = false
+                            var apiHeaderSent = false  // Api 参数的 Header 是否发送的标志
+                            var footerSent = false
+                            
+                            override fun readAvailable(dst: ByteArray, offset: Int, length: Int): Int {
+                                if (!headerSent) {
+                                    System.arraycopy(headerBytes, 0, dst, offset, headerBytes.size)
+                                    headerSent = true
+                                    return headerBytes.size
+                                }
+                                if (!apiHeaderSent) {  // 发送 Api 参数的 Header
+                                    System.arraycopy(apiHeaderBytes, 0, dst, offset, apiHeaderBytes.size)
+                                    apiHeaderSent = true
+                                    return apiHeaderBytes.size
+                                }
+                                
+                                val bytesRead = channel.readAvailable(dst, offset, length)
+                                if (bytesRead > 0) {
+                                    return bytesRead
+                                }
+
+                                if (!footerSent) {
+                                    System.arraycopy(footerBytes, 0, dst, offset, footerBytes.size)
+                                    footerSent = true
+                                    return footerBytes.size
+                                }
+                                return -1
+                            }
+
+                            override fun close() {
+                                super.close()
+                                fis.close()
+                                channel.cancel(null)
+                            }
+                        }
+                    }
+                }
+                setBody(body)
             }
 
             if (response.status.isSuccess()) {
