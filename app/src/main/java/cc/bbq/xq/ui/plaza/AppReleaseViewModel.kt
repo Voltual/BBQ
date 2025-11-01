@@ -327,9 +327,9 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             formData = formData {
                 // 使用 InputProvider 包装 file.inputStream() 实现流式传输
                 append("file", InputProvider { file.inputStream() }, Headers.build {
-                    append(HttpHeaders.ContentType, mediaType)
-                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                })
+    append(HttpHeaders.ContentType, mediaType)
+    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+})
             }
         )
 
@@ -369,9 +369,9 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                 append("Api", "小趣API")
                 // 使用 InputProvider 包装 file.inputStream() 实现流式传输
                 append("file", InputProvider { file.inputStream() }, Headers.build {
-                    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
-                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                })
+    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+})
             }
         )
 
