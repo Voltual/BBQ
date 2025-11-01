@@ -33,6 +33,9 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
+
 enum class ApkUploadService(val displayName: String) {
     KEYUN("氪云"),
     WANYUEYUN("挽悦云")
@@ -320,23 +323,31 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     // 修改uploadToKeyun 和 uploadToWanyueyun 方法为流式传输
 
 private suspend fun uploadToKeyun(
-        file: File, 
-        mediaType: String = "application/octet-stream", 
-        contextMessage: String = "文件", 
+        file: File,
+        mediaType: String = "application/octet-stream",
+        contextMessage: String = "文件",
         onSuccess: (String) -> Unit
     ) {
         try {
-            val byteReadChannel = FileInputStream(file).toByteReadChannel()
-            
-            val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
-                url = "api.php",
-                formData = formData {
-                    append("file", byteReadChannel, Headers.build {
-                        append(HttpHeaders.ContentType, mediaType)
-                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                    })
-                }
-            )
+            val fis = FileInputStream(file)
+            val byteReadChannel = fis.toByteReadChannel()
+
+            val response = KtorClient.uploadHttpClient.post("api.php") {
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append(
+                                "file",
+                                byteReadChannel,
+                                Headers.build {
+                                    append(HttpHeaders.ContentType, mediaType)
+                                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                                }
+                            )
+                        }
+                    )
+                )
+            }
 
             if (response.status.isSuccess()) {
                 val responseBody = response.body<KtorClient.UploadResponse>()
@@ -366,18 +377,26 @@ private suspend fun uploadToKeyun(
 
     private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
         try {
-            val byteReadChannel = FileInputStream(file).toByteReadChannel()
-            
-            val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
-                url = "upload",
-                formData = formData {
-                    append("Api", "小趣API")
-                    append("file", byteReadChannel, Headers.build {
-                        append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
-                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                    })
-                }
-            )
+            val fis = FileInputStream(file)
+            val byteReadChannel = fis.toByteReadChannel()
+
+            val response = KtorClient.wanyueyunUploadHttpClient.post("upload") {
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("Api", "小趣API")
+                            append(
+                                "file",
+                                byteReadChannel,
+                                Headers.build {
+                                    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+                                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                                }
+                            )
+                        }
+                    )
+                )
+            }
 
             if (response.status.isSuccess()) {
                 val responseBody = response.body<KtorClient.WanyueyunUploadResponse>()
@@ -404,8 +423,6 @@ private suspend fun uploadToKeyun(
             file.delete()
         }
     }
-private fun generateBoundary(): String {
-    return "===" + System.currentTimeMillis().toString() + "==="
 }
 
     fun clearProcessFeedback() {
