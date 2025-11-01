@@ -32,9 +32,28 @@ import io.ktor.utils.io.jvm.javaio.*
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
+
+// 自定义 ChannelProvider 实现，避免使用 Ktor 内部 API
+class FileChannelProvider(private val file: File) : OutgoingContent.WriteChannelContent() {
+    override val contentType: ContentType = ContentType.Application.OctetStream
+
+    override suspend fun writeTo(channel: ByteWriteChannel) {
+        val fis = FileInputStream(file)
+        val buffer = ByteArray(8192) // 8KB buffer
+        try {
+            while (true) {
+                val bytesRead = fis.read(buffer)
+                if (bytesRead == -1) break
+                channel.writeFully(buffer, 0, bytesRead)
+            }
+        } finally {
+            fis.close()
+            channel.close()
+        }
+    }
+}
 
 enum class ApkUploadService(val displayName: String) {
     KEYUN("氪云"),
@@ -329,28 +348,21 @@ private suspend fun uploadToKeyun(
         onSuccess: (String) -> Unit
     ) {
         try {
-            val fis = FileInputStream(file)
-            val byteReadChannel = fis.toByteReadChannel()
-
             val response = KtorClient.uploadHttpClient.post("api.php") {
                 setBody(
                     MultiPartFormDataContent(
                         formData {
-                            append(
-                                "file",
-                                byteReadChannel,
-                                Headers.build {
-                                    append(HttpHeaders.ContentType, mediaType)
-                                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                                }
-                            )
+                            append("file", FileChannelProvider(file), Headers.build {
+                                append(HttpHeaders.ContentType, mediaType)
+                                append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                            })
                         }
                     )
                 )
             }
 
             if (response.status.isSuccess()) {
-                val responseBody = response.body<KtorClient.UploadResponse>()
+                val responseBody: KtorClient.UploadResponse = response.body()
                 if ((responseBody.code == 1 || responseBody.exists == 1) && !responseBody.downurl.isNullOrBlank()) {
                     withContext(Dispatchers.Main) {
                         _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
@@ -377,29 +389,22 @@ private suspend fun uploadToKeyun(
 
     private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
         try {
-            val fis = FileInputStream(file)
-            val byteReadChannel = fis.toByteReadChannel()
-
             val response = KtorClient.wanyueyunUploadHttpClient.post("upload") {
                 setBody(
                     MultiPartFormDataContent(
                         formData {
                             append("Api", "小趣API")
-                            append(
-                                "file",
-                                byteReadChannel,
-                                Headers.build {
-                                    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
-                                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                                }
-                            )
+                            append("file", FileChannelProvider(file), Headers.build {
+                                append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+                                append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                            })
                         }
                     )
                 )
             }
 
             if (response.status.isSuccess()) {
-                val responseBody = response.body<KtorClient.WanyueyunUploadResponse>()
+                val responseBody: KtorClient.WanyueyunUploadResponse = response.body()
                 if (responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
                     withContext(Dispatchers.Main) {
                         _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
@@ -423,6 +428,7 @@ private suspend fun uploadToKeyun(
             file.delete()
         }
     }
+
 
 
     fun clearProcessFeedback() {
