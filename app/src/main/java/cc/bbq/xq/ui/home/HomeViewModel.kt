@@ -48,6 +48,7 @@ data class HomeUiState(
     val seriesDays: Int = 0,
     val signStatusMessage: String? = null,
     val createTime: String = "",
+    val exp: Int = 0, // 添加经验值属性
     val lastSignTime: String = "",
     val displayDaysDiff: Int = 0,
     // 添加数据加载状态
@@ -103,6 +104,7 @@ class HomeViewModel : ViewModel() {
                             lastSignTime = userData.signlasttime,
                             displayDaysDiff = daysDiff,
                             isLoading = false,
+                            exp = userData.exp, // 更新经验值
                             dataLoadState = DataLoadState.Loaded
                         )
                     }
