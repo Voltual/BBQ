@@ -290,7 +290,7 @@ private fun SearchHeader(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("机器人日志") }, 
+                        text = { Text("日志") }, 
                         onClick = { 
                             onModeChange(SearchMode.LOGS)
                             showMenu = false 
