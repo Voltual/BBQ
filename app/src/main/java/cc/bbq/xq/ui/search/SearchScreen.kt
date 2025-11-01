@@ -192,21 +192,24 @@ fun SearchScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             }
-            else -> {
-                Box(
-    modifier = Modifier.fillMaxSize(),
-    contentAlignment = Alignment.Center
-) {
-    when {
-        isLoading && searchMode == SearchMode.POSTS -> CircularProgressIndicator()
-        errorMessage != null -> Text(
-            errorMessage!!, 
-            color = MaterialTheme.colorScheme.error
-        )
-        query.isNotBlank() && searchMode != SearchMode.POSTS && !isLoading -> Text("没有找到关于 \"$query\" 的结果")
-        query.isBlank() -> Text("输入关键字开始搜索")
-    }
-}
+else -> {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            when {
+                isLoading && searchMode == SearchMode.POSTS -> CircularProgressIndicator()
+                errorMessage != null -> Text(
+                    errorMessage!!, 
+                    color = MaterialTheme.colorScheme.error
+                )
+                query.isNotBlank() && searchMode != SearchMode.POSTS && !isLoading -> Text("没有找到关于 \"$query\" 的结果")
+                query.isBlank() -> Text("输入关键字开始搜索")
+            }
+        }
 
         // 底部加载指示器（仅帖子模式）
         if (isLoading && searchMode == SearchMode.POSTS && searchResults.isNotEmpty()) {
@@ -520,6 +523,4 @@ private fun SearchHistoryList(
             }
         }
     }
-}
-}
 }
