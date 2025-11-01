@@ -331,9 +331,9 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
             url = "api.php",
             formData = formData {
-                // 使用 asInput() 扩展函数
-                append("file", file.inputStream().asInput(), Headers.build {
-                    append(HttpHeaders.ContentType, mediaType)
+                // 使用 InputProvider 替代 Input
+                append("file", InputProvider(file.length()) { file.inputStream() }, Headers.build {
+                    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
                     append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
                 })
             }
@@ -372,8 +372,8 @@ private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
             url = "upload",
             formData = formData {
                 append("Api", "小趣API")
-                // 使用 asInput() 扩展函数
-                append("file", file.inputStream().asInput(), Headers.build {
+                // 使用 InputProvider 替代 Input
+                append("file", InputProvider(file.length()) { file.inputStream() }, Headers.build {
                     append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
                     append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
                 })
