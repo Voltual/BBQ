@@ -15,7 +15,6 @@ import android.content.Context
 import cc.bbq.xq.KtorClient
 import android.net.Uri
 import android.widget.Toast
-import cc.bbq.xq.ui.animation.MaterialSharedAxis
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -42,6 +41,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.animation.AnimatedVisibility
+import cc.bbq.xq.ui.animation.materialSharedAxisYIn
+import cc.bbq.xq.ui.animation.materialSharedAxisYOut
+import cc.bbq.xq.ui.animation.rememberSlideDistance
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -164,6 +167,8 @@ fun PostDetailScreen(
         viewModel.loadComments(postId)
     }
 
+    val slideDistance = rememberSlideDistance()
+    
     Box(
         modifier = modifier.fillMaxSize()
     ) {
@@ -174,162 +179,163 @@ fun PostDetailScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             state = listState
         ) {
+            // 使用 AnimatedVisibility 包裹帖子内容卡片
             item {
-                // 使用 AnimatedVisibility 包裹 Card
                 AnimatedVisibility(
                     visible = postDetail != null,
-                    enter = materialSharedAxisYIn(forward = true, slideDistance = rememberSlideDistance())
+                    enter = materialSharedAxisYIn(forward = true, slideDistance = slideDistance),
+                    exit = materialSharedAxisYOut(forward = true, slideDistance = slideDistance)
                 ) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
+                    postDetail?.let { detail ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(bottom = 16.dp)
+                            // 卡片内容保持不变
+                            Column(
+                                modifier = Modifier.padding(16.dp)
                             ) {
-                                AsyncImage(
-                                    model = postDetail?.usertx ?: "",
-                                    contentDescription = "头像",
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(CircleShape)
-                                        .clickable {
-                                            postDetail?.userid?.let { userId ->
-                                                navController.navigate(UserDetail(userId).createRoute())
-                                            }
-                                        },
-                                    contentScale = ContentScale.Crop
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = postDetail?.nickname ?: "加载中...",
-                                        fontWeight = FontWeight.Bold
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                ) {
+                                    AsyncImage(
+                                        model = detail.usertx,
+                                        contentDescription = "头像",
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clip(CircleShape)
+                                            .clickable {
+                                                detail.userid.let { userId ->
+                                                    navController.navigate(UserDetail(userId).createRoute())
+                                                }
+                                            },
+                                        contentScale = ContentScale.Crop
                                     )
-                                    Text(
-                                        text = "${postDetail?.ip_address ?: ""} · ${postDetail?.create_time_ago ?: ""}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                Spacer(Modifier.weight(1f))
-                                Box {
-                                    IconButton(
-                                        onClick = { showMoreOptions = true }
-                                    ) {
-                                        Icon(Icons.Default.MoreVert, "更多")
-                                    }
-
-                                    DropdownMenu(
-                                        expanded = showMoreOptions,
-                                        onDismissRequest = { showMoreOptions = false }
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text("分享") },
-                                            onClick = {
-                                                showMoreOptions = false
-                                                showShareDialog = true
-                                            }
+                                    Spacer(Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            text = detail.nickname,
+                                            fontWeight = FontWeight.Bold
                                         )
-                                        DropdownMenuItem(
-                                            text = { Text("打赏") },
-                                            onClick = {
-                                                showMoreOptions = false
-                                                postDetail?.let {
+                                        Text(
+                                            text = "${detail.ip_address} · ${detail.create_time_ago}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    
+                                    Spacer(Modifier.weight(1f))
+                                    Box {
+                                        IconButton(
+                                            onClick = { showMoreOptions = true }
+                                        ) {
+                                            Icon(Icons.Default.MoreVert, "更多")
+                                        }
+                                        
+                                        DropdownMenu(
+                                            expanded = showMoreOptions,
+                                            onDismissRequest = { showMoreOptions = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("分享") },
+                                                onClick = {
+                                                    showMoreOptions = false
+                                                    showShareDialog = true
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("打赏") },
+                                                onClick = {
+                                                    showMoreOptions = false
                                                     val destination = PaymentForPost(
-                                                        postId = it.id,
-                                                        postTitle = it.title,
-                                                        // 修复：移除不必要的安全调用和 Elvis 运算符
-                                                        previewContent = it.content.take(30),
-                                                        authorName = it.nickname,
-                                                        authorAvatar = it.usertx,
-                                                        postTime = it.create_time_ago
+                                                        postId = detail.id,
+                                                        postTitle = detail.title,
+                                                        previewContent = detail.content.take(30),
+                                                        authorName = detail.nickname,
+                                                        authorAvatar = detail.usertx,
+                                                        postTime = detail.create_time_ago
                                                     )
                                                     navController.navigate(destination.createRoute())
                                                 }
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("删除帖子") },
-                                            onClick = {
-                                                showMoreOptions = false
-                                                viewModel.deletePost()
-                                            }
-                                        )
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("删除帖子") },
+                                                onClick = {
+                                                    showMoreOptions = false
+                                                    viewModel.deletePost()
+                                                }
+                                            )
+                                        }
                                     }
                                 }
-                            }
 
-                            SelectionContainer {
-                                Text(
-                                    text = postDetail?.title ?: "",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(Modifier.height(8.dp))
-
-                            LinkifyText(
-                                text = postDetail?.content?.replace("<br>", "\n") ?: "",
-                                navController = navController
-                            )
-
-                            postDetail?.img_url?.forEach { imageUrl ->
-                                Spacer(Modifier.height(16.dp))
-                                AsyncImage(
-                                    model = imageUrl,
-                                    contentDescription = "帖子图片",
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp)
-                                        .clip(MaterialTheme.shapes.medium)
-                                        .clickable {
-                                            navController.navigate(ImagePreview(imageUrl).createRoute())
-                                        },
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .padding(top = 16.dp)
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "浏览: ${postDetail?.view ?: 0}",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.clickable { viewModel.toggleLike() }
-                                ) {
-                                    Icon(
-                                        imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
-                                        contentDescription = "点赞",
-                                        tint = if (isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(Modifier.width(4.dp))
+                                SelectionContainer {
                                     Text(
-                                        text = "点赞: $likeCount",
+                                        text = detail.title,
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Spacer(Modifier.height(8.dp))
+
+                                LinkifyText(
+                                    text = detail.content.replace("<br>", "\n"),
+                                    navController = navController
+                                )
+
+                                detail.img_url.forEach { imageUrl ->
+                                    Spacer(Modifier.height(16.dp))
+                                    AsyncImage(
+                                        model = imageUrl,
+                                        contentDescription = "帖子图片",
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(200.dp)
+                                            .clip(MaterialTheme.shapes.medium)
+                                            .clickable {
+                                                navController.navigate(ImagePreview(imageUrl).createRoute())
+                                            },
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier
+                                        .padding(top = 16.dp)
+                                        .fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "浏览: ${detail.view}",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.clickable { viewModel.toggleLike() }
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Default.FavoriteBorder,
+                                            contentDescription = "点赞",
+                                            tint = if (isLiked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            text = "点赞: $likeCount",
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+
+                                    Text(
+                                        text = "评论: $commentCount",
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
-
-                                Text(
-                                    text = "评论: $commentCount",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
                             }
                         }
                     }
