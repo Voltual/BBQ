@@ -206,33 +206,7 @@ fun PostCreateScreen(
             onDismissRequest = { showRestoreDraftDialog = false },
             title = { Text("恢复草稿？") },
             text = {
-                Column {
-                    Text("检测到上次未发布的草稿，是否恢复？")
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = autoRestoreDraft,
-                            onCheckedChange = {
-                                autoRestoreDraft = it
-                                coroutineScope.launch {
-                                    postDraftDataStore.setAutoRestoreDraft(it)
-                                }
-                            }
-                        )
-                        Text("自动恢复草稿（不询问）")
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = doNotSaveDraft,
-                            onCheckedChange = {
-                                doNotSaveDraft = it
-                                coroutineScope.launch {
-                                    postDraftDataStore.setDoNotSaveDraft(it)
-                                }
-                            }
-                        )
-                        Text("不存储草稿")
-                    }
-                }
+                Text("是否恢复上次未发布的草稿？")
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -331,9 +305,22 @@ fun PostCreateScreen(
 
         ImageUploadSection(
             uris = uiState.selectedImageUris,
-            // 修复：直接调用，移除不必要的安全调用
             onAddClick = { startImagePicker() },
-            onRemoveClick = { uri -> viewModel.removeImage(uri) }
+            onRemoveClick = { uri -> viewModel.removeImage(uri) },
+            autoRestoreDraft = autoRestoreDraft,
+            onAutoRestoreDraftChange = {
+                coroutineScope.launch {
+                    postDraftDataStore.setAutoRestoreDraft(it)
+                    autoRestoreDraft = it
+                }
+            },
+            doNotSaveDraft = doNotSaveDraft,
+            onDoNotSaveDraftChange = {
+                coroutineScope.launch {
+                    postDraftDataStore.setDoNotSaveDraft(it)
+                    doNotSaveDraft = it
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -412,7 +399,11 @@ fun PostCreateScreen(
 private fun ImageUploadSection(
     uris: List<Uri>,
     onAddClick: () -> Unit,
-    onRemoveClick: (Uri) -> Unit
+    onRemoveClick: (Uri) -> Unit,
+    autoRestoreDraft: Boolean,
+    onAutoRestoreDraftChange: (Boolean) -> Unit,
+    doNotSaveDraft: Boolean,
+    onDoNotSaveDraftChange: (Boolean) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text("图片上传 (最多2张)", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 8.dp))
@@ -440,6 +431,21 @@ private fun ImageUploadSection(
                     }
                 }
             }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = autoRestoreDraft,
+                onCheckedChange = onAutoRestoreDraftChange
+            )
+            Text("自动恢复草稿（不询问）")
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = doNotSaveDraft,
+                onCheckedChange = onDoNotSaveDraftChange
+            )
+            Text("不存储草稿")
         }
     }
 }
