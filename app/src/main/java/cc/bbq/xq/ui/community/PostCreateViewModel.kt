@@ -33,10 +33,12 @@ import io.ktor.utils.io.*
 import io.ktor.http.content.*
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.HttpResponse
+import cc.bbq.xq.data.PostDraftDataStore
 
 class PostCreateViewModel(application: Application) : AndroidViewModel(application) {
 
     private val draftRepository = PostDraftRepository()
+    private val postDraftDataStore = PostDraftDataStore(application)
 
     private val _uiState = MutableStateFlow(PostCreateUiState())
     val uiState: StateFlow<PostCreateUiState> = _uiState.asStateFlow()
@@ -46,6 +48,18 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     val postStatus: StateFlow<PostStatus> = _postStatus.asStateFlow()
 
     init {
+        // 修改：不再自动恢复草稿
+        // observeAndAutoSave() // 移动到 restoreDraft 方法中
+    }
+
+    // --- Event Handlers ---
+    fun onTitleChange(newTitle: String) { _uiState.update { it.copy(title = newTitle) } }
+    fun onContentChange(newContent: String) { _uiState.update { it.copy(content = newContent) } }
+    fun onSubsectionChange(newId: Int) { _uiState.update { it.copy(selectedSubsectionId = newId) } }
+    fun onImageUrlsChange(urls: String) { _uiState.update { it.copy(imageUrls = urls) } }
+
+    // 新增：恢复草稿方法
+    fun restoreDraft() {
         viewModelScope.launch {
             draftRepository.draftFlow.first()?.let { draft ->
                 _uiState.update { it.copy(
@@ -57,15 +71,9 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                     imageUriToUrlMap = draft.imageUris.zip(draft.imageUrls.split(",").filter { s -> s.isNotEmpty() }).toMap()
                 )}
             }
+            observeAndAutoSave() // 只有在恢复草稿后才开始自动保存
         }
-        observeAndAutoSave()
     }
-
-    // --- Event Handlers ---
-    fun onTitleChange(newTitle: String) { _uiState.update { it.copy(title = newTitle) } }
-    fun onContentChange(newContent: String) { _uiState.update { it.copy(content = newContent) } }
-    fun onSubsectionChange(newId: Int) { _uiState.update { it.copy(selectedSubsectionId = newId) } }
-    fun onImageUrlsChange(urls: String) { _uiState.update { it.copy(imageUrls = urls) } }
 
     fun uploadImage(uri: Uri) {
         viewModelScope.launch {
@@ -239,22 +247,26 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     // 修复：添加 FlowPreview 注解
     @OptIn(FlowPreview::class)
     private fun observeAndAutoSave() {
-        _uiState
-            .debounce(1000)
-            .onEach { state ->
-                if (state.title.isNotBlank() || state.content.isNotBlank() || state.selectedImageUris.isNotEmpty()) {
-                    draftRepository.saveDraft(
-                        PostDraftRepository.DraftDto(
-                            title = state.title,
-                            content = state.content,
-                            imageUris = state.selectedImageUris,
-                            imageUrls = state.imageUrls,
-                            subsectionId = state.selectedSubsectionId
+        postDraftDataStore.draftFlow.map { it.doNotSaveDraft }.distinctUntilChanged().onEach { doNotSave ->
+            if (doNotSave) return@onEach // 如果用户选择不保存草稿，则直接返回
+            
+            _uiState
+                .debounce(1000)
+                .onEach { state ->
+                    if (state.title.isNotBlank() || state.content.isNotBlank() || state.selectedImageUris.isNotEmpty()) {
+                        draftRepository.saveDraft(
+                            PostDraftRepository.DraftDto(
+                                title = state.title,
+                                content = state.content,
+                                imageUris = state.selectedImageUris,
+                                imageUrls = state.imageUrls,
+                                subsectionId = state.selectedSubsectionId
+                            )
                         )
-                    )
+                    }
                 }
-            }
-            .launchIn(viewModelScope)
+                .launchIn(viewModelScope)
+        }.launchIn(viewModelScope)
     }
 }
 

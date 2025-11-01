@@ -39,9 +39,11 @@ import androidx.compose.ui.unit.dp
 import cc.bbq.xq.AuthManager
 //import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.data.DeviceNameDataStore
+import cc.bbq.xq.data.PostDraftDataStore
 import coil.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 // 从原 Activity 中提取的常量和数据类
 private const val MODE_CREATE = "create"
@@ -84,17 +86,27 @@ fun PostCreateScreen(
     val isRefundMode = mode == MODE_REFUND
     val uiState by viewModel.uiState.collectAsState()
     val postStatus by viewModel.postStatus.collectAsState()
-    
+
     // 本地 UI 状态
     var bvNumber by rememberSaveable { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var tempDeviceName by rememberSaveable { mutableStateOf("") }
     var manualImageUrls by rememberSaveable { mutableStateOf("") }
     var selectedRefundReason by rememberSaveable { mutableStateOf(REFUND_REASONS.first().name) }
-    
+
+    // 新增：DataStore
     val context = LocalContext.current
     val activity = context as? Activity
     val deviceNameDataStore = remember { DeviceNameDataStore(context) }
+    val postDraftDataStore = remember { PostDraftDataStore(context) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // 新增：是否显示恢复草稿对话框
+    var showRestoreDraftDialog by rememberSaveable { mutableStateOf(false) }
+    // 新增：自动恢复草稿
+    var autoRestoreDraft by rememberSaveable { mutableStateOf(false) }
+    // 新增：不存储草稿
+    var doNotSaveDraft by rememberSaveable { mutableStateOf(false) }
 
     // 处理发帖状态
     LaunchedEffect(postStatus) {
@@ -112,13 +124,25 @@ fun PostCreateScreen(
         }
     }
 
-    // 在 Composable 首次进入时，根据模式初始化标题和设备名
+    // 在 Composable 首次进入时，根据模式初始化标题和设备名, 并判断是否显示恢复草稿弹窗
     LaunchedEffect(Unit) {
         if (isRefundMode) {
             viewModel.onTitleChange("$refundAppName  【应用退币申请】")
         }
         val storedDeviceName = deviceNameDataStore.deviceNameFlow.first()
         tempDeviceName = storedDeviceName
+
+        // 获取 DataStore 中的选项
+        val draft = postDraftDataStore.draftFlow.first()
+        autoRestoreDraft = draft.autoRestoreDraft
+        doNotSaveDraft = draft.doNotSaveDraft
+
+        // 如果有草稿且未设置自动恢复，则显示弹窗
+        if (draft.hasDraft && !autoRestoreDraft) {
+            showRestoreDraftDialog = true
+        } else if (draft.hasDraft && autoRestoreDraft) {
+            viewModel.restoreDraft()
+        }
     }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -134,7 +158,7 @@ fun PostCreateScreen(
             }
         }
     }
-    
+
     val startImagePicker = {
         activity?.let {
             ImagePicker.with(it)
@@ -144,7 +168,7 @@ fun PostCreateScreen(
                 .createIntent { intent -> imagePickerLauncher.launch(intent) }
         }
     }
-    
+
     if (uiState.showProgressDialog) {
         AlertDialog(
             onDismissRequest = { /* 不允许取消 */ },
@@ -175,7 +199,60 @@ fun PostCreateScreen(
             confirmButton = {}
         )
     }
-    
+
+    // 新增：恢复草稿对话框
+    if (showRestoreDraftDialog) {
+        AlertDialog(
+            onDismissRequest = { showRestoreDraftDialog = false },
+            title = { Text("恢复草稿？") },
+            text = {
+                Column {
+                    Text("检测到上次未发布的草稿，是否恢复？")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = autoRestoreDraft,
+                            onCheckedChange = {
+                                autoRestoreDraft = it
+                                coroutineScope.launch {
+                                    postDraftDataStore.setAutoRestoreDraft(it)
+                                }
+                            }
+                        )
+                        Text("自动恢复草稿（不询问）")
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = doNotSaveDraft,
+                            onCheckedChange = {
+                                doNotSaveDraft = it
+                                coroutineScope.launch {
+                                    postDraftDataStore.setDoNotSaveDraft(it)
+                                }
+                            }
+                        )
+                        Text("不存储草稿")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRestoreDraftDialog = false
+                    viewModel.restoreDraft()
+                }) {
+                    Text("恢复")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showRestoreDraftDialog = false
+                    viewModel.clearDraft()
+                }) {
+                    Text("放弃")
+                }
+            }
+        )
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
