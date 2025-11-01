@@ -289,21 +289,24 @@ fun PostDetailScreen(
                                     navController = navController
                                 )
 
-                                detail.img_url.forEach { imageUrl ->
-                                    Spacer(Modifier.height(16.dp))
-                                    AsyncImage(
-                                        model = imageUrl,
-                                        contentDescription = "帖子图片",
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(200.dp)
-                                            .clip(MaterialTheme.shapes.medium)
-                                            .clickable {
-                                                navController.navigate(ImagePreview(imageUrl).createRoute())
-                                            },
-                                        contentScale = ContentScale.Crop
-                                    )
-                                }
+                        // 使用安全调用符 ?. 和 let 函数来处理 img_url 可能为空的情况
+                        postDetail?.img_url?.let { imgUrls ->
+                            imgUrls.forEach { imageUrl ->
+                                Spacer(Modifier.height(16.dp))
+                                AsyncImage(
+                                    model = imageUrl,
+                                    contentDescription = "帖子图片",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                        .clip(MaterialTheme.shapes.medium)
+                                        .clickable {
+                                            navController.navigate(ImagePreview(imageUrl).createRoute())
+                                        },
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
                                 Row(
                                     modifier = Modifier
                                         .padding(top = 16.dp)
