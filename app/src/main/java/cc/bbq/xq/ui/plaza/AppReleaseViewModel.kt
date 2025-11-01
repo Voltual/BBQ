@@ -341,7 +341,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     // 修改uploadToKeyun 和 uploadToWanyueyun 方法为流式传输
 
-private suspend fun uploadToKeyun(
+    private suspend fun uploadToKeyun(
         file: File,
         mediaType: String = "application/octet-stream",
         contextMessage: String = "文件",
@@ -367,57 +367,12 @@ private suspend fun uploadToKeyun(
                         val fis = FileInputStream(file)
                         val headerBytes = header.toByteArray()
                         val footerBytes = footer.toByteArray()
-                        val channel = fis.toByteReadChannel()
 
-                        return object : ByteReadChannel(true) {
-                            var headerSent = false
-                            var footerSent = false
-
-                            override suspend fun readAvailable(dst: ChunkBuffer): Int {
-                                if (!headerSent) {
-                                    val bytesToCopy = minOf(dst.remaining, headerBytes.size)
-                                    dst.writeFully(headerBytes, 0, bytesToCopy)
-                                    headerSent = true
-                                    return bytesToCopy
-                                }
-
-                                if (channel.isClosedForRead && !footerSent) {
-                                   val bytesToCopy = minOf(dst.remaining, footerBytes.size)
-                                    dst.writeFully(footerBytes, 0, bytesToCopy)
-                                    footerSent = true
-                                    return bytesToCopy
-                                }
-
-                                if(footerSent) return -1
-
-                                return try {
-                                    val buffer = ByteArray(dst.remaining)
-                                    val bytesRead = fis.read(buffer)
-                                    if (bytesRead == -1) {
-                                        val bytesToCopy = minOf(dst.remaining, footerBytes.size)
-                                        dst.writeFully(footerBytes, 0, bytesToCopy)
-                                        footerSent = true
-                                        return bytesToCopy
-                                    }
-                                    dst.writeFully(buffer, 0, bytesRead)
-                                    bytesRead
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                    -1
-                                }
-                            }
-
-                            override fun cancel(cause: Throwable?): Boolean {
-                                fis.close()
-                                return channel.cancel(cause)
-                            }
-                            
-                            override fun close() {
-                                super.close()
-                                fis.close()
-                                channel.cancel(null)
-                            }
-                        }
+                        return ByteReadChannel(
+                            headerBytes,
+                            fis.readBytes(),
+                            footerBytes
+                        )
                     }
                 }
                 setBody(body)
@@ -453,7 +408,7 @@ private suspend fun uploadToKeyun(
         file: File,
         onSuccess: (String) -> Unit
     ) {
-       try {
+        try {
             val response = KtorClient.wanyueyunUploadHttpClient.post("upload") {
                 val boundary = "===" + System.currentTimeMillis().toString() + "==="
                 val partName = "file"
@@ -482,64 +437,13 @@ private suspend fun uploadToKeyun(
                         val headerBytes = header.toByteArray()
                         val apiHeaderBytes = apiHeader.toByteArray()  // Api 参数的 Header 转换为 Byte 数组
                         val footerBytes = footer.toByteArray()
-                        val channel = fis.toByteReadChannel()
 
-                        return object : ByteReadChannel(true) {
-                            var headerSent = false
-                            var apiHeaderSent = false  // Api 参数的 Header 是否发送的标志
-                            var footerSent = false
-
-                            override suspend fun readAvailable(dst: ChunkBuffer): Int {
-                                if (!headerSent) {
-                                    val bytesToCopy = minOf(dst.remaining, headerBytes.size)
-                                    dst.writeFully(headerBytes, 0, bytesToCopy)
-                                    headerSent = true
-                                    return bytesToCopy
-                                }
-                                if (!apiHeaderSent) {  // 发送 Api 参数的 Header
-                                    val bytesToCopy = minOf(dst.remaining, apiHeaderBytes.size)
-                                    dst.writeFully(apiHeaderBytes, 0, bytesToCopy)
-                                    apiHeaderSent = true
-                                    return bytesToCopy
-                                }
-
-                                if (channel.isClosedForRead && !footerSent) {
-                                   val bytesToCopy = minOf(dst.remaining, footerBytes.size)
-                                    dst.writeFully(footerBytes, 0, bytesToCopy)
-                                    footerSent = true
-                                    return bytesToCopy
-                                }
-
-                                if(footerSent) return -1
-
-                                return try {
-                                    val buffer = ByteArray(dst.remaining)
-                                    val bytesRead = fis.read(buffer)
-                                    if (bytesRead == -1) {
-                                        val bytesToCopy = minOf(dst.remaining, footerBytes.size)
-                                        dst.writeFully(footerBytes, 0, bytesToCopy)
-                                        footerSent = true
-                                        return bytesToCopy
-                                    }
-                                    dst.writeFully(buffer, 0, bytesRead)
-                                    bytesRead
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                    -1
-                                }
-                            }
-
-                            override fun cancel(cause: Throwable?): Boolean {
-                                fis.close()
-                                return channel.cancel(cause)
-                            }
-
-                            override fun close() {
-                                super.close()
-                                fis.close()
-                                channel.cancel(null)
-                            }
-                        }
+                        return ByteReadChannel(
+                            headerBytes,
+                            apiHeaderBytes,
+                            fis.readBytes(),
+                            footerBytes
+                        )
                     }
                 }
                 setBody(body)
