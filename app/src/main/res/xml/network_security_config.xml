@@ -5,6 +5,7 @@
         <domain includeSubdomains="true">127.0.0.1</domain>  <!-- 本机の圣域 -->
         <domain includeSubdomains="true">localhost</domain>   <!-- 本地の神域 -->
         <domain includeSubdomains="true">10.0.2.2</domain>   <!-- 模拟器の结界 -->
+        <domain includeSubdomains="true">apk.xiaoqu.online</domain>
         <domain includeSubdomains="true">api.xiaoqu.online</domain>
     </domain-config>
     
