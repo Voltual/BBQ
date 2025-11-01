@@ -103,23 +103,26 @@ object ApkParser {
         }
     }
     
-    // ... (uriToTempFile and drawableToTempFile functions remain unchanged) ...
-    private fun uriToTempFile(context: Context, uri: Uri, fileName: String): File? {
-        return try {
-            val inputStream: InputStream = context.contentResolver.openInputStream(uri) ?: return null
-            val file = File(context.cacheDir, fileName)
-            if (file.exists()) {
-                file.delete()
-            }
-            FileOutputStream(file).use { outputStream ->
-                inputStream.use { it.copyTo(outputStream) }
-            }
-            file
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+private fun uriToTempFile(context: Context, uri: Uri, fileName: String): File? {
+    return try {
+        val inputStream: InputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val file = File(context.cacheDir, fileName)
+        if (file.exists()) {
+            file.delete()
         }
+        FileOutputStream(file).use { outputStream ->
+            val buffer = ByteArray(4 * 1024) // 4KB buffer
+            var bytesRead: Int
+            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                outputStream.write(buffer, 0, bytesRead)
+            }
+        }
+        file
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
+}
 
     private fun drawableToTempFile(context: Context, drawable: Drawable?, fileName: String): File? {
         if (drawable == null) return null

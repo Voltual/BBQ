@@ -522,3 +522,4 @@ private fun SearchHistoryList(
     }
 }
 }
+}
