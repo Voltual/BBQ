@@ -20,6 +20,7 @@ import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.util.ApkInfo
 import cc.bbq.xq.util.ApkParser
+import io.ktor.client.request.forms.ChannelProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -328,8 +329,7 @@ private suspend fun uploadToKeyun(file: File, mediaType: String = "application/o
         val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
             url = "api.php",
             formData = formData {
-                val stream = file.inputStream()
-                append("file", stream.readChannel(), Headers.build {
+                append("file", file.name, ChannelProvider { file.inputStream().buffered().use { it.readBytes() } }, Headers.build {
                     append(HttpHeaders.ContentType, mediaType)
                     append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
                 })
@@ -367,9 +367,8 @@ private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
         val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
             url = "upload",
             formData = formData {
-                val stream = file.inputStream()
                 append("Api", "小趣API")
-                append("file", stream.readChannel(), Headers.build {
+                append("file",  file.name, ChannelProvider { file.inputStream().buffered().use { it.readBytes() } }, Headers.build {
                     append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
                     append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
                 })
