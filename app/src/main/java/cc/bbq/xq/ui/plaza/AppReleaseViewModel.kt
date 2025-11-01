@@ -39,11 +39,25 @@ import java.io.File
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
+import io.ktor.utils.io.core.buildPacket
+import io.ktor.utils.io.core.writeFully
 import io.ktor.client.call.*
 
 enum class ApkUploadService(val displayName: String) {
     KEYUN("氪云"),
     WANYUEYUN("挽悦云")
+}
+
+private fun createInputFromFile(file: File): Input {
+    return buildPacket {
+        file.inputStream().use { inputStream ->
+            val buffer = ByteArray(8192)
+            var bytesRead: Int
+            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                writeFully(buffer, 0, bytesRead)
+            }
+        }
+    }
 }
 
 class AppReleaseViewModel(application: Application) : AndroidViewModel(application) {
@@ -331,11 +345,10 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
             url = "api.php",
             formData = formData {
-                // 使用 InputProvider 替代 Input
-                append("file", InputProvider(file.length()) { file.inputStream() }, Headers.build {
-                    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
-                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                })
+                append("file", createInputFromFile(file), Headers.build {
+    append(HttpHeaders.ContentType, mediaType)
+    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+})
             }
         )
 
@@ -373,10 +386,10 @@ private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
             formData = formData {
                 append("Api", "小趣API")
                 // 使用 InputProvider 替代 Input
-                append("file", InputProvider(file.length()) { file.inputStream() }, Headers.build {
-                    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
-                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                })
+                append("file", createInputFromFile(file), Headers.build {
+    append(HttpHeaders.ContentType, mediaType)
+    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+})
             }
         )
 
