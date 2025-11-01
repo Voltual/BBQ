@@ -423,7 +423,7 @@ private fun FunctionCardSection(
                 )
 
                 Text(
-                    text = "账号已使用${state.displayDaysDiff}天",
+                    text = "账号已使用${state.displayDaysDiff}天 经验：${state.exp}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
@@ -601,5 +601,6 @@ data class HomeState(
     // 添加签到相关状态
     val seriesDays: Int = 0,
     val signStatusMessage: String? = null,
+    val exp: Int = 0,
     val displayDaysDiff: Int = 0
 )

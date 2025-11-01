@@ -77,6 +77,7 @@ fun HomeDestination(
                 nickname = uiState.nickname,
                 level = uiState.level,
                 coins = uiState.coins,
+                exp = uiState.exp,
                 userId = uiState.userId,
                 followersCount = uiState.followersCount,
                 fansCount = uiState.fansCount,
