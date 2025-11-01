@@ -37,15 +37,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.AuthManager
-//import cc.bbq.xq.RetrofitClient
-import cc.bbq.xq.data.DeviceNameDataStore
-import cc.bbq.xq.data.PostDraftDataStore
 import coil.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
-// 从原 Activity 中提取的常量和数据类
 private const val MODE_CREATE = "create"
 private const val MODE_REFUND = "refund"
 
@@ -75,7 +70,6 @@ val REFUND_REASONS = listOf(
 fun PostCreateScreen(
     viewModel: PostCreateViewModel,
     onBackClick: () -> Unit,
-    // 修复：移除未使用的 onSubmitClick 参数
     mode: String,
     refundAppName: String,
     refundAppId: Long,
@@ -86,63 +80,60 @@ fun PostCreateScreen(
     val isRefundMode = mode == MODE_REFUND
     val uiState by viewModel.uiState.collectAsState()
     val postStatus by viewModel.postStatus.collectAsState()
-
+    val preferencesState by viewModel.preferencesState.collectAsState()
+    val showRestoreDialog by viewModel.showRestoreDialog.collectAsState()
+    
     // 本地 UI 状态
     var bvNumber by rememberSaveable { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var tempDeviceName by rememberSaveable { mutableStateOf("") }
     var manualImageUrls by rememberSaveable { mutableStateOf("") }
     var selectedRefundReason by rememberSaveable { mutableStateOf(REFUND_REASONS.first().name) }
-
-    // 新增：DataStore
+    
     val context = LocalContext.current
     val activity = context as? Activity
     val deviceNameDataStore = remember { DeviceNameDataStore(context) }
-    val postDraftDataStore = remember { PostDraftDataStore(context) }
-    val coroutineScope = rememberCoroutineScope()
-
-    // 新增：是否显示恢复草稿对话框
-    var showRestoreDraftDialog by rememberSaveable { mutableStateOf(false) }
-    // 新增：自动恢复草稿
-    var autoRestoreDraft by rememberSaveable { mutableStateOf(false) }
-    // 新增：不存储草稿
-    var doNotSaveDraft by rememberSaveable { mutableStateOf(false) }
 
     // 处理发帖状态
     LaunchedEffect(postStatus) {
         when (postStatus) {
             is PostStatus.Success -> {
-                // 发帖成功，关闭界面
                 onBackClick()
                 viewModel.resetPostStatus()
             }
             is PostStatus.Error -> {
-                // 错误已经在 ViewModel 中显示 Toast，这里只需要重置状态
                 viewModel.resetPostStatus()
             }
             else -> {}
         }
     }
 
-    // 在 Composable 首次进入时，根据模式初始化标题和设备名, 并判断是否显示恢复草稿弹窗
+    // 在 Composable 首次进入时，根据模式初始化标题和设备名
     LaunchedEffect(Unit) {
         if (isRefundMode) {
             viewModel.onTitleChange("$refundAppName  【应用退币申请】")
         }
         val storedDeviceName = deviceNameDataStore.deviceNameFlow.first()
         tempDeviceName = storedDeviceName
+    }
 
-        // 获取 DataStore 中的选项
-        val draft = postDraftDataStore.draftFlow.first()
-        autoRestoreDraft = draft.autoRestoreDraft
-        doNotSaveDraft = draft.doNotSaveDraft
-
-        // 如果有草稿且未设置自动恢复，则显示弹窗
-        if (draft.hasDraft && !autoRestoreDraft) {
-            showRestoreDraftDialog = true
-        } else if (draft.hasDraft && autoRestoreDraft) {
-            viewModel.restoreDraft()
-        }
+    // 草稿恢复对话框
+    if (showRestoreDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onRestoreDialogDismiss() },
+            title = { Text("恢复草稿") },
+            text = { Text("检测到未完成的草稿，是否恢复？") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.onRestoreDialogConfirm() }) {
+                    Text("恢复")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.onRestoreDialogDismiss() }) {
+                    Text("取消")
+                }
+            }
+        )
     }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -158,7 +149,7 @@ fun PostCreateScreen(
             }
         }
     }
-
+    
     val startImagePicker = {
         activity?.let {
             ImagePicker.with(it)
@@ -168,7 +159,7 @@ fun PostCreateScreen(
                 .createIntent { intent -> imagePickerLauncher.launch(intent) }
         }
     }
-
+    
     if (uiState.showProgressDialog) {
         AlertDialog(
             onDismissRequest = { /* 不允许取消 */ },
@@ -199,34 +190,7 @@ fun PostCreateScreen(
             confirmButton = {}
         )
     }
-
-    // 新增：恢复草稿对话框
-    if (showRestoreDraftDialog) {
-        AlertDialog(
-            onDismissRequest = { showRestoreDraftDialog = false },
-            title = { Text("恢复草稿？") },
-            text = {
-                Text("是否恢复上次未发布的草稿？")
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    showRestoreDraftDialog = false
-                    viewModel.restoreDraft()
-                }) {
-                    Text("恢复")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showRestoreDraftDialog = false
-                    viewModel.clearDraft()
-                }) {
-                    Text("放弃")
-                }
-            }
-        )
-    }
-
+    
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -244,7 +208,6 @@ fun PostCreateScreen(
             onExpandedChange = { expanded = it }
         ) {
             OutlinedTextField(
-                // 修复：使用新的 menuAnchor 重载方法
                 modifier = Modifier.fillMaxWidth().menuAnchor(),
                 readOnly = true,
                 value = selectedTopicName,
@@ -303,24 +266,20 @@ fun PostCreateScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 新增：草稿偏好设置选项
+        DraftPreferencesSection(
+            autoRestoreDraft = preferencesState.autoRestoreDraft,
+            noStoreDraft = preferencesState.noStoreDraft,
+            onAutoRestoreChange = { viewModel.setAutoRestoreDraft(it) },
+            onNoStoreChange = { viewModel.setNoStoreDraft(it) }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         ImageUploadSection(
             uris = uiState.selectedImageUris,
             onAddClick = { startImagePicker() },
-            onRemoveClick = { uri -> viewModel.removeImage(uri) },
-            autoRestoreDraft = autoRestoreDraft,
-            onAutoRestoreDraftChange = {
-                coroutineScope.launch {
-                    postDraftDataStore.setAutoRestoreDraft(it)
-                    autoRestoreDraft = it
-                }
-            },
-            doNotSaveDraft = doNotSaveDraft,
-            onDoNotSaveDraftChange = {
-                coroutineScope.launch {
-                    postDraftDataStore.setDoNotSaveDraft(it)
-                    doNotSaveDraft = it
-                }
-            }
+            onRemoveClick = { uri -> viewModel.removeImage(uri) }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -371,10 +330,8 @@ fun PostCreateScreen(
                     val manualUrlsList = manualImageUrls.split(",").filter { it.isNotBlank() }
                     val allImageUrls = (uploadedUrlsList + manualUrlsList).distinct().joinToString(",")
 
-                    // 调用 ViewModel 的发帖方法
                     viewModel.createPost(
                         title = uiState.title,
-//                        content = uiState.content,
                         imageUrls = allImageUrls,
                         subsectionId = uiState.selectedSubsectionId,
                         bvNumber = bvNumber,
@@ -395,15 +352,79 @@ fun PostCreateScreen(
     }
 }
 
+// 新增：草稿偏好设置组件
+@Composable
+private fun DraftPreferencesSection(
+    autoRestoreDraft: Boolean,
+    noStoreDraft: Boolean,
+    onAutoRestoreChange: (Boolean) -> Unit,
+    onNoStoreChange: (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                "草稿设置",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            
+            // 自动恢复草稿选项
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = autoRestoreDraft,
+                    onCheckedChange = onAutoRestoreChange
+                )
+                Text(
+                    "自动恢复草稿（不询问）",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // 不存储草稿选项
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = noStoreDraft,
+                    onCheckedChange = onNoStoreChange
+                )
+                Text(
+                    "不存储草稿",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+            
+            // 说明文本
+            if (noStoreDraft) {
+                Text(
+                    "注意：启用后不会保存任何草稿内容",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun ImageUploadSection(
     uris: List<Uri>,
     onAddClick: () -> Unit,
-    onRemoveClick: (Uri) -> Unit,
-    autoRestoreDraft: Boolean,
-    onAutoRestoreDraftChange: (Boolean) -> Unit,
-    doNotSaveDraft: Boolean,
-    onDoNotSaveDraftChange: (Boolean) -> Unit
+    onRemoveClick: (Uri) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text("图片上传 (最多2张)", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 8.dp))
@@ -431,21 +452,6 @@ private fun ImageUploadSection(
                     }
                 }
             }
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(
-                checked = autoRestoreDraft,
-                onCheckedChange = onAutoRestoreDraftChange
-            )
-            Text("自动恢复草稿（不询问）")
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(
-                checked = doNotSaveDraft,
-                onCheckedChange = onDoNotSaveDraftChange
-            )
-            Text("不存储草稿")
         }
     }
 }

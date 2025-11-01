@@ -26,28 +26,25 @@ class PostDraftDataStore(private val context: Context) {
         private val DRAFT_SUBSECTION_ID = intPreferencesKey("draft_subsection_id")
         private val HAS_DRAFT = booleanPreferencesKey("has_draft")
         private val DRAFT_IMAGE_URIS = stringPreferencesKey("draft_image_uris")
-        // 新增图片URL存储键
         private val DRAFT_IMAGE_URLS = stringPreferencesKey("draft_image_urls")
-
-        // 新增：自动恢复草稿选项
+        
+        // 新增偏好设置键
         private val AUTO_RESTORE_DRAFT = booleanPreferencesKey("auto_restore_draft")
-        // 新增：不存储草稿选项
-        private val DO_NOT_SAVE_DRAFT = booleanPreferencesKey("do_not_save_draft")
+        private val NO_STORE_DRAFT = booleanPreferencesKey("no_store_draft")
     }
 
     suspend fun saveDraft(
         title: String,
         content: String,
         imageUris: List<Uri>,
-        imageUrls: String, // 新增图片URL参数
+        imageUrls: String,
         subsectionId: Int
     ) {
-        val uriStrings = imageUris.joinToString(",") { it.toString() }
         context.draftDataStore.edit { preferences ->
             preferences[DRAFT_TITLE] = title
             preferences[DRAFT_CONTENT] = content
-            preferences[DRAFT_IMAGE_URIS] = uriStrings
-            preferences[DRAFT_IMAGE_URLS] = imageUrls // 保存图片URL
+            preferences[DRAFT_IMAGE_URIS] = imageUris.joinToString(",") { it.toString() }
+            preferences[DRAFT_IMAGE_URLS] = imageUrls
             preferences[DRAFT_SUBSECTION_ID] = subsectionId
             preferences[HAS_DRAFT] = true
         }
@@ -58,23 +55,22 @@ class PostDraftDataStore(private val context: Context) {
             preferences.remove(DRAFT_TITLE)
             preferences.remove(DRAFT_CONTENT)
             preferences.remove(DRAFT_IMAGE_URIS)
-            preferences.remove(DRAFT_IMAGE_URLS) // 清除图片URL
+            preferences.remove(DRAFT_IMAGE_URLS)
             preferences.remove(DRAFT_SUBSECTION_ID)
             preferences[HAS_DRAFT] = false
         }
     }
 
-    // 新增：保存自动恢复草稿选项
-    suspend fun setAutoRestoreDraft(autoRestore: Boolean) {
+    // 新增：保存偏好设置
+    suspend fun setAutoRestoreDraft(enabled: Boolean) {
         context.draftDataStore.edit { preferences ->
-            preferences[AUTO_RESTORE_DRAFT] = autoRestore
+            preferences[AUTO_RESTORE_DRAFT] = enabled
         }
     }
 
-    // 新增：保存不存储草稿选项
-    suspend fun setDoNotSaveDraft(doNotSave: Boolean) {
+    suspend fun setNoStoreDraft(enabled: Boolean) {
         context.draftDataStore.edit { preferences ->
-            preferences[DO_NOT_SAVE_DRAFT] = doNotSave
+            preferences[NO_STORE_DRAFT] = enabled
         }
     }
 
@@ -89,11 +85,18 @@ class PostDraftDataStore(private val context: Context) {
                 title = preferences[DRAFT_TITLE] ?: "",
                 content = preferences[DRAFT_CONTENT] ?: "",
                 imageUris = imageUris,
-                imageUrls = preferences[DRAFT_IMAGE_URLS] ?: "", // 恢复图片URL
+                imageUrls = preferences[DRAFT_IMAGE_URLS] ?: "",
                 subsectionId = preferences[DRAFT_SUBSECTION_ID] ?: 11,
-                hasDraft = preferences[HAS_DRAFT] ?: false,
-                autoRestoreDraft = preferences[AUTO_RESTORE_DRAFT] ?: false, // 恢复自动恢复草稿选项
-                doNotSaveDraft = preferences[DO_NOT_SAVE_DRAFT] ?: false // 恢复不存储草稿选项
+                hasDraft = preferences[HAS_DRAFT] ?: false
+            )
+        }
+    
+    // 新增：偏好设置 Flow
+    val preferencesFlow: Flow<DraftPreferences> = context.draftDataStore.data
+        .map { preferences ->
+            DraftPreferences(
+                autoRestoreDraft = preferences[AUTO_RESTORE_DRAFT] ?: false,
+                noStoreDraft = preferences[NO_STORE_DRAFT] ?: false
             )
         }
     
@@ -101,10 +104,14 @@ class PostDraftDataStore(private val context: Context) {
         val title: String,
         val content: String,
         val imageUris: List<Uri>,
-        val imageUrls: String, // 新增图片URL字段
+        val imageUrls: String,
         val subsectionId: Int,
-        val hasDraft: Boolean,
-        val autoRestoreDraft: Boolean, // 新增自动恢复草稿选项
-        val doNotSaveDraft: Boolean // 新增不存储草稿选项
+        val hasDraft: Boolean
+    )
+
+    // 新增：偏好设置数据类
+    data class DraftPreferences(
+        val autoRestoreDraft: Boolean,
+        val noStoreDraft: Boolean
     )
 }

@@ -10,14 +10,15 @@
 package cc.bbq.xq.ui.community
 
 import android.app.Application
-import io.ktor.client.request.post // 添加这个导入
-import io.ktor.client.request.setBody // 添加这个导入
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
+import cc.bbq.xq.data.PostDraftDataStore
 import cc.bbq.xq.data.db.PostDraftRepository
 import cc.bbq.xq.util.FileUtil
 import kotlinx.coroutines.Dispatchers
@@ -33,49 +34,133 @@ import io.ktor.utils.io.*
 import io.ktor.http.content.*
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.HttpResponse
-import cc.bbq.xq.data.PostDraftDataStore
 
 class PostCreateViewModel(application: Application) : AndroidViewModel(application) {
 
     private val draftRepository = PostDraftRepository()
-    private val postDraftDataStore = PostDraftDataStore(application)
+    private val draftDataStore = PostDraftDataStore(application)
 
     private val _uiState = MutableStateFlow(PostCreateUiState())
     val uiState: StateFlow<PostCreateUiState> = _uiState.asStateFlow()
 
-    // 新增：发帖状态
+    // 新增：偏好设置状态
+    private val _preferencesState = MutableStateFlow(DraftPreferencesState())
+    val preferencesState: StateFlow<DraftPreferencesState> = _preferencesState.asStateFlow()
+
     private val _postStatus = MutableStateFlow<PostStatus>(PostStatus.Idle)
     val postStatus: StateFlow<PostStatus> = _postStatus.asStateFlow()
 
+    // 新增：对话框状态
+    private val _showRestoreDialog = MutableStateFlow(false)
+    val showRestoreDialog: StateFlow<Boolean> = _showRestoreDialog.asStateFlow()
+
     init {
-        // 修改：不再自动恢复草稿
-        // observeAndAutoSave() // 移动到 restoreDraft 方法中
+        viewModelScope.launch {
+            // 加载偏好设置
+            draftDataStore.preferencesFlow.first().let { preferences ->
+                _preferencesState.value = DraftPreferencesState(
+                    autoRestoreDraft = preferences.autoRestoreDraft,
+                    noStoreDraft = preferences.noStoreDraft
+                )
+            }
+
+            // 检查是否有草稿并决定是否显示对话框
+            draftRepository.draftFlow.first().let { draft ->
+                if (draft != null && (draft.title.isNotBlank() || draft.content.isNotBlank() || draft.imageUris.isNotEmpty())) {
+                    if (_preferencesState.value.autoRestoreDraft) {
+                        // 自动恢复草稿
+                        restoreDraft(draft)
+                    } else {
+                        // 显示恢复对话框
+                        _showRestoreDialog.value = true
+                    }
+                }
+            }
+        }
+        observeAndAutoSave()
+    }
+
+    // 新增：恢复草稿方法
+    private fun restoreDraft(draft: PostDraftRepository.DraftDto) {
+        _uiState.update { 
+            it.copy(
+                title = draft.title,
+                content = draft.content,
+                selectedImageUris = draft.imageUris,
+                imageUrls = draft.imageUrls,
+                selectedSubsectionId = draft.subsectionId,
+                imageUriToUrlMap = draft.imageUris.zip(
+                    draft.imageUrls.split(",").filter { s -> s.isNotEmpty() }
+                ).toMap()
+            )
+        }
+    }
+
+    // 新增：处理对话框操作
+    fun onRestoreDialogConfirm() {
+        viewModelScope.launch {
+            draftRepository.draftFlow.first()?.let { draft ->
+                restoreDraft(draft)
+            }
+            _showRestoreDialog.value = false
+        }
+    }
+
+    fun onRestoreDialogDismiss() {
+        _showRestoreDialog.value = false
+    }
+
+    // 新增：更新偏好设置
+    fun setAutoRestoreDraft(enabled: Boolean) {
+        viewModelScope.launch {
+            draftDataStore.setAutoRestoreDraft(enabled)
+            _preferencesState.value = _preferencesState.value.copy(autoRestoreDraft = enabled)
+        }
+    }
+
+    fun setNoStoreDraft(enabled: Boolean) {
+        viewModelScope.launch {
+            draftDataStore.setNoStoreDraft(enabled)
+            _preferencesState.value = _preferencesState.value.copy(noStoreDraft = enabled)
+            
+            // 如果不存储草稿，立即清除当前草稿
+            if (enabled) {
+                draftRepository.clearDraft()
+            }
+        }
     }
 
     // --- Event Handlers ---
-    fun onTitleChange(newTitle: String) { _uiState.update { it.copy(title = newTitle) } }
-    fun onContentChange(newContent: String) { _uiState.update { it.copy(content = newContent) } }
-    fun onSubsectionChange(newId: Int) { _uiState.update { it.copy(selectedSubsectionId = newId) } }
-    fun onImageUrlsChange(urls: String) { _uiState.update { it.copy(imageUrls = urls) } }
-
-    // 新增：恢复草稿方法
-    fun restoreDraft() {
-        viewModelScope.launch {
-            draftRepository.draftFlow.first()?.let { draft ->
-                _uiState.update { it.copy(
-                    title = draft.title,
-                    content = draft.content,
-                    selectedImageUris = draft.imageUris,
-                    imageUrls = draft.imageUrls,
-                    selectedSubsectionId = draft.subsectionId,
-                    imageUriToUrlMap = draft.imageUris.zip(draft.imageUrls.split(",").filter { s -> s.isNotEmpty() }).toMap()
-                )}
-            }
-            observeAndAutoSave() // 只有在恢复草稿后才开始自动保存
+    fun onTitleChange(newTitle: String) { 
+        if (!_preferencesState.value.noStoreDraft) {
+            _uiState.update { it.copy(title = newTitle) } 
+        }
+    }
+    
+    fun onContentChange(newContent: String) { 
+        if (!_preferencesState.value.noStoreDraft) {
+            _uiState.update { it.copy(content = newContent) } 
+        }
+    }
+    
+    fun onSubsectionChange(newId: Int) { 
+        if (!_preferencesState.value.noStoreDraft) {
+            _uiState.update { it.copy(selectedSubsectionId = newId) } 
+        }
+    }
+    
+    fun onImageUrlsChange(urls: String) { 
+        if (!_preferencesState.value.noStoreDraft) {
+            _uiState.update { it.copy(imageUrls = urls) } 
         }
     }
 
     fun uploadImage(uri: Uri) {
+        if (_preferencesState.value.noStoreDraft) {
+            Toast.makeText(getApplication(), "草稿存储已禁用", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(showProgressDialog = true, progressMessage = "上传图片中...") }
             
@@ -91,7 +176,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
             try {
                 val file = File(realPath)
-                val bytes = file.readBytes() // 将文件读取为字节数组
+                val bytes = file.readBytes()
                 val uploadResult = uploadImageKtor(bytes, file.name)
 
                 if (uploadResult.isSuccess) {
@@ -120,56 +205,52 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     private suspend fun uploadImageKtor(fileBytes: ByteArray, fileName: String): Result<String> {
-    return withContext(Dispatchers.IO) {
-        try {
-            val response: HttpResponse = KtorClient.uploadHttpClient.post("api.php") {
-                setBody(
-                    MultiPartFormDataContent(
-                        formData {
-                            append("file", fileBytes, Headers.build {
-                                append(HttpHeaders.ContentType, "image/jpeg") // 根据实际文件类型设置
-                                append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
-                            })
-                        }
+        return withContext(Dispatchers.IO) {
+            try {
+                val response: HttpResponse = KtorClient.uploadHttpClient.post("api.php") {
+                    setBody(
+                        MultiPartFormDataContent(
+                            formData {
+                                append("file", fileBytes, Headers.build {
+                                    append(HttpHeaders.ContentType, "image/jpeg")
+                                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                                })
+                            }
+                        )
                     )
-                )
-            }
+                }
 
-            val responseBody = response.bodyAsText()
-            // 使用 Ktor 客户端的响应体获取图片 URL
-            val imageUrl = responseBody.substringAfter("\"viewurl\":\"").substringBefore("\"").trim()
-            Result.success(imageUrl)
-        } catch (e: Exception) {
-            Result.failure(e)
+                val responseBody = response.bodyAsText()
+                val imageUrl = responseBody.substringAfter("\"viewurl\":\"").substringBefore("\"").trim()
+                Result.success(imageUrl)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
     }
-}
-
-
 
     fun removeImage(uri: Uri) {
-        _uiState.update { currentState ->
-            val newUris = currentState.selectedImageUris - uri
-            val newUrlMap = currentState.imageUriToUrlMap - uri
-            val newUrls = newUrlMap.values.joinToString(",")
-            currentState.copy(
-                selectedImageUris = newUris,
-                imageUrls = newUrls,
-                imageUriToUrlMap = newUrlMap
-            )
+        if (!_preferencesState.value.noStoreDraft) {
+            _uiState.update { currentState ->
+                val newUris = currentState.selectedImageUris - uri
+                val newUrlMap = currentState.imageUriToUrlMap - uri
+                val newUrls = newUrlMap.values.joinToString(",")
+                currentState.copy(
+                    selectedImageUris = newUris,
+                    imageUrls = newUrls,
+                    imageUriToUrlMap = newUrlMap
+                )
+            }
         }
     }
 
-    // 新增：发帖方法
     fun createPost(
         title: String,
-        // 修复：移除未使用的 content 参数，使用 _uiState.value.content
         imageUrls: String,
         subsectionId: Int,
         bvNumber: String,
         tempDeviceName: String,
         mode: String,
-        // 修复：移除未使用的 refundAppName 参数
         refundAppId: Long = 0L,
         refundVersionId: Long = 0L,
         refundPayMoney: Int = 0,
@@ -187,7 +268,6 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
                 val token = credentials.third
                 
-                // 构建最终内容
                 val finalContent = if (mode == "refund") {
                     val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
                     """
@@ -210,7 +290,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
                 val createPostResult = KtorClient.ApiServiceImpl.createPost(
                     appid = 1,
-                    token = token,  // 这里使用参数名 token，而不是 usertoken
+                    token = token,
                     title = title,
                     content = finalContent,
                     sectionId = finalSubsectionId,
@@ -219,6 +299,10 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
                 if (createPostResult.isSuccess) {
                     _postStatus.value = PostStatus.Success
+                    // 发帖成功后清除草稿
+                    if (!_preferencesState.value.noStoreDraft) {
+                        draftRepository.clearDraft()
+                    }
                     Toast.makeText(getApplication(), "发帖成功", Toast.LENGTH_SHORT).show()
                 } else {
                     val errorMsg = createPostResult.exceptionOrNull()?.message ?: "发帖失败"
@@ -239,34 +323,33 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    // 新增：重置发帖状态
     fun resetPostStatus() {
         _postStatus.value = PostStatus.Idle
     }
 
-    // 修复：添加 FlowPreview 注解
     @OptIn(FlowPreview::class)
     private fun observeAndAutoSave() {
-        postDraftDataStore.draftFlow.map { it.doNotSaveDraft }.distinctUntilChanged().onEach { doNotSave ->
-            if (doNotSave) return@onEach // 如果用户选择不保存草稿，则直接返回
-            
-            _uiState
-                .debounce(1000)
-                .onEach { state ->
-                    if (state.title.isNotBlank() || state.content.isNotBlank() || state.selectedImageUris.isNotEmpty()) {
-                        draftRepository.saveDraft(
-                            PostDraftRepository.DraftDto(
-                                title = state.title,
-                                content = state.content,
-                                imageUris = state.selectedImageUris,
-                                imageUrls = state.imageUrls,
-                                subsectionId = state.selectedSubsectionId
-                            )
-                        )
-                    }
+        _uiState
+            .debounce(1000)
+            .onEach { state ->
+                // 如果不存储草稿，跳过自动保存
+                if (_preferencesState.value.noStoreDraft) {
+                    return@onEach
                 }
-                .launchIn(viewModelScope)
-        }.launchIn(viewModelScope)
+                
+                if (state.title.isNotBlank() || state.content.isNotBlank() || state.selectedImageUris.isNotEmpty()) {
+                    draftRepository.saveDraft(
+                        PostDraftRepository.DraftDto(
+                            title = state.title,
+                            content = state.content,
+                            imageUris = state.selectedImageUris,
+                            imageUrls = state.imageUrls,
+                            subsectionId = state.selectedSubsectionId
+                        )
+                    )
+                }
+            }
+            .launchIn(viewModelScope)
     }
 }
 
@@ -281,7 +364,12 @@ data class PostCreateUiState(
     val progressMessage: String = ""
 )
 
-// 新增：发帖状态密封类
+// 新增：偏好设置状态
+data class DraftPreferencesState(
+    val autoRestoreDraft: Boolean = false,
+    val noStoreDraft: Boolean = false
+)
+
 sealed class PostStatus {
     object Idle : PostStatus()
     object Loading : PostStatus()
