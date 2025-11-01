@@ -48,16 +48,9 @@ enum class ApkUploadService(val displayName: String) {
     WANYUEYUN("挽悦云")
 }
 
-private fun createInputFromFile(file: File): Input {
-    return buildPacket {
-        file.inputStream().use { inputStream ->
-            val buffer = ByteArray(8192)
-            var bytesRead: Int
-            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                writeFully(buffer, 0, bytesRead)
-            }
-        }
-    }
+@OptIn(InternalAPI::class)
+private fun createStreamInputProvider(file: File): InputProvider {
+    return InputProvider { file.inputStream().asInput() }
 }
 
 class AppReleaseViewModel(application: Application) : AndroidViewModel(application) {
@@ -340,15 +333,54 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     }
 
 @OptIn(InternalAPI::class)
-    private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
+private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
     try {
         val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
             url = "api.php",
             formData = formData {
-                append("file", createInputFromFile(file), Headers.build {
-    append(HttpHeaders.ContentType, mediaType)
-    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-})
+                append("file", createStreamInputProvider(file), Headers.build {
+                    append(HttpHeaders.ContentType, mediaType)
+                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                })
+            }
+        )
+
+        if (response.status.isSuccess()) {
+            val responseBody: KtorClient.UploadResponse = response.body()
+            if ((responseBody.code == 1 || responseBody.exists == 1) && !responseBody.downurl.isNullOrBlank()) {
+                withContext(Dispatchers.Main) {
+                    _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
+                    onSuccess(responseBody.downurl)
+                }
+            } else {
+                withContext(Dispatchers.Main){
+                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${responseBody.msg}"))
+                }
+            }
+        } else {
+            withContext(Dispatchers.Main){
+                _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 网络错误 ${response.status}"))
+            }
+        }
+    } catch (e: Exception) {
+        withContext(Dispatchers.Main){
+            _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${e.message}"))
+        }
+    } finally {
+        file.delete()
+    }
+}
+
+@OptIn(InternalAPI::class)
+private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
+    try {
+        val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
+            url = "api.php",
+            formData = formData {
+                append("file", createStreamInputProvider(file), Headers.build {
+                    append(HttpHeaders.ContentType, mediaType)
+                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                })
             }
         )
 
@@ -385,11 +417,10 @@ private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
             url = "upload",
             formData = formData {
                 append("Api", "小趣API")
-                // 使用 InputProvider 替代 Input
-                append("file", createInputFromFile(file), Headers.build {
-    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")//直接硬编码!
-    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-})
+                append("file", createStreamInputProvider(file), Headers.build {
+                    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                })
             }
         )
 
