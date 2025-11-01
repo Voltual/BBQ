@@ -39,12 +39,18 @@ import io.ktor.utils.io.jvm.javaio.*
 import java.io.File
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
+import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
+import io.ktor.http.*
+import io.ktor.utils.io.*
+import io.ktor.utils.io.jvm.javaio.toByteReadChannel
+import kotlinx.coroutines.Dispatchers
+import java.io.File
+import java.nio.channels.FileChannel
+import java.nio.file.StandardOpenOption
 
 fun File.readChannel(): ByteReadChannel {
-    return FileChannel.open(this.toPath(), StandardOpenOption.READ).toByteReadChannel(
-        pool = KtorDefaultPool,
-        directTransfer = true
-    )
+    return FileChannel.open(this.toPath(), StandardOpenOption.READ).toByteReadChannel(context = Dispatchers.IO)
 }
 
 enum class ApkUploadService(val displayName: String) {
@@ -336,10 +342,11 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
     try {
         val response = KtorClient.uploadHttpClient.post("api.php") {
+            val byteReadChannel = file.readChannel()
             setBody(
                 MultiPartFormDataContent(
                     formData {
-                        append("file", ChannelProvider(file.length()) { file.readChannel() }, Headers.build {
+                        append("file", byteReadChannel, Headers.build {
                             append(HttpHeaders.ContentType, mediaType)
                             append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
                         })
@@ -377,11 +384,12 @@ private suspend fun uploadToKeyun(file: File, mediaType: String = "application/o
 private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
     try {
         val response = KtorClient.wanyueyunUploadHttpClient.post("upload") {
+            val byteReadChannel = file.readChannel()
             setBody(
                 MultiPartFormDataContent(
                     formData {
                         append("Api", "小趣API")
-                        append("file", ChannelProvider(file.length()) { file.readChannel() }, Headers.build {
+                        append("file", byteReadChannel, Headers.build {
                             append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
                             append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
                         })
