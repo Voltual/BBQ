@@ -20,8 +20,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import java.util.UUID
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+
+private val Context.dataStore by preferencesDataStore(name = "payment_requests")
 
 class PaymentViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val dataStore = application.applicationContext.dataStore
 
     // 新增状态：是否正在加载余额
     private val _isLoadingBalance = MutableStateFlow(false)
@@ -218,14 +227,27 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
             val requestId = UUID.randomUUID().toString()
             _paymentRequestId.value = requestId
 
+            // 检查是否已经提交过相同的支付请求
+            val existingRequestId = getPaymentRequestId(requestId)
+            if (existingRequestId != null) {
+                _errorMessage.value = "该支付请求已提交，请勿重复操作"
+                _paymentStatus.value = PaymentStatus.FAILED
+                _paymentRequestId.value = null
+                return@launch
+            }
+
             _paymentStatus.value = PaymentStatus.PROCESSING // 支付中
             _errorMessage.value = null
 
             try {
+                // 保存 paymentRequestId 到 DataStore
+                savePaymentRequestId(requestId)
+
                 val context = getApplication<Application>().applicationContext
                 val credentials = AuthManager.getCredentials(context) ?: run {
                     _errorMessage.value = "用户未登录"
                     _paymentStatus.value = PaymentStatus.FAILED
+                    removePaymentRequestId(requestId) // 移除 paymentRequestId
                     return@launch
                 }
 
@@ -237,8 +259,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                             appsId = info.appId,
                             appsVersionId = info.versionId,
                             money = amount,
-                            type = 0, // 硬币支付
-                            requestId = requestId // 传入 paymentRequestId
+                            type = 0 // 硬币支付
                         )
                     }
                     PaymentType.POST_REWARD -> {
@@ -246,8 +267,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                             token = credentials.third,
                             postId = info.postId,
                             money = amount,
-                            payment = 0, // 硬币支付
-                            requestId = requestId // 传入 paymentRequestId
+                            payment = 0 // 硬币支付
                         )
                     }
                 }
@@ -275,6 +295,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                 _errorMessage.value = "支付错误: ${e.message}"
                 _paymentStatus.value = PaymentStatus.FAILED
             } finally {
+                removePaymentRequestId(requestId) // 移除 paymentRequestId
                 _paymentRequestId.value = null // 清空 paymentRequestId
             }
         }
@@ -285,5 +306,28 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
         _paymentStatus.value = PaymentStatus.INITIAL
         _errorMessage.value = null
         _downloadUrl = null
+    }
+
+    // 保存 paymentRequestId 到 DataStore
+    private suspend fun savePaymentRequestId(requestId: String) {
+        dataStore.edit { mutablePreferences ->
+            mutablePreferences[stringPreferencesKey(requestId)] = requestId
+        }
+    }
+
+    // 从 DataStore 中获取 paymentRequestId
+    private suspend fun getPaymentRequestId(requestId: String): String? {
+        return dataStore.data
+            .map { preferences ->
+                preferences[stringPreferencesKey(requestId)]
+            }
+            .first()
+    }
+
+    // 从 DataStore 中移除 paymentRequestId
+    private suspend fun removePaymentRequestId(requestId: String) {
+        dataStore.edit { mutablePreferences ->
+            mutablePreferences.remove(stringPreferencesKey(requestId))
+        }
     }
 }
