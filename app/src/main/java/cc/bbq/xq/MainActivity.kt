@@ -151,7 +151,7 @@ fun CheckForUpdates() {
         // 后台线程执行网络请求
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = KtorClient.httpClient.get("https://gitee.com/api/v5/repos/Voltula/bbq/releases/latest")
+                val response = KtorClient.httpClient.get(URLBuilder("https://gitee.com/api/v5/repos/Voltula/bbq/releases/latest").build())
                 if (response.status.isSuccess()) {
                     val responseBody = response.body<String>()
                     val update = Json.decodeFromString<UpdateInfo>(responseBody)
