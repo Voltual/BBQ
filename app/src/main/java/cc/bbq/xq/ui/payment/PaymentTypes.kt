@@ -16,10 +16,11 @@ enum class PaymentType {
 
 // 支付状态枚举
 enum class PaymentStatus {
-    IDLE,
-    PROCESSING,
-    SUCCESS,
-    FAILED
+    INITIAL,   // 初始状态
+    PROCESSING,  // 支付处理中
+    SUCCESS,     // 支付成功
+    FAILED,      // 支付失败
+    SUBMITTED    // 支付请求已提交
 }
 
 // 支付信息数据类

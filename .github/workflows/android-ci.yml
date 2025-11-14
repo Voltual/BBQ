@@ -52,7 +52,7 @@ jobs:
 
       - name: Build  with Gradle
         run: |
-                             ./gradlew assembleRelease
+                   ./gradlew assembleDebug
 
       - name: Get version info
         id: version

@@ -93,7 +93,7 @@ fun PaymentCenterScreen(
     val paymentStatus by viewModel.paymentStatus.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val context = LocalContext.current
-    
+
     // 支付成功后自动触发下载
     LaunchedEffect(paymentStatus) {
         if (paymentStatus == PaymentStatus.SUCCESS) {
@@ -102,11 +102,13 @@ fun PaymentCenterScreen(
                 try {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl))
                     context.startActivity(intent)
-                } catch (e: Exception) {}
+                } catch (e: Exception) {
+                    // 处理异常
+                }
             }
         }
     }
-    
+
     when (paymentStatus) {
         PaymentStatus.SUCCESS -> {
             PaymentResultDialog(
@@ -118,7 +120,9 @@ fun PaymentCenterScreen(
                         try {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl))
                             context.startActivity(intent)
-                        } catch (e: Exception) {}
+                        } catch (e: Exception) {
+                            // 处理异常
+                        }
                     }
                 },
                 showDownloadButton = paymentInfo?.type == PaymentType.APP_PURCHASE
@@ -141,6 +145,7 @@ fun PaymentCenterScreen(
                 onFetchBalance = { viewModel.fetchCoinsBalance() },
                 onPay = { amount -> viewModel.executePayment(amount) },
                 viewModel = viewModel,
+                isPaymentProcessing = paymentStatus == PaymentStatus.PROCESSING, // 根据状态判断是否正在处理
                 modifier = modifier // 传递 modifier
             )
         }
@@ -156,14 +161,15 @@ fun PaymentContent(
     onFetchBalance: () -> Unit,
     onPay: (Int) -> Unit,
     viewModel: PaymentViewModel,
+    isPaymentProcessing: Boolean = false, // 添加一个参数来表示是否正在支付处理中
     modifier: Modifier = Modifier // 新增：接收外部 modifier
 ) {
 //    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    
+
     var amount by remember { mutableStateOf(paymentInfo?.price?.toString() ?: "") }
-    
+
     var postIdInput by remember { mutableStateOf("") }
     val isAdvancedMode = paymentInfo?.type == PaymentType.POST_REWARD && paymentInfo.postId == 0L
 
@@ -190,7 +196,7 @@ fun PaymentContent(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    
+
                     OutlinedTextField(
                         value = postIdInput,
                         onValueChange = { postIdInput = it },
@@ -201,7 +207,7 @@ fun PaymentContent(
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
-                    
+
                     Button(
                         onClick = {
                             val postId = postIdInput.toLongOrNull()
@@ -242,9 +248,9 @@ fun PaymentContent(
                                         .clip(RoundedCornerShape(16.dp)),
                                     contentScale = ContentScale.Crop
                                 )
-                                
+
                                 Spacer(Modifier.width(16.dp))
-                                
+
                                 Column {
                                     Text(
                                         paymentInfo.appName,
@@ -258,7 +264,7 @@ fun PaymentContent(
                                     )
                                 }
                             }
-                            
+
                             // 显示预览内容
                             Text(
                                 text = paymentInfo.previewContent,
@@ -266,7 +272,7 @@ fun PaymentContent(
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            
+
                             // 价格信息
                             Row(
                                 modifier = Modifier
@@ -286,7 +292,7 @@ fun PaymentContent(
                             }
                         }
                     }
-                    
+
                     PaymentType.POST_REWARD -> {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -300,7 +306,7 @@ fun PaymentContent(
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            
+
                             // 显示预览内容
                             Text(
                                 text = paymentInfo.previewContent,
@@ -308,7 +314,7 @@ fun PaymentContent(
                                 maxLines = 3,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            
+
                             // 作者信息
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -322,9 +328,9 @@ fun PaymentContent(
                                         .clip(CircleShape),
                                     contentScale = ContentScale.Crop
                                 )
-                                
+
                                 Spacer(Modifier.width(12.dp))
-                                
+
                                 Column {
                                     Text(
                                         paymentInfo.authorName,
@@ -340,7 +346,7 @@ fun PaymentContent(
                             }
                         }
                     }
-                    
+
                     else -> {
                         // 默认布局
                         Text(
@@ -367,7 +373,7 @@ fun PaymentContent(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        
+
                         // 金额选择器
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -381,7 +387,7 @@ fun PaymentContent(
                                 )
                             }
                         }
-                        
+
                         // 自定义金额输入
                         OutlinedTextField(
                             value = amount,
@@ -425,20 +431,20 @@ fun PaymentContent(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f)
                     )
-                    
+
                     BBQOutlinedButton(
                         onClick = onFetchBalance,
                         modifier = Modifier.width(120.dp),
                         contentPadding = PaddingValues(vertical = 6.dp),
                         enabled = !isLoadingBalance,
-                        text = { 
-                            if (isLoadingBalance) Text("查询中...") 
-                            else if (coinsBalance == null) Text("查询余额") 
+                        text = {
+                            if (isLoadingBalance) Text("查询中...")
+                            else if (coinsBalance == null) Text("查询余额")
                             else Text("刷新余额")
                         }
                     )
                 }
-                
+
                 // 余额显示区域
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -449,7 +455,7 @@ fun PaymentContent(
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f)
                     )
-                    
+
                     // 显示余额或加载状态
                     when {
                         isLoadingBalance -> CircularProgressIndicator(
@@ -498,27 +504,34 @@ fun PaymentContent(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = payAmount > 0 && (coinsBalance == null || payAmount <= coinsBalance),
+                enabled = payAmount > 0 && (coinsBalance == null || payAmount <= coinsBalance) && !isPaymentProcessing, // 禁用条件
                 contentPadding = PaddingValues(vertical = 16.dp),
-                text = { 
-                    Text(
-                        text = when {
-                            paymentInfo?.type == PaymentType.APP_PURCHASE -> 
-                                "确认支付 ${paymentInfo.price} 硬币购买应用"
-                            
-                            paymentInfo?.type == PaymentType.POST_REWARD -> 
-                                "打赏 $payAmount 硬币"
-                            
-                            else -> "确认支付 $payAmount 硬币"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                text = {
+                    if (isPaymentProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text(
+                            text = when {
+                                paymentInfo?.type == PaymentType.APP_PURCHASE ->
+                                    "确认支付 ${paymentInfo.price} 硬币购买应用"
+
+                                paymentInfo?.type == PaymentType.POST_REWARD ->
+                                    "打赏 $payAmount 硬币"
+
+                                else -> "确认支付 $payAmount 硬币"
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             )
         }
     }
-    
+
     // 错误消息处理
     errorMessage?.let { msg ->
         LaunchedEffect(msg) {
@@ -538,13 +551,13 @@ private fun CoinAmountChip(
     } else {
         MaterialTheme.colorScheme.surfaceVariant
     }
-    
+
     val borderColor = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.outline
     }
-    
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
@@ -561,8 +574,8 @@ private fun CoinAmountChip(
         Text(
             text = "$amount",
             style = MaterialTheme.typography.titleMedium,
-            color = if (selected) MaterialTheme.colorScheme.primary 
-                   else MaterialTheme.colorScheme.onSurface
+            color = if (selected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -604,16 +617,16 @@ fun PaymentResultDialog(
                         modifier = Modifier.size(72.dp)
                     )
                 }
-                
+
                 Spacer(Modifier.height(24.dp))
-                
+
                 Text(
                     text = if (success) "支付成功！" else "支付失败",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = if (success) MaterialTheme.colorScheme.primary 
-                           else MaterialTheme.colorScheme.error
+                    color = if (success) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.error
                 )
-                
+
                 if (!success && !error.isNullOrEmpty()) {
                     Spacer(Modifier.height(16.dp))
                     Text(
@@ -623,9 +636,9 @@ fun PaymentResultDialog(
                         textAlign = TextAlign.Center
                     )
                 }
-                
+
                 Spacer(Modifier.height(32.dp))
-                
+
                 if (success && showDownloadButton) {
                     BBQButton(
                         onClick = { onDownload?.invoke() },
@@ -635,7 +648,7 @@ fun PaymentResultDialog(
                     )
                     Spacer(Modifier.height(12.dp))
                 }
-                
+
                 BBQOutlinedButton(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),

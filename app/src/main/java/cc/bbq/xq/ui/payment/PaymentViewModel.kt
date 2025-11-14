@@ -19,37 +19,42 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
+import java.util.UUID
 
 class PaymentViewModel(application: Application) : AndroidViewModel(application) {
 
     // 新增状态：是否正在加载余额
     private val _isLoadingBalance = MutableStateFlow(false)
     val isLoadingBalance: StateFlow<Boolean> = _isLoadingBalance.asStateFlow()
-    
+
     // 支付信息状态
     private val _paymentInfo = MutableStateFlow<PaymentInfo?>(null)
     val paymentInfo: StateFlow<PaymentInfo?> = _paymentInfo
-    
+
     // 硬币余额状态
     private val _coinsBalance = MutableStateFlow<Int?>(null)
     val coinsBalance: StateFlow<Int?> = _coinsBalance
-    
+
     // 验证状态
     private val _verificationResult = MutableStateFlow<String?>(null)
     val verificationResult: StateFlow<String?> = _verificationResult
-    
+
     // 支付状态
-    private val _paymentStatus = MutableStateFlow<PaymentStatus>(PaymentStatus.IDLE)
+    private val _paymentStatus = MutableStateFlow<PaymentStatus>(PaymentStatus.INITIAL)
     val paymentStatus: StateFlow<PaymentStatus> = _paymentStatus
-    
+
     // 错误信息
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
-    
+
+    // Payment Request ID
+    private val _paymentRequestId = MutableStateFlow<String?>(null)
+    val paymentRequestId: StateFlow<String?> = _paymentRequestId
+
     private var _downloadUrl: String? = null
-    
+
     fun getDownloadUrl(): String? = _downloadUrl
-    
+
     // 设置支付信息（更新参数）
     fun setPaymentInfo(
         type: PaymentType,
@@ -82,7 +87,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
             postTime = postTime
         )
     }
-    
+
     fun loadPostInfo(postId: Long) {
         viewModelScope.launch {
             try {
@@ -92,7 +97,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                     _errorMessage.value = "用户未登录"
                     return@launch
                 }
-                
+
                 // 使用 KtorClient 发起请求
                 val response = withContext(Dispatchers.IO) {
                     KtorClient.ApiServiceImpl.getPostDetail(
@@ -100,7 +105,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                         postId = postId
                     )
                 }
-                
+
                 response.onSuccess { result ->
                     val post = result.data
                     _paymentInfo.value = PaymentInfo(
@@ -121,7 +126,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
             }
         }
     }
-    
+
     // 获取硬币余额
     fun fetchCoinsBalance() {
         // 只有用户点击时才加载
@@ -134,7 +139,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                     _errorMessage.value = "用户未登录"
                     return@launch
                 }
-                
+
                 // 使用 KtorClient 发起请求
                 val response = withContext(Dispatchers.IO) {
                     KtorClient.ApiServiceImpl.getUserInformation(
@@ -142,7 +147,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                         token = credentials.third
                     )
                 }
-                
+
                 response.onSuccess { result ->
                     _coinsBalance.value = result.data.money
                 }.onFailure { error ->
@@ -155,15 +160,15 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
             }
         }
     }
-    
+
     // 验证支付信息
     fun verifyPaymentInfo() {
         viewModelScope.launch {
             val info = _paymentInfo.value ?: return@launch
-            
+
             _verificationResult.value = null
             _errorMessage.value = null
-            
+
             try {
                 when (info.type) {
                     PaymentType.APP_PURCHASE -> {
@@ -173,10 +178,10 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                             appsId = info.appId,
                             appsVersionId = info.versionId
                         )
-                        
+
                         response.onSuccess { result ->
                             val appDetail = result.data
-                            _verificationResult.value = 
+                            _verificationResult.value =
                                 "验证成功: ${appDetail.appname} (¥${appDetail.pay_money})"
                         }.onFailure { error ->
                             _errorMessage.value = "应用验证失败: ${error.message}"
@@ -188,10 +193,10 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                             token = "",
                             postId = info.postId
                         )
-                        
+
                         response.onSuccess { result ->
                             val post = result.data
-                            _verificationResult.value = 
+                            _verificationResult.value =
                                 "验证成功: ${post.title}"
                         }.onFailure { error ->
                             _errorMessage.value = "帖子验证失败: ${error.message}"
@@ -203,15 +208,19 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
             }
         }
     }
-    
+
     // 执行支付
     fun executePayment(amount: Int) {
         viewModelScope.launch {
             val info = _paymentInfo.value ?: return@launch
-            
-            _paymentStatus.value = PaymentStatus.PROCESSING
+
+            // 生成 paymentRequestId
+            val requestId = UUID.randomUUID().toString()
+            _paymentRequestId.value = requestId
+
+            _paymentStatus.value = PaymentStatus.PROCESSING // 支付中
             _errorMessage.value = null
-            
+
             try {
                 val context = getApplication<Application>().applicationContext
                 val credentials = AuthManager.getCredentials(context) ?: run {
@@ -219,7 +228,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                     _paymentStatus.value = PaymentStatus.FAILED
                     return@launch
                 }
-                
+
                 // 使用 KtorClient 发起请求
                 val response = when (info.type) {
                     PaymentType.APP_PURCHASE -> {
@@ -228,7 +237,8 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                             appsId = info.appId,
                             appsVersionId = info.versionId,
                             money = amount,
-                            type = 0 // 硬币支付
+                            type = 0, // 硬币支付
+                            requestId = requestId // 传入 paymentRequestId
                         )
                     }
                     PaymentType.POST_REWARD -> {
@@ -236,17 +246,18 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                             token = credentials.third,
                             postId = info.postId,
                             money = amount,
-                            payment = 0 // 硬币支付
+                            payment = 0, // 硬币支付
+                            requestId = requestId // 传入 paymentRequestId
                         )
                     }
                 }
-                
+
                 response.onSuccess { result ->
                     if (result.code == 1) {
                         _paymentStatus.value = PaymentStatus.SUCCESS
                         // 更新硬币余额
                         _coinsBalance.value = (_coinsBalance.value ?: 0) - amount
-                        
+
                         // 保存下载链接（如果是应用购买）
                         if (info.type == PaymentType.APP_PURCHASE) {
                             // 使用 getDownloadUrl() 方法获取下载链接
@@ -263,13 +274,15 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
             } catch (e: Exception) {
                 _errorMessage.value = "支付错误: ${e.message}"
                 _paymentStatus.value = PaymentStatus.FAILED
+            } finally {
+                _paymentRequestId.value = null // 清空 paymentRequestId
             }
         }
     }
-    
+
     // 重置支付状态时也清除下载链接
     fun resetPaymentStatus() {
-        _paymentStatus.value = PaymentStatus.IDLE
+        _paymentStatus.value = PaymentStatus.INITIAL
         _errorMessage.value = null
         _downloadUrl = null
     }
