@@ -319,7 +319,7 @@ fun AppDetailContent(
                                         onUpdateClick()
                                     }
                                 )
-                                if (appDetail.is_user_pay) {
+                                if (appDetail.is_pay == 1) {
                                     DropdownMenuItem(
                                         text = { Text("退币") },
                                         onClick = {
