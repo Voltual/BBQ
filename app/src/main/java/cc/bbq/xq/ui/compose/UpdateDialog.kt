@@ -15,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import cc.bbq.xq.data.UpdateInfo
+import cc.bbq.xq.KtorClient
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.text.style.TextAlign
