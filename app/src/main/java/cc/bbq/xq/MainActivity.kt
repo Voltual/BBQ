@@ -50,6 +50,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import cc.bbq.xq.data.db.LogEntry
 import java.io.IOException // 导入 IOException
+import cc.bbq.xq.data.UpdateInfo
+import kotlinx.serialization.json.Json
+import io.ktor.client.call.body
+import cc.bbq.xq.ui.compose.UpdateDialog
+import kotlinx.serialization.decodeFromString
 
 class MainActivity : ComponentActivity() {
 
@@ -65,6 +70,8 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     MainComposeApp()
+                    // 检查更新
+                    CheckForUpdates()
                 }
             }
         }
@@ -131,6 +138,57 @@ class MainActivity : ComponentActivity() {
         configuration.fontScale = fontScale
         metrics.densityDpi = newDensityDpi
         resources.updateConfiguration(configuration, metrics)
+    }
+}
+
+@Composable
+fun CheckForUpdates() {
+    val context = LocalContext.current
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        // 后台线程执行网络请求
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = KtorClient.httpClient.get("https://gitee.com/api/v5/repos/Voltula/bbq/releases/latest")
+                if (response.status.isSuccess()) {
+                    val responseBody = response.body<String>()
+                    val update = Json.decodeFromString<UpdateInfo>(responseBody)
+
+                    // 版本号比较
+                    val currentVersion = BuildConfig.VERSION_NAME
+                    val newVersion = update.tag_name.replace(Regex("[^\\d.]"), "") // 提取数字部分
+                    if (newVersion > currentVersion) {
+                        // 在主线程更新UI
+                        withContext(Dispatchers.Main) {
+                            updateInfo = update
+                            showDialog = true
+                        }
+                    } else {
+                        withContext(Dispatchers.Main){
+                            Toast.makeText(context, "当前已是最新版本", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.Main){
+                        Toast.makeText(context, "检查更新失败", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main){
+                    Toast.makeText(context, "检查更新出错: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    // 显示更新对话框
+    if (showDialog && updateInfo != null) {
+        UpdateDialog(updateInfo = updateInfo!!) {
+            showDialog = false
+        }
     }
 }
 
