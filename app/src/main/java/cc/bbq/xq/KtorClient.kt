@@ -591,6 +591,19 @@ data class WanyueyunUploadResponse(
     val msg: String,
     val data: String?
 )
+
+@kotlinx.serialization.Serializable
+data class UpdateInfo(
+    val tag_name: String,
+    val body: String,
+    val assets: List<Asset>
+) {
+@kotlinx.serialization.Serializable
+    data class Asset(
+        val browser_download_url: String,
+        val name: String
+    )
+}
     
     // **NEW**: Helper object to handle JSON conversion
     object JsonConverter {
@@ -957,6 +970,8 @@ private suspend inline fun <reified T> safeApiCall(block: suspend () -> HttpResp
              file: ByteArray,
              filename: String
         ): Result<BaseResponse>
+        
+        suspend fun getLatestRelease(): Result<UpdateInfo>
 
         //suspend fun getImageVerificationCode(
         //    appid: Int = 1,
@@ -1003,6 +1018,7 @@ private suspend inline fun <reified T> safeApiCall(block: suspend () -> HttpResp
         private const val FOLLOW_USERS_URL = "api/follow_users"
         private const val UPLOAD_AVATAR_URL = "api/upload_avatar"
         //private const val GET_IMAGE_VERIFICATION_CODE_URL = "api/get_image_verification_code"
+        private const val GET_LATEST_RELEASE_URL = "https://gitee.com/api/v5/repos/Voltula/bbq/releases/latest"
 
         override suspend fun login(
             appid: Int,
@@ -1603,6 +1619,12 @@ private suspend inline fun <reified T> safeApiCall(block: suspend () -> HttpResp
             }
             return request(RANKING_LIST_URL, parameters = parameters)
         }
+        
+        override suspend fun getLatestRelease(): Result<UpdateInfo> {
+    return safeApiCall {
+        httpClient.get(GET_LATEST_RELEASE_URL).body()
+    }
+}
 
         override suspend fun followUser(
             appid: Int,

@@ -151,28 +151,32 @@ fun CheckForUpdates() {
         // 后台线程执行网络请求
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = KtorClient.httpClient.get(URLBuilder("https://gitee.com/api/v5/repos/Voltula/bbq/releases/latest").build())
-                if (response.status.isSuccess()) {
-                    val responseBody = response.body<String>()
-                    val update = Json.decodeFromString<UpdateInfo>(responseBody)
-
-                    // 版本号比较
-                    val currentVersion = BuildConfig.VERSION_NAME
-                    val newVersion = update.tag_name.replace(Regex("[^\\d.]"), "") // 提取数字部分
-                    if (newVersion > currentVersion) {
-                        // 在主线程更新UI
-                        withContext(Dispatchers.Main) {
-                            updateInfo = update
-                            showDialog = true
+                val result = KtorClient.ApiServiceImpl.getLatestRelease()
+                if (result.isSuccess) {
+                    val update = result.getOrNull()
+                    if (update != null) {
+                        // 版本号比较
+                        val currentVersion = BuildConfig.VERSION_NAME
+                        val newVersion = update.tag_name.replace(Regex("[^\\d.]"), "") // 提取数字部分
+                        if (newVersion > currentVersion) {
+                            // 在主线程更新UI
+                            withContext(Dispatchers.Main) {
+                                updateInfo = update
+                                showDialog = true
+                            }
+                        } else {
+                            withContext(Dispatchers.Main){
+                                Toast.makeText(context, "当前已是最新版本", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     } else {
                         withContext(Dispatchers.Main){
-                            Toast.makeText(context, "当前已是最新版本", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "获取更新信息失败", Toast.LENGTH_SHORT).show()
                         }
                     }
                 } else {
                     withContext(Dispatchers.Main){
-                        Toast.makeText(context, "检查更新失败", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "检查更新失败: ${result.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
