@@ -53,12 +53,8 @@ import java.io.IOException // 导入 IOException
 import cc.bbq.xq.data.UpdateInfo
 import kotlinx.serialization.json.Json
 import io.ktor.client.call.body
+import cc.bbq.xq.ui.compose.UpdateDialog
 import kotlinx.serialization.decodeFromString
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.ui.platform.LocalView
-import androidx.appcompat.app.AlertDialog
-import androidx.activity.ComponentActivity
 
 class MainActivity : ComponentActivity() {
 
@@ -149,6 +145,7 @@ class MainActivity : ComponentActivity() {
 fun CheckForUpdates() {
     val context = LocalContext.current
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         // 后台线程执行网络请求
@@ -165,7 +162,7 @@ fun CheckForUpdates() {
                             // 在主线程更新UI
                             withContext(Dispatchers.Main) {
                                 updateInfo = update
-                                showUpdateDialog(context, update)
+                                showDialog = true
                             }
                         } else {
                             withContext(Dispatchers.Main){
@@ -190,47 +187,11 @@ fun CheckForUpdates() {
             }
         }
     }
-}
 
-fun openBrowser(context: Context, url: String) {
-    val intent = Intent(Intent.ACTION_VIEW).apply {
-        data = Uri.parse(url)
-        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-    }
-    context.startActivity(intent)
-}
-
-@Composable
-fun showUpdateDialog(context: Context, updateInfo: UpdateInfo) {
-    val view = LocalView.current
-    // 使用 Android View 的 Context 来创建 AlertDialog
-    val activityContext = context as? ComponentActivity ?: return
-
-    val alertDialog = remember { mutableStateOf<AlertDialog?>(null) }
-
-    LaunchedEffect(updateInfo) {
-        activityContext.runOnUiThread {
-            val builder = AlertDialog.Builder(context)
-                .setTitle("发现新版本：${updateInfo.tag_name}")
-                .setMessage(updateInfo.body + "\n\n请选择合适的APK版本下载")
-                .setPositiveButton("下载") { dialog: DialogInterface, _ ->
-                    // 处理下载逻辑
-                    updateInfo.assets.filter { it.name.endsWith(".apk") }.forEach { asset ->
-                        openBrowser(context, asset.browser_download_url)
-                    }
-                    dialog.dismiss()
-                }
-                .setNegativeButton("稍后更新") { dialog: DialogInterface, _ ->
-                    dialog.dismiss()
-                }
-            alertDialog.value = builder.create()
-            alertDialog.value?.show()
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            alertDialog.value?.dismiss()
+    // 显示更新对话框
+    if (showDialog && updateInfo != null) {
+        UpdateDialog(updateInfo = updateInfo!!) {
+            showDialog = false
         }
     }
 }
