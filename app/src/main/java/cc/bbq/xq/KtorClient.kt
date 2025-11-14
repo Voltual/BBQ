@@ -22,6 +22,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import cc.bbq.xq.data.UpdateInfo
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import java.io.ByteArrayInputStream
@@ -591,19 +592,6 @@ data class WanyueyunUploadResponse(
     val msg: String,
     val data: String?
 )
-
-@kotlinx.serialization.Serializable
-data class UpdateInfo(
-    val tag_name: String,
-    val body: String,
-    val assets: List<Asset>
-) {
-@kotlinx.serialization.Serializable
-    data class Asset(
-        val browser_download_url: String,
-        val name: String
-    )
-}
     
     // **NEW**: Helper object to handle JSON conversion
     object JsonConverter {

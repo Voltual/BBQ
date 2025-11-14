@@ -50,7 +50,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import cc.bbq.xq.data.db.LogEntry
 import java.io.IOException // 导入 IOException
-import cc.bbq.xq.KtorClient
+import cc.bbq.xq.data.UpdateInfo
 import kotlinx.serialization.json.Json
 import io.ktor.client.call.body
 import cc.bbq.xq.ui.compose.UpdateDialog
