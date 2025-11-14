@@ -220,6 +220,7 @@ fun showUpdateDialog(context: Context, updateInfo: UpdateInfo) {
     }
 }
 
+
 // 移到此处，成为包级函数
 fun restartMainActivity(context: Context) {
     val packageManager = context.packageManager
