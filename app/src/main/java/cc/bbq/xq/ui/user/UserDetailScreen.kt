@@ -15,6 +15,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.shape.CircleShape
@@ -53,29 +57,53 @@ import cc.bbq.xq.ui.theme.BBQCard
 import cc.bbq.xq.ui.theme.BBQOutlinedButton
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun UserDetailScreen(
     userData: KtorClient.UserInformationData?,
     isLoading: Boolean,
     errorMessage: String?,
-//    onBackClick: () -> Unit,
-//    navController: NavController,
     onPostsClick: () -> Unit,
     onResourcesClick: (Long) -> Unit,
-    onImagePreview: (String) -> Unit, // 新增：图片预览回调
-    modifier: Modifier = Modifier
+    onImagePreview: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: UserDetailViewModel = viewModel()
 ) {
-    // 移除 Scaffold 包装，直接使用 ScreenContent
-    ScreenContent(
-        modifier = modifier.fillMaxSize(),
-        userData = userData,
-        isLoading = isLoading,
-        errorMessage = errorMessage,
-        onPostsClick = onPostsClick,
-        onResourcesClick = onResourcesClick,
-        onImagePreview = onImagePreview
-    )
+    // 下拉刷新状态
+    var refreshing by remember { mutableStateOf(false) }
+
+    val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = {
+        refreshing = true
+        viewModel.refresh()
+        refreshing = false
+    })
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        ScreenContent(
+            modifier = Modifier.fillMaxSize(),
+            userData = userData,
+            isLoading = isLoading,
+            errorMessage = errorMessage,
+            onPostsClick = onPostsClick,
+            onResourcesClick = onResourcesClick,
+            onImagePreview = onImagePreview
+        )
+
+        PullRefreshIndicator(
+            refreshing = refreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            contentColor = MaterialTheme.colorScheme.primary,
+            backgroundColor = MaterialTheme.colorScheme.surface
+        )
+    }
 }
 
 @Composable
@@ -86,7 +114,7 @@ private fun ScreenContent(
     errorMessage: String?,
     onPostsClick: () -> Unit,
     onResourcesClick: (Long) -> Unit,
-    onImagePreview: (String) -> Unit // 新增：图片预览回调
+    onImagePreview: (String) -> Unit
 ) {
     Box(
         modifier = modifier
@@ -112,10 +140,9 @@ private fun UserProfileContent(
     userData: KtorClient.UserInformationData,
     onPostsClick: () -> Unit,
     onResourcesClick: (Long) -> Unit,
-    onImagePreview: (String) -> Unit, // 新增：图片预览回调
+    onImagePreview: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-//    val context = LocalContext.current
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -127,7 +154,7 @@ private fun UserProfileContent(
             userData = userData,
             onAvatarClick = {
                 if (userData.usertx.isNotEmpty()) {
-                    onImagePreview(userData.usertx) // 使用新的回调
+                    onImagePreview(userData.usertx)
                 }
             }
         )

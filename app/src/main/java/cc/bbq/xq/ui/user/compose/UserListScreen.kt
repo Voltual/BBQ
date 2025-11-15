@@ -14,6 +14,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,9 +31,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.R
+import cc.bbq.xq.ui.user.UserListViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import androidx.lifecycle.viewmodel.compose.viewModel
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun UserListScreen(
     users: List<KtorClient.UserItem>,
@@ -37,37 +44,60 @@ fun UserListScreen(
     errorMessage: String?,
     isEmpty: Boolean,
     onLoadMore: () -> Unit,
-    onRefresh: () -> Unit,
     onUserClick: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: UserListViewModel = viewModel() // 获取 ViewModel 实例
 ) {
     // 修复：使用更简单的状态管理
     val safeUsers by remember(users) { mutableStateOf(users) }
     val safeIsLoading by remember(isLoading) { mutableStateOf(isLoading) }
     val safeErrorMessage by remember(errorMessage) { mutableStateOf(errorMessage) }
 
-    Column(
-        modifier = modifier.fillMaxSize()
+    // 下拉刷新状态
+    var refreshing by remember { mutableStateOf(false) }
+
+    // 使用LaunchedEffect在viewModel.refresh()被调用时启动刷新
+    val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = {
+        refreshing = true // 开始刷新
+        viewModel.refresh() // 调用 ViewModel 中的 refresh 函数
+        refreshing = false // 结束刷新
+    })
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
     ) {
-        // 错误状态显示
-        safeErrorMessage?.takeIf { it.isNotEmpty() }?.let { message ->
-            ErrorState(message = message, onRetry = onRefresh)
-            return
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // 错误状态显示
+            safeErrorMessage?.takeIf { it.isNotEmpty() }?.let { message ->
+                ErrorState(message = message, onRetry = { viewModel.refresh() }) // 错误重试也调用 viewModel.refresh()
+                return
+            }
+
+            // 空状态显示
+            if (safeUsers.isEmpty() && !safeIsLoading && safeErrorMessage.isNullOrEmpty()) {
+                EmptyState()
+                return
+            }
+
+            // 使用更安全的 LazyColumn 实现
+            SafeLazyColumn(
+                users = safeUsers,
+                isLoading = safeIsLoading,
+                onLoadMore = onLoadMore,
+                onUserClick = onUserClick
+            )
         }
 
-        // 空状态显示
-        if (safeUsers.isEmpty() && !safeIsLoading && safeErrorMessage.isNullOrEmpty()) {
-            EmptyState()
-            return
-        }
-
-        // 使用更安全的 LazyColumn 实现
-        SafeLazyColumn(
-            users = safeUsers,
-            isLoading = safeIsLoading,
-            onLoadMore = onLoadMore,
-            onUserClick = onUserClick,
-            onRefresh = onRefresh
+        PullRefreshIndicator(
+            refreshing = refreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            contentColor = MaterialTheme.colorScheme.primary,
+            backgroundColor = MaterialTheme.colorScheme.surface
         )
     }
 }
@@ -77,8 +107,7 @@ private fun SafeLazyColumn(
     users: List<KtorClient.UserItem>,
     isLoading: Boolean,
     onLoadMore: () -> Unit,
-    onUserClick: (Long) -> Unit,
-    onRefresh: () -> Unit
+    onUserClick: (Long) -> Unit
 ) {
     val listState = rememberLazyListState()
 

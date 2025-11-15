@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +29,7 @@ import cc.bbq.xq.ui.compose.PaginationControls
 
 // 在 MessageCenterScreen.kt 中修复 UI 显示问题
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun MessageCenterScreen(
     viewModel: MessageViewModel,
@@ -35,103 +40,124 @@ fun MessageCenterScreen(
     var showPageDialog by remember { mutableStateOf(false) }
     val dialogShape = remember { RoundedCornerShape(4.dp) }
 
+    // 下拉刷新状态
+    var refreshing by remember { mutableStateOf(false) }
+
     // 修复：只在真正需要时初始化，不强制重置
     LaunchedEffect(Unit) {
         viewModel.initializeIfNeeded()
     }
 
-    Column(
+    val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = {
+        refreshing = true
+        viewModel.reset()
+        refreshing = false
+    })
+
+    Box(
         modifier = modifier
             .fillMaxSize()
+            .pullRefresh(pullRefreshState)
     ) {
-        // 消息列表
-        Box(modifier = Modifier.weight(1f)) {
-            when {
-                // 修复：显示加载指示条
-                state.isLoading && state.messages.isEmpty() -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("加载中...")
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // 消息列表
+            Box(modifier = Modifier.weight(1f)) {
+                when {
+                    // 修复：显示加载指示条
+                    state.isLoading && state.messages.isEmpty() -> {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("加载中...")
+                        }
                     }
-                }
-                state.messages.isEmpty() && state.isInitialized -> {
-                    Text(
-                        text = "暂无消息",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                state.messages.isEmpty() -> {
-                    Text(
-                        text = "加载中...",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                else -> {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(state.messages) { message ->
-                            MessageItem(
-                                message = message,
-                                onClick = {
-                                    if (message.postid != null) {
-                                        onMessageClick(message.postid)
+                    state.messages.isEmpty() && state.isInitialized -> {
+                        Text(
+                            text = "暂无消息",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    state.messages.isEmpty() -> {
+                        Text(
+                            text = "加载中...",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    else -> {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(state.messages) { message ->
+                                MessageItem(
+                                    message = message,
+                                    onClick = {
+                                        if (message.postid != null) {
+                                            onMessageClick(message.postid)
+                                        }
+                                    }
+                                )
+                            }
+
+                            // 修复：分页加载时显示底部加载指示
+                            if (state.isLoading && state.messages.isNotEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
                                     }
                                 }
-                            )
+                            }
                         }
-                        
-                        // 修复：分页加载时显示底部加载指示
-                        if (state.isLoading && state.messages.isNotEmpty()) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
-                                }
+                    }
+                }
+
+                // 显示错误信息
+                state.error?.let { error ->
+                    if (state.messages.isEmpty()) {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = error,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(onClick = { viewModel.reset() }) {
+                                Text("重试")
                             }
                         }
                     }
                 }
             }
 
-            // 显示错误信息
-            state.error?.let { error ->
-                if (state.messages.isEmpty()) {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { viewModel.reset() }) {
-                            Text("重试")
-                        }
-                    }
-                }
+            // 分页控制栏 - 只在有数据且不是加载中时显示
+            if (state.messages.isNotEmpty() && !state.isLoading) {
+                PaginationControls(
+                    currentPage = state.currentPage,
+                    totalPages = state.totalPages,
+                    onPrevClick = { viewModel.prevPage() },
+                    onNextClick = { viewModel.nextPage() },
+                    onPageClick = { showPageDialog = true },
+                    isPrevEnabled = state.currentPage > 1,
+                    isNextEnabled = state.currentPage < state.totalPages
+                )
             }
         }
-
-        // 分页控制栏 - 只在有数据且不是加载中时显示
-        if (state.messages.isNotEmpty() && !state.isLoading) {
-            PaginationControls(
-                currentPage = state.currentPage,
-                totalPages = state.totalPages,
-                onPrevClick = { viewModel.prevPage() },
-                onNextClick = { viewModel.nextPage() },
-                onPageClick = { showPageDialog = true },
-                isPrevEnabled = state.currentPage > 1,
-                isNextEnabled = state.currentPage < state.totalPages
-            )
-        }
+        PullRefreshIndicator(
+            refreshing = refreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            contentColor = MaterialTheme.colorScheme.primary,
+            backgroundColor = MaterialTheme.colorScheme.surface
+        )
     }
 
     // 分页跳转对话框
