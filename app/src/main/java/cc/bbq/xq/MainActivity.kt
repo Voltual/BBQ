@@ -64,7 +64,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)               
 
-        applyDpiAndFontScale(this)
+        // 只有在用户启用自定义 DPI 的情况下才执行
+        val customDpiEnabled = ThemeColorStore.loadCustomDpiEnabled(this)
+        if (customDpiEnabled) {
+            applyDpiAndFontScale(this)
+        }
 
         setContent {
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {

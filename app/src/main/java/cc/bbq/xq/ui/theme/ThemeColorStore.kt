@@ -5,7 +5,7 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.theme
 
 import android.content.Context
@@ -140,6 +140,9 @@ object ThemeColorStore {
     private val DRAWER_HEADER_DARK_BG_URI_KEY = stringPreferencesKey("drawer_header_dark_bg_uri")
     
     private val GLOBAL_BACKGROUND_URI_KEY = stringPreferencesKey("global_background_uri")
+    
+    // 新增：是否启用自定义 DPI 的 DataStore 键
+    private val CUSTOM_DPI_ENABLED_KEY = booleanPreferencesKey("custom_dpi_enabled")
     
     suspend fun saveGlobalBackgroundUri(context: Context, uri: String?) {
         context.themeSettingsDataStore.edit { preferences ->
@@ -278,5 +281,20 @@ fun loadColors(context: Context): CustomColorSet {
 
     fun getImageThemeDarkUriFlow(context: Context): Flow<String?> {
         return context.themeSettingsDataStore.data.map { it[IMAGE_THEME_DARK_URI_KEY] }
+    }
+    
+    // 新增：保存是否启用自定义 DPI 的偏好
+    suspend fun saveCustomDpiEnabled(context: Context, enabled: Boolean) {
+        context.themeSettingsDataStore.edit { it[CUSTOM_DPI_ENABLED_KEY] = enabled }
+    }
+
+    // 新增：获取是否启用自定义 DPI 的 Flow
+    fun getCustomDpiEnabledFlow(context: Context): Flow<Boolean> {
+        return context.themeSettingsDataStore.data.map { it[CUSTOM_DPI_ENABLED_KEY] ?: false }
+    }
+    
+    // 新增：同步加载是否启用自定义 DPI 的偏好
+    fun loadCustomDpiEnabled(context: Context): Boolean {
+        return runBlocking { context.themeSettingsDataStore.data.first()[CUSTOM_DPI_ENABLED_KEY] ?: false }
     }
 }

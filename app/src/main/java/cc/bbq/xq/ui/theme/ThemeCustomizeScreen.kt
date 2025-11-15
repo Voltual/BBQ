@@ -5,7 +5,7 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.theme
 
 import android.app.Activity
@@ -66,7 +66,10 @@ fun ThemeCustomizeScreen(
     var dpi by remember { mutableStateOf(ThemeColorStore.loadDpi(context)) }
     var fontSize by remember { mutableStateOf(ThemeColorStore.loadFontSize(context)) }
 
-    // 新增：翻译状态
+    // 新增：是否启用自定义 DPI 的状态
+    var customDpiEnabled by remember { mutableStateOf(ThemeColorStore.loadCustomDpiEnabled(context)) }
+
+    // 翻译状态
     var translate by remember { mutableStateOf(false) }
 
     // 分离各种图片选择器启动器
@@ -163,6 +166,7 @@ fun ThemeCustomizeScreen(
                             darkColors = ThemeColorStore.DEFAULT_COLORS.darkSet
                             dpi = 1.0f
                             fontSize = 1.0f
+                            customDpiEnabled = false // 重置为不启用自定义 DPI
 
                             // 清除所有图片 URI
                             ThemeColorStore.saveGlobalBackgroundUri(context, null)
@@ -244,13 +248,22 @@ fun ThemeCustomizeScreen(
                     )
                 }
                 item {
+                    SwitchWithText(
+                        text = "启用自定义屏幕密度和字体大小",
+                        checked = customDpiEnabled,
+                        onCheckedChange = { customDpiEnabled = it },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+                item {
                     OutlinedTextField(
                         value = dpi.toString(),
                         onValueChange = { dpi = it.toFloatOrNull() ?: dpi },
                         label = { Text("屏幕密度 (DPI 缩放)") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        enabled = customDpiEnabled // 只有在启用自定义 DPI 时才可编辑
                     )
                 }
                 item {
@@ -260,7 +273,8 @@ fun ThemeCustomizeScreen(
                         label = { Text("字体大小 (倍数)") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        enabled = customDpiEnabled // 只有在启用自定义 DPI 时才可编辑
                     )
                 }
                 item { HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) }
@@ -385,7 +399,8 @@ fun ThemeCustomizeScreen(
                     context = context,
                     colors = CustomColorSet(lightColors, darkColors),
                     dpi = dpi,
-                    fontScale = fontSize
+                    fontScale = fontSize,
+                    customDpiEnabled = customDpiEnabled // 保存是否启用自定义 DPI 的状态
                 )
                 showSavedMessage = true
             },
@@ -465,31 +480,36 @@ private fun saveThemeAndRestart(
     context: Context,
     colors: CustomColorSet,
     dpi: Float,
-    fontScale: Float
+    fontScale: Float,
+    customDpiEnabled: Boolean // 新增：是否启用自定义 DPI 的参数
 ) {
     val scope = (context as? androidx.lifecycle.LifecycleOwner)?.lifecycleScope ?: kotlinx.coroutines.MainScope()
     scope.launch {
         val oldDpi = ThemeColorStore.loadDpi(context)
         val oldFontScale = ThemeColorStore.loadFontSize(context)
+        val oldCustomDpiEnabled = ThemeColorStore.loadCustomDpiEnabled(context)
 
         ThemeColorStore.saveColors(context, colors)
         ThemeColorStore.saveDpi(context, dpi)
         ThemeColorStore.saveFontSize(context, fontScale)
+        ThemeColorStore.saveCustomDpiEnabled(context, customDpiEnabled) // 保存是否启用自定义 DPI 的状态
 
         withContext(Dispatchers.Main) {
             ThemeManager.applyCustomColors(context) // 应用颜色
 
-            // 仅当 DPI 或字体大小改变时才重启 Activity
-            if (oldDpi != dpi || oldFontScale != fontScale) {
+            // 仅当 DPI 或字体大小或自定义 DPI 启用状态改变时才重启 Activity
+            if (oldDpi != dpi || oldFontScale != fontScale || oldCustomDpiEnabled != customDpiEnabled) {
                 (context as? Activity)?.let {
-                    val resources = it.resources
-                    val configuration = Configuration(resources.configuration)
-                    val metrics = resources.displayMetrics
-                    val newDensityDpi = (dpi * DisplayMetrics.DENSITY_DEFAULT).toInt()
-                    configuration.densityDpi = newDensityDpi
-                    configuration.fontScale = fontScale
-                    metrics.densityDpi = newDensityDpi
-                    resources.updateConfiguration(configuration, metrics)
+                    if(customDpiEnabled){
+                        val resources = it.resources
+                        val configuration = Configuration(resources.configuration)
+                        val metrics = resources.displayMetrics
+                        val newDensityDpi = (dpi * DisplayMetrics.DENSITY_DEFAULT).toInt()
+                        configuration.densityDpi = newDensityDpi
+                        configuration.fontScale = fontScale
+                        metrics.densityDpi = newDensityDpi
+                        resources.updateConfiguration(configuration, metrics)
+                    }
                 }
                 delay(300)
                  restartMainActivity(context) // 重启
