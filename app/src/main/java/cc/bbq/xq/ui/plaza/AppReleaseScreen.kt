@@ -287,7 +287,8 @@ fun AppReleaseScreen(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-private Composable fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
+@Composable
+private fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
     val services = ApkUploadService.values()
     val selectedService by viewModel.selectedApkUploadService
