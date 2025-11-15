@@ -487,3 +487,4 @@ private fun ImagePreviewSection(
     }
 }
 }
+}
