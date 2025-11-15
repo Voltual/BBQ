@@ -35,14 +35,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext // 导入 LocalContext
-import androidx.compose.runtime.collectAsState // 导入 collectAsState
-import androidx.compose.foundation.layout.Box // 导入 Box
-import androidx.compose.foundation.layout.fillMaxSize // 导入 fillMaxSize
-import androidx.compose.foundation.Image // 导入 Image
-import androidx.compose.ui.layout.ContentScale // 导入 ContentScale
-import coil.compose.rememberAsyncImagePainter // 导入 rememberAsyncImagePainter
+import androidx.compose.ui.platform.LocalContext 
+import androidx.compose.runtime.collectAsState 
+import androidx.compose.foundation.layout.Box 
+import androidx.compose.foundation.layout.fillMaxSize 
+import androidx.compose.foundation.Image 
+import androidx.compose.ui.layout.ContentScale 
+import coil.compose.rememberAsyncImagePainter 
+import androidx.compose.foundation.layout.width // 添加正确的导入路径
 
 // 基础按钮组件
 @Composable
@@ -50,14 +50,14 @@ fun BBQButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: @Composable () -> Unit,
-    enabled: Boolean = true, // 添加 enabled 参数
+    enabled: Boolean = true, 
     shape: Shape = AppShapes.medium,
     contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
 ) {
     Button(
         onClick = onClick,
         modifier = modifier,
-        enabled = enabled, // 传递 enabled 状态
+        enabled = enabled, 
         shape = shape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -75,14 +75,14 @@ fun BBQOutlinedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: @Composable () -> Unit,
-    enabled: Boolean = true, // 添加 enabled 参数
+    enabled: Boolean = true, 
     shape: Shape = AppShapes.small,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
 ) {
     OutlinedButton(
         onClick = onClick,
         modifier = modifier,
-        enabled = enabled, // 传递 enabled 状态
+        enabled = enabled, 
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shape = shape,
         colors = ButtonDefaults.outlinedButtonColors(

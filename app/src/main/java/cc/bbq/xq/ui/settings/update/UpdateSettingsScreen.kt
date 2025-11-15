@@ -16,9 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cc.bbq.xq.ui.components.SwitchWithText
+import cc.bbq.xq.ui.theme.SwitchWithText // 添加正确的导入路径
 import kotlinx.coroutines.launch
-import cc.bbq.xq.data.UpdateInfo // 导入 UpdateInfo
+import cc.bbq.xq.data.UpdateInfo 
 import cc.bbq.xq.ui.compose.UpdateDialog
 
 @Composable
@@ -28,7 +28,7 @@ fun UpdateSettingsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val autoCheckUpdates by viewModel.autoCheckUpdates.collectAsState(initial = false)
-    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) } // 修改为 updateInfo
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) } 
     var showDialog by remember { mutableStateOf(false) }
 
     Column(
@@ -39,9 +39,9 @@ fun UpdateSettingsScreen(
         SwitchWithText(
             text = "自动检查更新",
             checked = autoCheckUpdates,
-            onCheckedChange = {
+            onCheckedChange = { checked ->
                 scope.launch {
-                    viewModel.setAutoCheckUpdates(context, it)
+                    viewModel.setAutoCheckUpdates(context, checked)
                 }
             }
         )
@@ -51,8 +51,8 @@ fun UpdateSettingsScreen(
         Button(
             onClick = {
                 viewModel.checkForUpdates(context) { update ->
-                    if (update != null) {
-                        updateInfo = update
+                    update?.let {
+                        updateInfo = it
                         showDialog = true
                     }
                 }
