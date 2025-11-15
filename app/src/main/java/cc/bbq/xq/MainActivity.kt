@@ -55,6 +55,8 @@ import kotlinx.serialization.json.Json
 import io.ktor.client.call.body
 import cc.bbq.xq.ui.compose.UpdateDialog
 import kotlinx.serialization.decodeFromString
+import cc.bbq.xq.data.UpdateSettingsDataStore
+import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
 
@@ -148,41 +150,29 @@ fun CheckForUpdates() {
     var showDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        // 后台线程执行网络请求
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val result = KtorClient.ApiServiceImpl.getLatestRelease()
-                if (result.isSuccess) {
-                    val update = result.getOrNull()
-                    if (update != null) {
-                        // 版本号比较
-                        val currentVersion = BuildConfig.VERSION_NAME
-                        val newVersion = update.tag_name.replace(Regex("[^\\d.]"), "") // 提取数字部分
-                        if (newVersion > currentVersion) {
-                            // 在主线程更新UI
-                            withContext(Dispatchers.Main) {
-                                updateInfo = update
-                                showDialog = true
-                            }
-                        } else {
-                            withContext(Dispatchers.Main){
-                                Toast.makeText(context, "当前已是最新版本", Toast.LENGTH_SHORT).show()
+        val autoCheckUpdates = UpdateSettingsDataStore.autoCheckUpdates.first()
+        if (autoCheckUpdates) {
+            // 后台线程执行网络请求
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val result = KtorClient.ApiServiceImpl.getLatestRelease()
+                    if (result.isSuccess) {
+                        val update = result.getOrNull()
+                        if (update != null) {
+                            // 版本号比较
+                            val currentVersion = BuildConfig.VERSION_NAME
+                            val newVersion = update.tag_name.replace(Regex("[^\\d.]"), "") // 提取数字部分
+                            if (newVersion > currentVersion) {
+                                // 在主线程更新UI
+                                withContext(Dispatchers.Main) {
+                                    updateInfo = update
+                                    showDialog = true
+                                }
                             }
                         }
-                    } else {
-                        withContext(Dispatchers.Main){
-                            Toast.makeText(context, "获取更新信息失败", Toast.LENGTH_SHORT).show()
-                        }
                     }
-                } else {
-                    withContext(Dispatchers.Main){
-                        Toast.makeText(context, "检查更新失败: ${result.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main){
-                    Toast.makeText(context, "检查更新出错: ${e.message}", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }

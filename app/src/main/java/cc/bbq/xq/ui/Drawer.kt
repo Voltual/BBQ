@@ -76,8 +76,9 @@ fun NavigationDrawerItems(
             DrawerItem("ranking_list", "天梯竞赛", R.drawable.ic_menu_ranking, RankingList.route),
             DrawerItem("release_app", "发布应用", R.drawable.bg, CreateAppRelease.route),
             DrawerItem("bot_logs", "日志", R.drawable.work_log, LogViewer.route),
-            // 新增：存储管理菜单项
             DrawerItem("store_manager", "存储管理", R.drawable.appbackuprestore, StoreManager.route),
+            // 新增：更新设置菜单项
+            DrawerItem("update_settings", "更新设置", R.drawable.asusupdate, UpdateSettings.route),
             DrawerItem("settings", "主题设置", R.drawable.ic_menu_settings, ThemeCustomize.route),
             DrawerItem("logout", "退出登录", R.drawable.ic_menu_logout, "logout") // 特殊处理
         )

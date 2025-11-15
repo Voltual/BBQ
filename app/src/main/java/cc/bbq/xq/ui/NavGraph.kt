@@ -472,6 +472,12 @@ composable(route = UpdateAppRelease("").route, arguments = UpdateAppRelease.argu
 //                navController = navController // 传递 navController
             )
         }
+        
+        // 新增更新设置屏幕
+
+composable(route = UpdateSettings.route) {
+    UpdateSettingsScreen()
+}
 
         // --- 列表屏幕 ---
         composable(Community.route) { CommunityScreen(navController, communityViewModel) }

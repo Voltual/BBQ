@@ -18,6 +18,7 @@ import org.koin.core.context.startKoin
 import cc.bbq.xq.data.db.AppDatabase // 导入 AppDatabase
 import cc.bbq.xq.data.SearchHistoryDataStore // 导入
 import cc.bbq.xq.data.StorageSettingsDataStore // 导入 StorageSettingsDataStore
+import cc.bbq.xq.data.UpdateSettingsDataStore // 导入 UpdateSettingsDataStore
 
 class BBQApplication : Application() {
 
@@ -34,6 +35,9 @@ class BBQApplication : Application() {
         
     lateinit var storageSettingsDataStore: StorageSettingsDataStore // 新增
         private set
+    
+    lateinit var updateSettingsDataStore: UpdateSettingsDataStore // 新增
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -44,6 +48,7 @@ class BBQApplication : Application() {
         database = AppDatabase.getDatabase(this) // 初始化数据库
         searchHistoryDataStore = SearchHistoryDataStore(this) // 新增
         storageSettingsDataStore = StorageSettingsDataStore(this) // 新增
+        updateSettingsDataStore = UpdateSettingsDataStore // 新增
         // 初始化主题管理器
         ThemeManager.initialize(this)
 

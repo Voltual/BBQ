@@ -68,9 +68,13 @@ object ThemeCustomize : AppDestination {
     override val route = "theme_customize"
 }
 
-// --- 新增：存储管理 ---
 object StoreManager : AppDestination {
     override val route = "store_manager"
+}
+
+//新增更新设置
+object UpdateSettings : AppDestination {
+    override val route = "update_settings"
 }
 
 // --- 社区与帖子 ---
