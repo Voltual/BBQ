@@ -49,6 +49,8 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
+import cc.bbq.xq.ui.theme.ImagePreviewItem
+import cc.bbq.xq.ui.theme.ImageUploadSection
 
 @Composable
 fun AppReleaseScreen(
@@ -185,35 +187,35 @@ fun AppReleaseScreen(
             item { FormTextField(label = "适配性能描述 (支持换行)", state = viewModel.appExplain, singleLine = false, minLines = 4) }
 
             item {
-                Column {
-                    Text("2. 上传应用介绍图 (至氪云)", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    BBQOutlinedButton(
-                        onClick = { imageLauncher.launch("image/*") },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = viewModel.introductionImageUrls.size < MAX_INTRO_IMAGES,
-                        text = { Text("选择图片 (${viewModel.introductionImageUrls.size}/$MAX_INTRO_IMAGES)") }
+    Column {
+        Text("2. 上传应用介绍图 (至氪云)", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        BBQOutlinedButton(
+            onClick = { imageLauncher.launch("image/*") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = viewModel.introductionImageUrls.size < MAX_INTRO_IMAGES,
+            text = { Text("选择图片 (${viewModel.introductionImageUrls.size}/$MAX_INTRO_IMAGES)") }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        if (viewModel.introductionImageUrls.isNotEmpty()) {
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                viewModel.introductionImageUrls.forEach { url ->
+                    ImagePreviewItem(
+                        imageModel = url,
+                        onRemoveClick = { viewModel.removeIntroductionImage(url) },
+                        onImageClick = {
+                            navController.navigate(ImagePreview(url).createRoute())
+                        },
+                        contentDescription = "应用介绍图"
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (viewModel.introductionImageUrls.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier.horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            viewModel.introductionImageUrls.forEach { url ->
-                                ImagePreviewItem(
-                                    imageUrl = url,
-                                    onRemoveClick = { viewModel.removeIntroductionImage(url) },
-                                    onImageClick = {
-                                        // 修复：使用 NavController 导航到 ImagePreview
-                                        navController.navigate(ImagePreview(url).createRoute())
-                                    }
-                                )
-                            }
-                        }
-                    }
                 }
             }
+        }
+    }
+}
 
             item { CategoryDropdown(viewModel) }
             item { PaymentSettings(viewModel) }
@@ -306,62 +308,6 @@ private fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun ImagePreviewItem(
-    imageUrl: String,
-    onRemoveClick: () -> Unit,
-    onImageClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(100.dp)
-            .clip(MaterialTheme.shapes.medium)
-    ) {
-        SubcomposeAsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = "介绍图预览",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize().clickable(onClick = onImageClick)
-        ) {
-            val state = painter.state
-            when (state) {
-                is AsyncImagePainter.State.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(strokeWidth = 2.dp)
-                    }
-                }
-                is AsyncImagePainter.State.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.BrokenImage, contentDescription = "加载失败")
-                    }
-                }
-                else -> {
-                    SubcomposeAsyncImageContent()
-                }
-            }
-        }
-
-        IconButton(
-            onClick = onRemoveClick,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(4.dp)
-                .size(20.dp)
-                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "移除图片",
-                tint = Color.White,
-                modifier = Modifier.size(14.dp)
-            )
         }
     }
 }

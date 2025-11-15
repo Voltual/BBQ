@@ -42,6 +42,8 @@ import cc.bbq.xq.AuthManager
 import coil.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.flow.first
+import cc.bbq.xq.ui.theme.ImagePreviewItem
+import cc.bbq.xq.ui.theme.ImageUploadSection
 
 private const val MODE_CREATE = "create"
 private const val MODE_REFUND = "refund"
@@ -278,13 +280,26 @@ fun PostCreateScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        ImageUploadSection(
-            uris = uiState.selectedImageUris,
-            onAddClick = { startImagePicker() },
-            onRemoveClick = { uri -> viewModel.removeImage(uri) }
-        )
+ImageUploadSection(
+    images = uiState.selectedImageUris,
+    onAddClick = { startImagePicker() },
+    onRemoveClick = { uri -> viewModel.removeImage(uri) },
+    onImageClick = { uri ->
+        // 暂时处理本地 Uri 预览 - 后续可以扩展 ImagePreviewScreen 支持本地 Uri
+        val imageUrl = uiState.imageUriToUrlMap[uri]
+        if (imageUrl != null) {
+            // 如果图片已上传，使用 URL 导航到预览
+            navController.navigate(ImagePreview(imageUrl).createRoute())
+        } else {
+            // 对于本地 Uri，可以显示一个临时预览对话框或 toast
+            Toast.makeText(context, "图片尚未上传，无法预览", Toast.LENGTH_SHORT).show()
+        }
+    },
+    maxImages = 2,
+    title = "图片上传"
+)
 
-        Spacer(modifier = Modifier.height(8.dp))
+Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
             value = bvNumber,
@@ -416,42 +431,6 @@ private fun DraftPreferencesSection(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 8.dp)
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ImageUploadSection(
-    uris: List<Uri>,
-    onAddClick: () -> Unit,
-    onRemoveClick: (Uri) -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-        Text("图片上传 (最多2张)", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 8.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(uris) { uri ->
-                Box(modifier = Modifier.size(80.dp)) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = uri),
-                        contentDescription = "预览图片",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp))
-                    )
-                    IconButton(
-                        onClick = { onRemoveClick(uri) },
-                        modifier = Modifier.align(Alignment.TopEnd).size(24.dp).background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                    ) {
-                        Icon(Icons.Default.Close, "删除", tint = Color.White, modifier = Modifier.size(16.dp))
-                    }
-                }
-            }
-            if (uris.size < 2) {
-                item {
-                    OutlinedButton(onClick = onAddClick, modifier = Modifier.size(80.dp)) {
-                        Icon(Icons.Default.Add, "添加图片")
-                    }
-                }
             }
         }
     }

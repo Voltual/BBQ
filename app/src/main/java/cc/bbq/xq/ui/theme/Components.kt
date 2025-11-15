@@ -227,63 +227,124 @@ fun SwitchWithText(
 
 @Composable
 fun ImagePreviewItem(
-    imageUrl: String,
-    onRemoveClick: () -> Unit,
-    onImageClick: () -> Unit,
+    imageModel: Any,
+    onRemoveClick: (() -> Unit)? = null,
+    onImageClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
-    size: Dp = 100.dp
+    contentDescription: String = "图片预览"
 ) {
+    val context = LocalContext.current
+    
     Box(
         modifier = modifier
-            .size(size)
+            .size(100.dp)
             .clip(MaterialTheme.shapes.medium)
     ) {
         SubcomposeAsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageUrl)
+            model = ImageRequest.Builder(context)
+                .data(imageModel)
                 .crossfade(true)
                 .build(),
-            contentDescription = "预览图片",
+            contentDescription = contentDescription,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
-                .clickable(onClick = onImageClick)
+                .clickable { onImageClick?.invoke() }
         ) {
             val state = painter.state
-            if (state is AsyncImagePainter.State.Loading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+            when (state) {
+                is AsyncImagePainter.State.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(), 
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(strokeWidth = 2.dp)
+                    }
                 }
-            } else if (state is AsyncImagePainter.State.Error) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Icon(
-                        Icons.Filled.BrokenImage, 
-                        "加载失败",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                is AsyncImagePainter.State.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(), 
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.BrokenImage, 
+                            contentDescription = "加载失败",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
-            } else {
-                SubcomposeAsyncImageContent()
+                else -> {
+                    SubcomposeAsyncImageContent()
+                }
             }
         }
 
-        IconButton(
-            onClick = onRemoveClick,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(4.dp)
-                .size(24.dp)
-                .background(
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                    CircleShape
+        // 只有在提供了移除回调时才显示移除按钮
+        onRemoveClick?.let { removeCallback ->
+            IconButton(
+                onClick = removeCallback,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+                    .size(20.dp)
+                    .background(
+                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f), 
+                        CircleShape
+                    )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "移除图片",
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(14.dp)
                 )
+            }
+        }
+    }
+}
+
+// 用于显示图片上传区域的通用组件
+@Composable
+fun ImageUploadSection(
+    images: List<Any>,
+    onAddClick: () -> Unit,
+    onRemoveClick: (Any) -> Unit,
+    onImageClick: (Any) -> Unit,
+    maxImages: Int,
+    modifier: Modifier = Modifier,
+    title: String = "图片上传"
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            "$title (${images.size}/$maxImages)", 
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                Icons.Filled.Close,
-                "移除图片",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp)
-            )
+            items(images) { image ->
+                ImagePreviewItem(
+                    imageModel = image,
+                    onRemoveClick = { onRemoveClick(image) },
+                    onImageClick = { onImageClick(image) },
+                    contentDescription = "已上传图片"
+                )
+            }
+            
+            // 添加图片按钮（如果未达到最大数量）
+            if (images.size < maxImages) {
+                item {
+                    OutlinedButton(
+                        onClick = onAddClick,
+                        modifier = Modifier.size(100.dp)
+                    ) {
+                        Icon(Icons.Default.Add, "添加图片")
+                    }
+                }
+            }
         }
     }
 }
