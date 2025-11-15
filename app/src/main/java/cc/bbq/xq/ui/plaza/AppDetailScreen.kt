@@ -20,6 +20,10 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.filled.Download
@@ -42,6 +46,7 @@ import cc.bbq.xq.ui.community.compose.CommentItem
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun AppDetailScreen(
     viewModel: AppDetailComposeViewModel,
@@ -69,6 +74,15 @@ fun AppDetailScreen(
         viewModel.initializeData(appId, versionId)
     }
 
+    // 下拉刷新状态
+    var refreshing by remember { mutableStateOf(false) }
+
+    val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = {
+        refreshing = true
+        viewModel.refresh()
+        refreshing = false
+    })
+
     LaunchedEffect(errorMessage) {
         if (errorMessage.isNotEmpty()) {
             coroutineScope.launch {
@@ -93,7 +107,11 @@ fun AppDetailScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         } else if (appDetail != null) {
@@ -141,7 +159,7 @@ fun AppDetailScreen(
                 onShareClick = {
                     shareApp()
                 },
-                onImagePreview = { imageUrl -> 
+                onImagePreview = { imageUrl ->
                     navController.navigate(ImagePreview(imageUrl).createRoute())
                 }
             )
@@ -158,6 +176,14 @@ fun AppDetailScreen(
         ) {
             Icon(Icons.AutoMirrored.Filled.Comment, "评论")
         }
+
+        PullRefreshIndicator(
+            refreshing = refreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            contentColor = MaterialTheme.colorScheme.primary,
+            backgroundColor = MaterialTheme.colorScheme.surface
+        )
     }
 
     // 评论对话框
@@ -273,7 +299,7 @@ fun AppDetailContent(
                             modifier = Modifier
                                 .size(64.dp)
                                 .clip(RoundedCornerShape(16.dp))
-                                .clickable { 
+                                .clickable {
                                     if (appDetail.app_icon.isNotEmpty()) {
                                         onImagePreview(appDetail.app_icon)
                                     }
@@ -298,7 +324,7 @@ fun AppDetailContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        
+
                         // 更多菜单按钮与下拉菜单正确集成
                         Box {
                             IconButton(
@@ -306,7 +332,7 @@ fun AppDetailContent(
                             ) {
                                 Icon(Icons.Default.MoreVert, contentDescription = "更多选项")
                             }
-                            
+
                             // 下拉菜单直接与按钮关联
                             DropdownMenu(
                                 expanded = showMoreMenu,
@@ -461,7 +487,7 @@ fun AppDetailContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
-                        .clickable { 
+                        .clickable {
                             // 修复：点击作者头像跳转到用户详情页
                             navController.navigate(UserDetail(appDetail.userid).createRoute())
                         },
@@ -473,7 +499,7 @@ fun AppDetailContent(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .clickable { 
+                            .clickable {
                                 if (appDetail.usertx.isNotEmpty()) {
                                     onImagePreview(appDetail.usertx)
                                 }

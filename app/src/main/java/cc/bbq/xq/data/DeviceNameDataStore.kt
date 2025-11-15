@@ -25,7 +25,7 @@ class DeviceNameDataStore(context: Context) {
 
     val deviceNameFlow: Flow<String> = dataStore.data
         .map { preferences ->
-            preferences[DEVICE_NAME_KEY] ?: "Android"
+            preferences[DEVICE_NAME_KEY] ?: "https://gitee.com/Voltula/bbq/releases/"
         }
 
     suspend fun saveDeviceName(deviceName: String) {
