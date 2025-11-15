@@ -1,4 +1,3 @@
-@file:OptIn(ExperimentalComposeUiApi::class)
 //Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
@@ -313,10 +312,12 @@ fun PostCreateScreen(
                                 viewModel.removeImage(uriToRemove)
                             }
                         },
-                        onImageClick = {
-                    // 导航到图片预览
-                    navController.navigate(ImagePreview(imageUrl).createRoute())
-                }
+                       onImageClick = {
+    val context = LocalContext.current
+    LaunchedEffect(context) {
+        navController.navigate(ImagePreview(imageUrl).createRoute())
+    }
+}
                     )
                 }
                 if (uiState.imageUriToUrlMap.size < 2) {
