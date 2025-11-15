@@ -44,11 +44,19 @@ import coil.compose.rememberAsyncImagePainter
 import androidx.compose.foundation.layout.width // 添加正确的导入路径
 // --- 新增导入 ---
 import androidx.compose.ui.draw.clip
-import coil.compose.AsyncImagePainter
+import androidx.compose.foundation.clickable // 确保导入 clickable
 import androidx.compose.material.icons.Icons // 导入 Icons
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape // 确保导入 CircleShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.Arrangement
+import coil.compose.SubcomposeAsyncImage // 确保导入 SubcomposeAsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImageContent
+import coil.request.ImageRequest // 确保导入 ImageRequest
 // -----------------
 
 // 基础按钮组件
@@ -242,28 +250,22 @@ fun ImagePreviewItem(
                 .clickable(onClick = onImageClick)
         ) {
             val state = painter.state
-            when (state) {
-                is AsyncImagePainter.State.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(strokeWidth = 2.dp)
-                    }
+            if (state is AsyncImagePainter.State.Loading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(strokeWidth = 2.dp)
                 }
-
-                is AsyncImagePainter.State.Error -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.BrokenImage, contentDescription = "加载失败")
-                    }
+            } else if (state is AsyncImagePainter.State.Error) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
                 }
-
-                else -> {
-                    SubcomposeAsyncImageContent()
-                }
+            } else {
+                SubcomposeAsyncImageContent()
             }
         }
 
@@ -276,7 +278,7 @@ fun ImagePreviewItem(
                 .background(MaterialTheme.colorScheme.primaryContainer, CircleShape) // 使用 Material You 颜色
         ) {
             Icon(
-                imageVector = Icons.Default.Close,
+                imageVector = Icons.Filled.Close,
                 contentDescription = "移除图片",
                 tint = MaterialTheme.colorScheme.onPrimaryContainer, // 使用 Material You 颜色
                 modifier = Modifier.size(14.dp)
