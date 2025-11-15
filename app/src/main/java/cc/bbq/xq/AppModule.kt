@@ -30,6 +30,11 @@ import cc.bbq.xq.data.StorageSettingsDataStore
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import cc.bbq.xq.ui.community.BrowseHistoryViewModel//导入缺失的viewmodel
+import cc.bbq.xq.ui.community.PostDetailViewModel//导入缺失的viewmodel
+import cc.bbq.xq.ui.rank.RankingListViewModel//导入缺失的viewmodel
+import cc.bbq.xq.ui.settings.update.UpdateSettingsViewModel//导入缺失的viewmodel
+import cc.bbq.xq.ui.home.HomeViewModel//导入缺失的viewmodel
 
 val appModule = module {
     // ViewModel definitions
