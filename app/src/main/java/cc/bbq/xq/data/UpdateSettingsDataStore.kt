@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import cc.bbq.xq.BBQApplication
 
 private val Context.updateSettingsDataStore by preferencesDataStore(name = "update_settings")
 

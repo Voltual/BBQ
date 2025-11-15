@@ -32,7 +32,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import cc.bbq.xq.AuthManager
-//import cc.bbq.xq.RetrofitClient
+//import cc.bbq.xq.RetrofitClient移除时代的眼泪
 import cc.bbq.xq.KtorClient // 导入 KtorClient
 import cc.bbq.xq.ui.auth.LoginScreen
 import cc.bbq.xq.ui.auth.LoginViewModel
@@ -69,6 +69,7 @@ import cc.bbq.xq.ui.animation.materialSharedAxisXOut
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.ui.animation.rememberSlideDistance
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cc.bbq.xq.ui.settings.update.UpdateSettingsScreen //导入更新屏幕
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

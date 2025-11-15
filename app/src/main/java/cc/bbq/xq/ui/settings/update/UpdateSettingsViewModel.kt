@@ -78,6 +78,7 @@ class UpdateSettingsViewModel : ViewModel() {
     
         @Composable
     private fun showUpdateDialog(context: Context, updateInfo: UpdateInfo) {
+         val context = LocalContext.current
         UpdateDialog(updateInfo = updateInfo) {
             //showDialog = false
         }
