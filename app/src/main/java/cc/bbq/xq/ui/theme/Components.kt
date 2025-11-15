@@ -1,4 +1,3 @@
-// Components.kt
 //Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
@@ -35,14 +34,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext 
-import androidx.compose.runtime.collectAsState 
-import androidx.compose.foundation.layout.Box 
-import androidx.compose.foundation.layout.fillMaxSize 
-import androidx.compose.foundation.Image 
-import androidx.compose.ui.layout.ContentScale 
-import coil.compose.rememberAsyncImagePainter 
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose. runtime.collectAsState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.rememberAsyncImagePainter
 import androidx.compose.foundation.layout.width // 添加正确的导入路径
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
+import coil.request.ImageRequest
+import androidx.navigation.NavController
 
 // 基础按钮组件
 @Composable
@@ -50,14 +56,14 @@ fun BBQButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: @Composable () -> Unit,
-    enabled: Boolean = true, 
+    enabled: Boolean = true,
     shape: Shape = AppShapes.medium,
     contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
 ) {
     Button(
         onClick = onClick,
         modifier = modifier,
-        enabled = enabled, 
+        enabled = enabled,
         shape = shape,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
@@ -75,14 +81,14 @@ fun BBQOutlinedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: @Composable () -> Unit,
-    enabled: Boolean = true, 
+    enabled: Boolean = true,
     shape: Shape = AppShapes.small,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
 ) {
     OutlinedButton(
         onClick = onClick,
         modifier = modifier,
-        enabled = enabled, 
+        enabled = enabled,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shape = shape,
         colors = ButtonDefaults.outlinedButtonColors(
@@ -157,7 +163,7 @@ fun BBQBackgroundCard(
                         .matchParentSize()
                 )
             }
-            
+
             // 内容区域（不透明，确保文字可读）
             Box(
                 modifier = Modifier
@@ -209,5 +215,65 @@ fun SwitchWithText(
         )
         Spacer(Modifier.width(8.dp))
         Text(text = text, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+fun ImagePreviewItem(
+    imageUrl: String,
+    onRemoveClick: () -> Unit,
+    onImageClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    size: Dp = 100.dp // 默认尺寸
+) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(MaterialTheme.shapes.medium)
+    ) {
+        SubcomposeAsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(imageUrl)
+                .crossfade(true)
+                .build(),
+            contentDescription = "介绍图预览",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(onClick = onImageClick)
+        ) {
+            val state = painter.state
+            when (state) {
+                is AsyncImagePainter.State.Loading -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(strokeWidth = 2.dp)
+                    }
+                }
+                is AsyncImagePainter.State.Error -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.BrokenImage, contentDescription = "加载失败")
+                    }
+                }
+                else -> {
+                    SubcomposeAsyncImageContent()
+                }
+            }
+        }
+
+        IconButton(
+            onClick = onRemoveClick,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp)
+                .size(20.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "移除图片",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(14.dp)
+            )
+        }
     }
 }

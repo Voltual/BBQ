@@ -49,6 +49,9 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
+import cc.bbq.xq.ui.theme.ImagePreviewItem // 导入 ImagePreviewItem
+import cc.bbq.xq.R
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun AppReleaseScreen(
@@ -90,11 +93,12 @@ fun AppReleaseScreen(
             Toast.makeText(context, "未选择任何图片", Toast.LENGTH_SHORT).show()
         }
     }
-    
+
     val isUpdateMode by viewModel.isUpdateMode
 
     Box(modifier = modifier.fillMaxSize()) {
-        val isAnyTaskRunning = viewModel.isApkUploading.value || viewModel.isIconUploading.value || viewModel.isIntroImagesUploading.value || viewModel.isReleasing.value
+        val isAnyTaskRunning =
+            viewModel.isApkUploading.value || viewModel.isIconUploading.value || viewModel.isIntroImagesUploading.value || viewModel.isReleasing.value
 
         LazyColumn(
             modifier = Modifier
@@ -111,14 +115,18 @@ fun AppReleaseScreen(
                 BBQButton(
                     onClick = { apkLauncher.launch("application/vnd.android.package-archive") },
                     modifier = Modifier.fillMaxWidth(),
-                    text = { Text(if (isUpdateMode) "1. 选择新版 APK (上传至${selectedService.displayName})" else "1. 选择并上传 APK (至${selectedService.displayName})") }
+                    text = {
+                        Text(
+                            if (isUpdateMode) "1. 选择新版 APK (上传至${selectedService.displayName})" else "1. 选择并上传 APK (至${selectedService.displayName})"
+                        )
+                    }
                 )
             }
 
             item {
                 val iconUrl by viewModel.iconUrl
                 val localIconUri by viewModel.localIconUri
-                
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val model: Any? = iconUrl ?: localIconUri
                     if (model != null) {
@@ -136,7 +144,7 @@ fun AppReleaseScreen(
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Text(
-                            if(iconUrl != null) "当前图标" else "已解析图标",
+                            if (iconUrl != null) "当前图标" else "已解析图标",
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
@@ -144,14 +152,25 @@ fun AppReleaseScreen(
             }
 
             item { FormTextField(label = "应用名称", state = viewModel.appName) }
-            item { FormTextField(label = "APK 下载链接 (自动填充/可修改)", state = viewModel.apkDownloadUrl, singleLine = true) }
+            item {
+                FormTextField(
+                    label = "APK 下载链接 (自动填充/可修改)",
+                    state = viewModel.apkDownloadUrl,
+                    singleLine = true
+                )
+            }
 
             item {
                 val uploadUrl = "https://file.bz6.top/upload.php"
                 val annotatedString = buildAnnotatedString {
                     append("如果氪云API上传不稳定? 你或许可以尝试直接使用氪云的网页端上传")
                     pushStringAnnotation(tag = "URL", annotation = uploadUrl)
-                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)) {
+                    withStyle(
+                        style = SpanStyle(
+                            color = MaterialTheme.colorScheme.primary,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    ) {
                         append("点此访问网页版上传，但是记住复制下载链接回来填充")
                     }
                     pop()
@@ -181,8 +200,22 @@ fun AppReleaseScreen(
             item { FormTextField(label = "版本名 (自动填充)", state = viewModel.versionName, enabled = false) }
             item { FormTextField(label = "版本号 (用户可见)", state = viewModel.appVersion) }
             item { FormTextField(label = "文件大小 (MB, 自动填充)", state = viewModel.appSize, enabled = false) }
-            item { FormTextField(label = "资源介绍 (支持密码格式)", state = viewModel.appIntroduce, singleLine = false, minLines = 3) }
-            item { FormTextField(label = "适配性能描述 (支持换行)", state = viewModel.appExplain, singleLine = false, minLines = 4) }
+            item {
+                FormTextField(
+                    label = "资源介绍 (支持密码格式)",
+                    state = viewModel.appIntroduce,
+                    singleLine = false,
+                    minLines = 3
+                )
+            }
+            item {
+                FormTextField(
+                    label = "适配性能描述 (支持换行)",
+                    state = viewModel.appExplain,
+                    singleLine = false,
+                    minLines = 4
+                )
+            }
 
             item {
                 Column {
@@ -207,7 +240,8 @@ fun AppReleaseScreen(
                                     onImageClick = {
                                         // 修复：使用 NavController 导航到 ImagePreview
                                         navController.navigate(ImagePreview(url).createRoute())
-                                    }
+                                    },
+                                    modifier = Modifier.size(100.dp)
                                 )
                             }
                         }
@@ -240,7 +274,10 @@ fun AppReleaseScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
                         CircularProgressIndicator()
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
@@ -248,7 +285,7 @@ fun AppReleaseScreen(
                                 viewModel.isApkUploading.value -> "正在上传 APK..."
                                 viewModel.isIconUploading.value -> "正在上传图标..."
                                 viewModel.isIntroImagesUploading.value -> "正在上传介绍图..."
-                                viewModel.isReleasing.value -> if(isUpdateMode) "正在提交更新..." else "正在提交发布..."
+                                viewModel.isReleasing.value -> if (isUpdateMode) "正在提交更新..." else "正在提交发布..."
                                 else -> "请稍候..."
                             },
                             style = MaterialTheme.typography.bodyLarge
@@ -310,61 +347,6 @@ private fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
     }
 }
 
-@Composable
-fun ImagePreviewItem(
-    imageUrl: String,
-    onRemoveClick: () -> Unit,
-    onImageClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(100.dp)
-            .clip(MaterialTheme.shapes.medium)
-    ) {
-        SubcomposeAsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = "介绍图预览",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize().clickable(onClick = onImageClick)
-        ) {
-            val state = painter.state
-            when (state) {
-                is AsyncImagePainter.State.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(strokeWidth = 2.dp)
-                    }
-                }
-                is AsyncImagePainter.State.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.BrokenImage, contentDescription = "加载失败")
-                    }
-                }
-                else -> {
-                    SubcomposeAsyncImageContent()
-                }
-            }
-        }
-
-        IconButton(
-            onClick = onRemoveClick,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(4.dp)
-                .size(20.dp)
-                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "移除图片",
-                tint = Color.White,
-                modifier = Modifier.size(14.dp)
-            )
-        }
-    }
-}
 
 @Composable
 private fun PaymentSettings(viewModel: AppReleaseViewModel) {
@@ -391,7 +373,8 @@ private fun PaymentSettings(viewModel: AppReleaseViewModel) {
 @Composable
 private fun CategoryDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedCategoryName = viewModel.categories.getOrNull(viewModel.selectedCategoryIndex.value)?.categoryName ?: "请选择"
+    val selectedCategoryName =
+        viewModel.categories.getOrNull(viewModel.selectedCategoryIndex.value)?.categoryName ?: "请选择"
 
     Column {
         Text("应用分类", style = MaterialTheme.typography.titleMedium)
