@@ -78,9 +78,10 @@ fun UpdateDialog(updateInfo: UpdateInfo, onDismiss: () -> Unit) {
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Row(
+                // 将 TextButton 放入 Column 中
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalAlignment = Alignment.End
                 ) {
                     TextButton(onClick = onDismiss) {
                         Text("稍后更新")
