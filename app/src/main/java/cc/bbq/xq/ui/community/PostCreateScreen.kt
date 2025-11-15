@@ -312,10 +312,9 @@ fun PostCreateScreen(
                                 viewModel.removeImage(uriToRemove)
                             }
                         },
-                        onImageClick = {
-                            // 导航到图片预览
-                            navController.navigate(ImagePreview(imageUrl).createRoute()) // 修正
-                        }
+                        onImageClick = { _: String ->
+    navController.navigate(ImagePreview(imageUrl).createRoute()) // 修正
+}
                     )
                 }
                 if (uiState.imageUriToUrlMap.size < 2) {
