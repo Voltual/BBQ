@@ -16,8 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cc.bbq.xq.ui.theme.SwitchWithText // 正确导入 SwitchWithText
+import cc.bbq.xq.ui.components.SwitchWithText
 import kotlinx.coroutines.launch
+import cc.bbq.xq.data.UpdateInfo // 导入 UpdateInfo
+import cc.bbq.xq.ui.compose.UpdateDialog
 
 @Composable
 fun UpdateSettingsScreen(
@@ -26,7 +28,8 @@ fun UpdateSettingsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val autoCheckUpdates by viewModel.autoCheckUpdates.collectAsState(initial = false)
-    var showDialog by remember { mutableStateOf<UpdateInfo?>(null) }
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) } // 修改为 updateInfo
+    var showDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -36,9 +39,9 @@ fun UpdateSettingsScreen(
         SwitchWithText(
             text = "自动检查更新",
             checked = autoCheckUpdates,
-            onCheckedChange = { checked ->
+            onCheckedChange = {
                 scope.launch {
-                    viewModel.setAutoCheckUpdates(context, checked)
+                    viewModel.setAutoCheckUpdates(context, it)
                 }
             }
         )
@@ -47,9 +50,10 @@ fun UpdateSettingsScreen(
 
         Button(
             onClick = {
-                viewModel.checkForUpdates(context) { updateInfo ->
-                    if (updateInfo != null) {
-                        showDialog = updateInfo
+                viewModel.checkForUpdates(context) { update ->
+                    if (update != null) {
+                        updateInfo = update
+                        showDialog = true
                     }
                 }
             },
@@ -59,17 +63,9 @@ fun UpdateSettingsScreen(
         }
     }
 
-    // 添加对话框显示逻辑
-    showDialog?.let { updateInfo ->
-        AlertDialog(
-            onDismissRequest = { showDialog = null },
-            title = { Text("发现新版本") },
-            text = { Text("发现新版本: ${updateInfo.versionName}") },
-            confirmButton = {
-                Button(onClick = { showDialog = null }) {
-                    Text("确定")
-                }
-            }
-        )
+    if (showDialog && updateInfo != null) {
+        UpdateDialog(updateInfo = updateInfo!!) {
+            showDialog = false
+        }
     }
 }
