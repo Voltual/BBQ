@@ -157,7 +157,9 @@ fun RankingListScreen(
             PullRefreshIndicator(
                 refreshing,
                 pullRefreshState,
-                Modifier.align(Alignment.TopCenter)
+                Modifier.align(Alignment.TopCenter),
+                color = MaterialTheme.colorScheme.primary, // 使用主题主色
+                backgroundColor = MaterialTheme.colorScheme.surface // 使用主题背景色
             )
         }
     }

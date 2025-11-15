@@ -225,7 +225,7 @@ fun ThemeCustomizeScreen(
                 // 全局背景设置（独立于主题模式）
                 item {
                     GlobalBackgroundEditor(
-                        title = "全局背景图片",
+                        title = "主页背景图片",
                         backgroundUri = globalBackgroundUri,
                         onSelectImage = { globalBackgroundPickerLauncher.launch(arrayOf("image/*")) },
                         onReset = {
