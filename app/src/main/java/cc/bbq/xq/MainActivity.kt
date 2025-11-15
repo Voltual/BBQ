@@ -307,6 +307,7 @@ fun getTitleForDestination(backStackEntry: NavBackStackEntry?): String {
         "image_preview" -> "图片预览"
         StoreManager.route -> "存储管理"
         "app_detail" -> "应用详情"
+        UpdateSettings.route -> "更新设置"
         else -> "BBQ"
     }
 }
