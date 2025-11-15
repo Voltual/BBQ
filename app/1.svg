@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1805" height="1661" viewBox="0 0 200 200">
   <g transform="rotate(-42, 100, 100)">
-    <ellipse cx="100" cy="108" rx="100" ry="50" fill="none" stroke="white" stroke-width="25" />
+    <ellipse cx="100" cy="100" rx="120" ry="50" fill="none" stroke="white" stroke-width="24" />
   </g>
   <line x1="20" y1="20" x2="180" y2="180" stroke="white" stroke-width="30" stroke-linecap="round" />
 </svg>

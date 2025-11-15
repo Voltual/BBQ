@@ -312,12 +312,10 @@ fun PostCreateScreen(
                                 viewModel.removeImage(uriToRemove)
                             }
                         },
-                       onImageClick = {
-    val context = LocalContext.current
-    LaunchedEffect(context) {
-        navController.navigate(ImagePreview(imageUrl).createRoute())
-    }
-}
+                        onImageClick = {
+                            // 导航到图片预览
+                            navController.navigate(ImagePreview(imageUrl).createRoute())
+                        }
                     )
                 }
                 if (uiState.imageUriToUrlMap.size < 2) {
