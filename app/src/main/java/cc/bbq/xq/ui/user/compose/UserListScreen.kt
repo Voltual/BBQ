@@ -44,9 +44,10 @@ fun UserListScreen(
     errorMessage: String?,
     isEmpty: Boolean,
     onLoadMore: () -> Unit,
+    onRefresh: () -> Unit, // 添加 onRefresh 参数
     onUserClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: UserListViewModel = viewModel() // 获取 ViewModel 实例
+    viewModel: UserListViewModel = viewModel()
 ) {
     // 修复：使用更简单的状态管理
     val safeUsers by remember(users) { mutableStateOf(users) }
