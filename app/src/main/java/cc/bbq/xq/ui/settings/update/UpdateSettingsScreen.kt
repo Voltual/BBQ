@@ -16,9 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import cc.bbq.xq.ui.components.SwitchWithText //修复 import
+import cc.bbq.xq.ui.theme.SwitchWithText // 正确导入 SwitchWithText
 import kotlinx.coroutines.launch
-import cc.bbq.xq.ui.components.SwitchWithText
 
 @Composable
 fun UpdateSettingsScreen(
@@ -36,9 +35,9 @@ fun UpdateSettingsScreen(
         SwitchWithText(
             text = "自动检查更新",
             checked = autoCheckUpdates,
-            onCheckedChange = {
+            onCheckedChange = { checked ->
                 scope.launch {
-                    viewModel.setAutoCheckUpdates(context, it)
+                    viewModel.setAutoCheckUpdates(context, checked)
                 }
             }
         )

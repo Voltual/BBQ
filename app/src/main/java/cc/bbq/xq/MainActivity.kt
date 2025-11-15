@@ -57,6 +57,7 @@ import cc.bbq.xq.ui.compose.UpdateDialog
 import kotlinx.serialization.decodeFromString
 import cc.bbq.xq.data.UpdateSettingsDataStore
 import kotlinx.coroutines.flow.first
+import cc.bbq.xq.util.UpdateChecker//导入公共的更新函数
 
 class MainActivity : ComponentActivity() {
 
@@ -152,27 +153,10 @@ fun CheckForUpdates() {
     LaunchedEffect(Unit) {
         val autoCheckUpdates = UpdateSettingsDataStore.autoCheckUpdates.first()
         if (autoCheckUpdates) {
-            // 后台线程执行网络请求
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val result = KtorClient.ApiServiceImpl.getLatestRelease()
-                    if (result.isSuccess) {
-                        val update = result.getOrNull()
-                        if (update != null) {
-                            // 版本号比较
-                            val currentVersion = BuildConfig.VERSION_NAME
-                            val newVersion = update.tag_name.replace(Regex("[^\\d.]"), "") // 提取数字部分
-                            if (newVersion > currentVersion) {
-                                // 在主线程更新UI
-                                withContext(Dispatchers.Main) {
-                                    updateInfo = update
-                                    showDialog = true
-                                }
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+            UpdateChecker.checkForUpdates(context) { update ->
+                if (update != null) {
+                    updateInfo = update
+                    showDialog = true
                 }
             }
         }

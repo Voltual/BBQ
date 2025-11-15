@@ -184,3 +184,24 @@ fun BBQIconButton(
         )
     }
 }
+
+//移动帖子详情页“带文本的开关”到theme下的公共位置以便复用
+@Composable
+fun SwitchWithText(
+    text: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+    ) {
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(text = text, style = MaterialTheme.typography.bodyMedium)
+    }
+}

@@ -76,26 +76,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
-
-@Composable
-fun SwitchWithText(
-    text: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-    ) {
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(text = text, style = MaterialTheme.typography.bodyMedium)
-    }
-}
+import cc.bbq.xq.ui.theme.SwitchWithText // 导入移动到公共位置的 SwitchWithText
 
 @Composable
 fun PostDetailScreen(
