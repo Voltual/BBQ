@@ -1,3 +1,4 @@
+// Components.kt
 //Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
@@ -49,6 +50,12 @@ import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import androidx.navigation.NavController
+import androidx.compose.foundation.clickable // 导入 clickable
+import androidx.compose.material3.CircularProgressIndicator // 导入 CircularProgressIndicator
+import androidx.compose.material.icons.Icons // 导入 Icons
+import androidx.compose.foundation.layout.padding // 导入 padding
+import androidx.compose.foundation.shape.CircleShape // 导入 CircleShape
+import androidx.compose.material.icons.filled.BrokenImage // 确保导入了 BrokenImage
 
 // 基础按钮组件
 @Composable
@@ -251,7 +258,7 @@ fun ImagePreviewItem(
                 }
                 is AsyncImagePainter.State.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.BrokenImage, contentDescription = "加载失败")
+                        Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
                     }
                 }
                 else -> {
@@ -269,7 +276,7 @@ fun ImagePreviewItem(
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
         ) {
             Icon(
-                imageVector = Icons.Default.Close,
+                imageVector = Icons.Filled.Close,
                 contentDescription = "移除图片",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(14.dp)

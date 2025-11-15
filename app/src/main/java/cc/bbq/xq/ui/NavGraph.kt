@@ -167,30 +167,32 @@ fun AppNavHost(
         }
 
 composable(route = CreatePost.route) {
+    val navController = rememberNavController() // 获取当前 Composable 的 NavController
     PostCreateScreen(
         viewModel = postCreateViewModel,
         onBackClick = { navController.popBackStack() },
-        // 移除 onSubmitClick 参数
         mode = "create",
         refundAppName = "",
         refundAppId = 0L,
         refundVersionId = 0L,
-        refundPayMoney = 0
+        refundPayMoney = 0,
+        navController = navController // 传递 NavController
     )
 }
 
 composable(route = CreateRefundPost(0, 0, "", 0).route, arguments = CreateRefundPost.arguments) { backStackEntry ->
+    val navController = rememberNavController() // 获取当前 Composable 的 NavController
     val args = backStackEntry.arguments!!
     PostCreateScreen(
         viewModel = postCreateViewModel,
         onBackClick = { navController.popBackStack() },
-        // 移除 onSubmitClick 参数
         mode = "refund",
         refundAppName = URLDecoder.decode(args.getString(AppDestination.ARG_APP_NAME, ""), StandardCharsets.UTF_8.toString()),
         refundAppId = args.getLong(AppDestination.ARG_APP_ID),
         refundVersionId = args.getLong(AppDestination.ARG_VERSION_ID),
         refundPayMoney = args.getInt(AppDestination.ARG_PAY_MONEY),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        navController = navController // 传递 NavController
     )
 }
 

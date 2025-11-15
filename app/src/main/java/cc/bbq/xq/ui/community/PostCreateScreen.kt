@@ -16,25 +16,19 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.navigation.NavController
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import cc.bbq.xq.ui.theme.BBQCard
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -46,6 +40,7 @@ import cc.bbq.xq.ui.theme.ImagePreviewItem // 导入 ImagePreviewItem
 import cc.bbq.xq.ui.ImagePreview // 导入 ImagePreview
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
+import android.widget.Toast // 导入 Toast
 
 private const val MODE_CREATE = "create"
 private const val MODE_REFUND = "refund"
@@ -461,7 +456,7 @@ private fun ImagePreviewSection(
             if (uris.size < maxImages) {
                 item {
                     OutlinedButton(onClick = onAddClick, modifier = Modifier.size(80.dp)) {
-                        Icon(Icons.Default.Add, "添加图片")
+                        Icon(Icons.Filled.Add, "添加图片")
                     }
                 }
             }
