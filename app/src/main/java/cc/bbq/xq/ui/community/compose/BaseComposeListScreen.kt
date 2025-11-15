@@ -282,7 +282,9 @@ fun BaseComposeListScreen(
             PullRefreshIndicator(
                 refreshing = isRefreshing,
                 state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentColor = MaterialTheme.colorScheme.primary, // 使用主题主色
+                backgroundColor = MaterialTheme.colorScheme.surface // 使用主题背景色
             )
         }
     }
