@@ -26,6 +26,7 @@ fun UpdateSettingsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val autoCheckUpdates by viewModel.autoCheckUpdates.collectAsState(initial = false)
+    var showDialog by remember { mutableStateOf<UpdateInfo?>(null) }
 
     Column(
         modifier = Modifier
@@ -44,19 +45,31 @@ fun UpdateSettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // UpdateSettingsScreen.kt
-Button(
-    onClick = {
-        viewModel.checkForUpdates(context) { updateInfo ->
-            if (updateInfo != null) {
-                showDialog = updateInfo
+        Button(
+            onClick = {
+                viewModel.checkForUpdates(context) { updateInfo ->
+                    if (updateInfo != null) {
+                        showDialog = updateInfo
+                    }
+                }
+            },
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text("手动检查更新")
+        }
+    }
+
+    // 添加对话框显示逻辑
+    showDialog?.let { updateInfo ->
+        AlertDialog(
+            onDismissRequest = { showDialog = null },
+            title = { Text("发现新版本") },
+            text = { Text("发现新版本: ${updateInfo.versionName}") },
+            confirmButton = {
+                Button(onClick = { showDialog = null }) {
+                    Text("确定")
+                }
             }
-        }
-    },
-    modifier = Modifier.align(Alignment.CenterHorizontally)
-) {
-    Text("手动检查更新")
-}
-        }
+        )
     }
 }
