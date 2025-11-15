@@ -42,16 +42,20 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.foundation.layout.width // 添加正确的导入路径
-import androidx.compose.foundation.clickable // 导入 clickable
-import androidx.compose.material.icons.Icons // 导入 Icons
-import androidx.compose.material.icons.filled.BrokenImage // 导入 BrokenImage
-import androidx.compose.foundation.shape.CircleShape // 导入 CircleShape
-import coil.compose.SubcomposeAsyncImage // 导入 SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent // 导入 SubcomposeAsyncImageContent
-import coil.request.ImageRequest // 导入 ImageRequest
-import androidx.compose.material3.CircularProgressIndicator // 导入 CircularProgressIndicator
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.BrokenImage
+import androidx.compose.foundation.shape.CircleShape
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
+import coil.request.ImageRequest
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.ui.draw.clip // 导入 clip
+import androidx.compose.ui.draw.clip
+import coil.compose.AsyncImagePainter
+import androidx.compose.material.icons.filled.BrokenImage
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
 
 // 基础按钮组件
 @Composable
