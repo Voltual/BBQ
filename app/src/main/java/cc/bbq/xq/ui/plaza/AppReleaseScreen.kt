@@ -8,37 +8,41 @@
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.plaza
 
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import cc.bbq.xq.ui.ImagePreview
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BrokenImage
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import cc.bbq.xq.R
 import cc.bbq.xq.ui.theme.BBQButton
 import cc.bbq.xq.ui.theme.BBQOutlinedButton
-import cc.bbq.xq.ui.theme.ImagePreviewItem // 导入 ImagePreviewItem
-import androidx.compose.ui.res.stringResource
-import cc.bbq.xq.R
-import androidx.compose.foundation.horizontalScroll // 确保导入此项
-import androidx.compose.ui.Alignment // 确保导入此项
+import cc.bbq.xq.ui.theme.ImagePreviewItem
+import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
-import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 
 @Composable
@@ -206,43 +210,44 @@ fun AppReleaseScreen(
             }
 
             item {
-                Column {
-                    Text("2. 上传应用介绍图 (至氪云)", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    BBQOutlinedButton(
-                        onClick = { imageLauncher.launch("image/*") },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = viewModel.introductionImageUrls.size < MAX_INTRO_IMAGES,
-                        text = { Text("选择图片 (${viewModel.introductionImageUrls.size}/$MAX_INTRO_IMAGES)") }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    // 使用HorizontalScroll包含展示图片
-                        Row(
-                            modifier = Modifier.horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (viewModel.introductionImageUrls.isNotEmpty()) {
-                                viewModel.introductionImageUrls.forEach { url ->
-                                    ImagePreviewItem(
-                                        imageUrl = url,
-                                        onRemoveClick = { viewModel.removeIntroductionImage(url) },
-                                        onImageClick = {
-                                            navController.navigate(ImagePreview(url).createRoute())
-                                        },
-                                        modifier = Modifier.size(100.dp)
-                                    )
-                                }
-                            } else {
-                                Text(
-                                    text = stringResource(id = R.string.no_images_uploaded),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
-                            }
-                        }
+        Column {
+            Text("2. 上传应用介绍图 (至氪云)", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            BBQOutlinedButton(
+                onClick = { imageLauncher.launch("image/*") },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = viewModel.introductionImageUrls.size < MAX_INTRO_IMAGES,
+                text = { 
+                    Text("选择图片 (${viewModel.introductionImageUrls.size}/$MAX_INTRO_IMAGES)") 
                 }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            if (viewModel.introductionImageUrls.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    viewModel.introductionImageUrls.forEach { url ->
+                        ImagePreviewItem(
+                            imageUrl = url,
+                            onRemoveClick = { viewModel.removeIntroductionImage(url) },
+                            onImageClick = {
+                                navController.navigate("image_preview?url=$url")
+                            },
+                            modifier = Modifier.size(100.dp)
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = context.getString(R.string.no_images_uploaded),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
+        }
+    }
 
             item { CategoryDropdown(viewModel) }
             item { PaymentSettings(viewModel) }

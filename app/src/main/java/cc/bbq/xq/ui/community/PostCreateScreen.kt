@@ -10,12 +10,9 @@ package cc.bbq.xq.ui.community
 
 import android.app.Activity
 import android.net.Uri
-import android.os.Build
-import cc.bbq.xq.data.DeviceNameDataStore
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.navigation.NavController
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -23,26 +20,26 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import cc.bbq.xq.ui.theme.BBQCard
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import cc.bbq.xq.AuthManager
+import androidx.navigation.NavController
+import cc.bbq.xq.R
+import cc.bbq.xq.data.DeviceNameDataStore
+import cc.bbq.xq.ui.theme.BBQCard
+import cc.bbq.xq.ui.theme.ImagePreviewItem
 import coil.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.flow.first
-import cc.bbq.xq.ui.theme.ImagePreviewItem // 导入 ImagePreviewItem
-import cc.bbq.xq.ui.ImagePreview // 导入 ImagePreview
-import androidx.compose.ui.res.stringResource
-import cc.bbq.xq.R
-import android.widget.Toast // 导入 Toast
-import androidx.compose.ui.text.input.KeyboardOptions // 导入 KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType // 导入 KeyboardType
 
 private const val MODE_CREATE = "create"
 private const val MODE_REFUND = "refund"
@@ -141,18 +138,19 @@ fun PostCreateScreen(
     }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { uri ->
-                if (uiState.selectedImageUris.size < 2) {
-                    viewModel.uploadImage(uri)
-                } else {
-                    Toast.makeText(context, stringResource(R.string.maximum_two_images), Toast.LENGTH_SHORT).show()
-                }
+    contract = ActivityResultContracts.StartActivityForResult()
+) { result ->
+    if (result.resultCode == Activity.RESULT_OK) {
+        result.data?.data?.let { uri ->
+            if (uiState.selectedImageUris.size < 2) {
+                viewModel.uploadImage(uri)
+            } else {
+                // 使用上下文获取字符串资源
+                Toast.makeText(context, context.getString(R.string.maximum_two_images), Toast.LENGTH_SHORT).show()
             }
         }
     }
+}
 
     val startImagePicker = {
         activity?.let {
@@ -327,43 +325,47 @@ fun PostCreateScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = {
-                if (uiState.title.isBlank()) {
-                    Toast.makeText(context, stringResource(R.string.please_fill_title), Toast.LENGTH_SHORT).show()
-                } else if (uiState.content.isBlank()) {
-                    val message = if (isRefundMode) stringResource(R.string.please_describe_problem) else stringResource(R.string.please_fill_content)
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                } else if (isRefundMode && uiState.content.length < 12) {
-                    Toast.makeText(context, stringResource(R.string.problem_description_at_least_12_words), Toast.LENGTH_SHORT).show()
-                } else {
-                    // 合并图片URL
-                    val uploadedUrlsList = uiState.imageUrls.split(",").filter { it.isNotBlank() }
-                    val manualUrlsList = manualImageUrls.split(",").filter { it.isNotBlank() }
-                    val allImageUrls = (uploadedUrlsList + manualUrlsList).distinct().joinToString(",")
+    onClick = {
+        if (uiState.title.isBlank()) {
+            Toast.makeText(context, context.getString(R.string.please_fill_title), Toast.LENGTH_SHORT).show()
+        } else if (uiState.content.isBlank()) {
+            val message = if (isRefundMode) 
+                context.getString(R.string.please_describe_problem) 
+            else 
+                context.getString(R.string.please_fill_content)
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        } else if (isRefundMode && uiState.content.length < 12) {
+            Toast.makeText(
+                context, 
+                context.getString(R.string.problem_description_at_least_12_words), 
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            // 合并图片URL
+            val uploadedUrlsList = uiState.imageUrls.split(",").filter { it.isNotBlank() }
+            val manualUrlsList = manualImageUrls.split(",").filter { it.isNotBlank() }
+            val allImageUrls = (uploadedUrlsList + manualUrlsList).distinct().joinToString(",")
 
-                    viewModel.createPost(
-                        title = uiState.title,
-                        imageUrls = allImageUrls,
-                        subsectionId = uiState.selectedSubsectionId,
-                        bvNumber = bvNumber,
-                        tempDeviceName = tempDeviceName,
-                        mode = mode,
-                        refundAppId = refundAppId,
-                        refundVersionId = refundVersionId,
-                        refundPayMoney = refundPayMoney,
-                        selectedRefundReason = selectedRefundReason
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = postStatus !is PostStatus.Loading
-        ) {
-            Text(if (isRefundMode) "提交申请" else "发布帖子")
+            viewModel.createPost(
+                title = uiState.title,
+                imageUrls = allImageUrls,
+                subsectionId = uiState.selectedSubsectionId,
+                bvNumber = bvNumber,
+                tempDeviceName = tempDeviceName,
+                mode = mode,
+                refundAppId = refundAppId,
+                refundVersionId = refundVersionId,
+                refundPayMoney = refundPayMoney,
+                selectedRefundReason = selectedRefundReason
+            )
         }
-    }
-}
+    },
+    modifier = Modifier.fillMaxWidth(),
+    enabled = postStatus !is PostStatus.Loading
+) {
+    Text(if (isRefundMode) "提交申请" else "发布帖子")
 
-// 新增：草稿偏好设置组件
+// 草稿偏好设置组件
 @Composable
 private fun DraftPreferencesSection(
     autoRestoreDraft: Boolean,
@@ -435,39 +437,46 @@ private fun ImagePreviewSection(
     uris: List<Uri>,
     onAddClick: () -> Unit,
     onRemoveClick: (Uri) -> Unit,
-    maxImages: Int = 2, // 默认限制
+    maxImages: Int = 2,
     navController: NavController
 ) {
     val context = LocalContext.current
+    
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(
             "图片上传 (最多${maxImages}张)",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
+        
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(uris) { uri ->
-                cc.bbq.xq.ui.theme.ImagePreviewItem(
+                ImagePreviewItem(
                     imageUrl = uri.toString(),
                     onRemoveClick = { onRemoveClick(uri) },
                     onImageClick = {
-                        navController.navigate(cc.bbq.xq.ui.ImagePreview(uri.toString()).createRoute())
+                        navController.navigate("image_preview?url=${uri.toString()}")
                     },
                     modifier = Modifier.size(80.dp)
                 )
             }
+            
             if (uris.size < maxImages) {
                 item {
-                    OutlinedButton(onClick = onAddClick, modifier = Modifier.size(80.dp)) {
-                        Icon(Icons.Filled.Add, "添加图片", contentDescription = "添加图片")
+                    OutlinedButton(
+                        onClick = onAddClick, 
+                        modifier = Modifier.size(80.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = "添加图片"
+                        )
                     }
                 }
             } else {
-
-                // 提示已经到达最大数量
                 item {
                     Text(
-                        text = stringResource(id = R.string.maximum_images_reached),
+                        text = context.getString(R.string.maximum_images_reached),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(start = 8.dp)

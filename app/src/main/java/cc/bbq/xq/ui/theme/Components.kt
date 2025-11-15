@@ -231,7 +231,7 @@ fun ImagePreviewItem(
     onRemoveClick: () -> Unit,
     onImageClick: () -> Unit,
     modifier: Modifier = Modifier,
-    size: Dp = 100.dp // 默认尺寸
+    size: Dp = 100.dp
 ) {
     Box(
         modifier = modifier
@@ -243,27 +243,27 @@ fun ImagePreviewItem(
                 .data(imageUrl)
                 .crossfade(true)
                 .build(),
-            contentDescription = "介绍图预览",
+            contentDescription = "预览图片",
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
                 .clickable(onClick = onImageClick)
         ) {
             val state = painter.state
-            when (state) {
-                is AsyncImagePainter.State.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(strokeWidth = 2.dp)
-                    }
+            if (state is AsyncImagePainter.State.Loading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
-                is AsyncImagePainter.State.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
-                    }
+            } else if (state is AsyncImagePainter.State.Error) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Filled.BrokenImage, 
+                        "加载失败",
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
-                else -> {
-                    SubcomposeAsyncImageContent()
-                }
+            } else {
+                SubcomposeAsyncImageContent()
             }
         }
 
@@ -272,14 +272,17 @@ fun ImagePreviewItem(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(4.dp)
-                .size(20.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
+                .size(24.dp)
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                    CircleShape
+                )
         ) {
             Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = "移除图片",
+                Icons.Filled.Close,
+                "移除图片",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(14.dp)
+                modifier = Modifier.size(16.dp)
             )
         }
     }

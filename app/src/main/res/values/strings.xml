@@ -57,4 +57,11 @@
     <string name="clear_all_history_text">您确定要清空所有搜索历史记录吗？此操作不可恢复。</string>
     <string name="confirm">确认</string>
     <string name="cancel">取消</string>
+    <string name="maximum_two_images">最多只能上传两张图片</string>
+    <string name="please_fill_title">请填写标题</string>
+    <string name="please_describe_problem">请详细描述问题</string>
+    <string name="please_fill_content">请填写内容</string>
+    <string name="problem_description_at_least_12_words">问题描述不能少于12个字</string>
+    <string name="maximum_images_reached">已达最大图片数量</string>
+    <string name="no_images_uploaded">未上传图片</string>
 </resources>
