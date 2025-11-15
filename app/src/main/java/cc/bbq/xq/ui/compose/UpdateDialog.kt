@@ -57,7 +57,7 @@ fun UpdateDialog(updateInfo: UpdateInfo, onDismiss: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "请选择合适的APK版本下载",
+                    text = "32位设备请下载v7a，64位下载v8a",
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.bodySmall
@@ -82,7 +82,7 @@ fun UpdateDialog(updateInfo: UpdateInfo, onDismiss: () -> Unit) {
                 
                 // "稍后更新" 按钮
                 TextButton(onClick = onDismiss) {
-                    Text("稍后更新")
+                    Text("下次一定")
                 }
             }
         }
