@@ -75,6 +75,7 @@ val REFUND_REASONS = listOf(
     RefundReason("适配反馈")
 )
 
+@OptIn(ExperimentalComposeUiApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostCreateScreen(
@@ -315,7 +316,6 @@ fun PostCreateScreen(
                         onImageClick = {
                     // 导航到图片预览
                     navController.navigate(ImagePreview(imageUrl).createRoute())
-                    Unit // 显式返回 Unit
                 }
                     )
                 }
