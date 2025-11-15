@@ -347,7 +347,8 @@ private suspend fun uploadToKeyun(file: File, mediaType: String = "application/o
 
         if (response.status.isSuccess()) {
             val responseBody: KtorClient.UploadResponse = response.body()
-            if ((responseBody.code == 1 || responseBody.exists == 1) && !responseBody.downurl.isNullOrBlank()) {
+            // 修复：服务器返回 code 为 0 表示成功，exists 为 1 表示文件已存在
+            if (responseBody.code == 0 && !responseBody.downurl.isNullOrBlank()) {
                 withContext(Dispatchers.Main) {
                     _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
                     onSuccess(responseBody.downurl)
