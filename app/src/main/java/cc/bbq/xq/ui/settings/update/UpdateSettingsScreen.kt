@@ -44,14 +44,19 @@ fun UpdateSettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = {
-                // 手动检查更新的逻辑
-                viewModel.checkForUpdates(context)
-            },
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text("手动检查更新")
+        // UpdateSettingsScreen.kt
+Button(
+    onClick = {
+        viewModel.checkForUpdates(context) { updateInfo ->
+            if (updateInfo != null) {
+                showDialog = updateInfo
+            }
+        }
+    },
+    modifier = Modifier.align(Alignment.CenterHorizontally)
+) {
+    Text("手动检查更新")
+}
         }
     }
 }
