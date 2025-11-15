@@ -1,4 +1,3 @@
-// Components.kt
 //Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
@@ -36,26 +35,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose. runtime.collectAsState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.foundation.layout.width // 添加正确的导入路径
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.Dp
-import coil.compose.AsyncImagePainter
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.BrokenImage
+import androidx.compose.foundation.shape.CircleShape
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
-import androidx.navigation.NavController
-import androidx.compose.foundation.clickable // 导入 clickable
-import androidx.compose.material3.CircularProgressIndicator // 导入 CircularProgressIndicator
-import androidx.compose.material.icons.Icons // 导入 Icons
-import androidx.compose.foundation.layout.padding // 导入 padding
-import androidx.compose.foundation.shape.CircleShape // 导入 CircleShape
-import androidx.compose.material.icons.filled.BrokenImage // 确保导入了 BrokenImage
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.Arrangement
 
 // 基础按钮组件
 @Composable
@@ -227,124 +221,66 @@ fun SwitchWithText(
 
 @Composable
 fun ImagePreviewItem(
-    imageModel: Any,
-    onRemoveClick: (() -> Unit)? = null,
-    onImageClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-    contentDescription: String = "图片预览"
+    imageUrl: String,
+    onRemoveClick: () -> Unit,
+    onImageClick: () -> Unit
 ) {
-    val context = LocalContext.current
-    
     Box(
-        modifier = modifier
+        modifier = Modifier
             .size(100.dp)
             .clip(MaterialTheme.shapes.medium)
     ) {
         SubcomposeAsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(imageModel)
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(imageUrl)
                 .crossfade(true)
                 .build(),
-            contentDescription = contentDescription,
+            contentDescription = "预览图片",
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
-                .clickable { onImageClick?.invoke() }
+                .clickable(onClick = onImageClick)
         ) {
             val state = painter.state
             when (state) {
                 is AsyncImagePainter.State.Loading -> {
                     Box(
-                        modifier = Modifier.fillMaxSize(), 
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(strokeWidth = 2.dp)
                     }
                 }
+
                 is AsyncImagePainter.State.Error -> {
                     Box(
-                        modifier = Modifier.fillMaxSize(), 
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.BrokenImage, 
-                            contentDescription = "加载失败",
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                        Icon(Icons.Default.BrokenImage, contentDescription = "加载失败")
                     }
                 }
+
                 else -> {
                     SubcomposeAsyncImageContent()
                 }
             }
         }
 
-        // 只有在提供了移除回调时才显示移除按钮
-        onRemoveClick?.let { removeCallback ->
-            IconButton(
-                onClick = removeCallback,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp)
-                    .size(20.dp)
-                    .background(
-                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f), 
-                        CircleShape
-                    )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "移除图片",
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
-        }
-    }
-}
-
-// 用于显示图片上传区域的通用组件
-@Composable
-fun ImageUploadSection(
-    images: List<Any>,
-    onAddClick: () -> Unit,
-    onRemoveClick: (Any) -> Unit,
-    onImageClick: (Any) -> Unit,
-    maxImages: Int,
-    modifier: Modifier = Modifier,
-    title: String = "图片上传"
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            "$title (${images.size}/$maxImages)", 
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
+        IconButton(
+            onClick = onRemoveClick,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp)
+                .size(20.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer, CircleShape) // 使用 Material You 颜色
         ) {
-            items(images) { image ->
-                ImagePreviewItem(
-                    imageModel = image,
-                    onRemoveClick = { onRemoveClick(image) },
-                    onImageClick = { onImageClick(image) },
-                    contentDescription = "已上传图片"
-                )
-            }
-            
-            // 添加图片按钮（如果未达到最大数量）
-            if (images.size < maxImages) {
-                item {
-                    OutlinedButton(
-                        onClick = onAddClick,
-                        modifier = Modifier.size(100.dp)
-                    ) {
-                        Icon(Icons.Default.Add, "添加图片")
-                    }
-                }
-            }
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "移除图片",
+                tint = MaterialTheme.colorScheme.onPrimaryContainer, // 使用 Material You 颜色
+                modifier = Modifier.size(14.dp)
+            )
         }
     }
 }

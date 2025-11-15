@@ -49,8 +49,7 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
-import cc.bbq.xq.ui.theme.ImagePreviewItem
-import cc.bbq.xq.ui.theme.ImageUploadSection
+import cc.bbq.xq.ui.theme.ImagePreviewItem // 导入 ImagePreviewItem
 
 @Composable
 fun AppReleaseScreen(
@@ -92,7 +91,7 @@ fun AppReleaseScreen(
             Toast.makeText(context, "未选择任何图片", Toast.LENGTH_SHORT).show()
         }
     }
-    
+
     val isUpdateMode by viewModel.isUpdateMode
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -113,14 +112,18 @@ fun AppReleaseScreen(
                 BBQButton(
                     onClick = { apkLauncher.launch("application/vnd.android.package-archive") },
                     modifier = Modifier.fillMaxWidth(),
-                    text = { Text(if (isUpdateMode) "1. 选择新版 APK (上传至${selectedService.displayName})" else "1. 选择并上传 APK (至${selectedService.displayName})") }
+                    text = {
+                        Text(
+                            if (isUpdateMode) "1. 选择新版 APK (上传至${selectedService.displayName})" else "1. 选择并上传 APK (至${selectedService.displayName})"
+                        )
+                    }
                 )
             }
 
             item {
                 val iconUrl by viewModel.iconUrl
                 val localIconUri by viewModel.localIconUri
-                
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val model: Any? = iconUrl ?: localIconUri
                     if (model != null) {
@@ -138,7 +141,7 @@ fun AppReleaseScreen(
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Text(
-                            if(iconUrl != null) "当前图标" else "已解析图标",
+                            if (iconUrl != null) "当前图标" else "已解析图标",
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
@@ -146,14 +149,25 @@ fun AppReleaseScreen(
             }
 
             item { FormTextField(label = "应用名称", state = viewModel.appName) }
-            item { FormTextField(label = "APK 下载链接 (自动填充/可修改)", state = viewModel.apkDownloadUrl, singleLine = true) }
+            item {
+                FormTextField(
+                    label = "APK 下载链接 (自动填充/可修改)",
+                    state = viewModel.apkDownloadUrl,
+                    singleLine = true
+                )
+            }
 
             item {
                 val uploadUrl = "https://file.bz6.top/upload.php"
                 val annotatedString = buildAnnotatedString {
                     append("如果氪云API上传不稳定? 你或许可以尝试直接使用氪云的网页端上传")
                     pushStringAnnotation(tag = "URL", annotation = uploadUrl)
-                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)) {
+                    withStyle(
+                        style = SpanStyle(
+                            color = MaterialTheme.colorScheme.primary,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    ) {
                         append("点此访问网页版上传，但是记住复制下载链接回来填充")
                     }
                     pop()
@@ -179,43 +193,63 @@ fun AppReleaseScreen(
                 }
             }
 
-            item { FormTextField(label = "包名 (自动填充)", state = viewModel.packageName, enabled = !isUpdateMode) }
+            item {
+                FormTextField(
+                    label = "包名 (自动填充)",
+                    state = viewModel.packageName,
+                    enabled = !isUpdateMode
+                )
+            }
             item { FormTextField(label = "版本名 (自动填充)", state = viewModel.versionName, enabled = false) }
             item { FormTextField(label = "版本号 (用户可见)", state = viewModel.appVersion) }
             item { FormTextField(label = "文件大小 (MB, 自动填充)", state = viewModel.appSize, enabled = false) }
-            item { FormTextField(label = "资源介绍 (支持密码格式)", state = viewModel.appIntroduce, singleLine = false, minLines = 3) }
-            item { FormTextField(label = "适配性能描述 (支持换行)", state = viewModel.appExplain, singleLine = false, minLines = 4) }
+            item {
+                FormTextField(
+                    label = "资源介绍 (支持密码格式)",
+                    state = viewModel.appIntroduce,
+                    singleLine = false,
+                    minLines = 3
+                )
+            }
+            item {
+                FormTextField(
+                    label = "适配性能描述 (支持换行)",
+                    state = viewModel.appExplain,
+                    singleLine = false,
+                    minLines = 4
+                )
+            }
 
             item {
-    Column {
-        Text("2. 上传应用介绍图 (至氪云)", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
-        BBQOutlinedButton(
-            onClick = { imageLauncher.launch("image/*") },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = viewModel.introductionImageUrls.size < MAX_INTRO_IMAGES,
-            text = { Text("选择图片 (${viewModel.introductionImageUrls.size}/$MAX_INTRO_IMAGES)") }
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        if (viewModel.introductionImageUrls.isNotEmpty()) {
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                viewModel.introductionImageUrls.forEach { url ->
-                    ImagePreviewItem(
-                        imageModel = url,
-                        onRemoveClick = { viewModel.removeIntroductionImage(url) },
-                        onImageClick = {
-                            navController.navigate(ImagePreview(url).createRoute())
-                        },
-                        contentDescription = "应用介绍图"
+                Column {
+                    Text("2. 上传应用介绍图 (至氪云)", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    BBQOutlinedButton(
+                        onClick = { imageLauncher.launch("image/*") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = viewModel.introductionImageUrls.size < MAX_INTRO_IMAGES,
+                        text = { Text("选择图片 (${viewModel.introductionImageUrls.size}/$MAX_INTRO_IMAGES)") }
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    if (viewModel.introductionImageUrls.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            viewModel.introductionImageUrls.forEach { url ->
+                                ImagePreviewItem(
+                                    imageUrl = url,
+                                    onRemoveClick = { viewModel.removeIntroductionImage(url) },
+                                    onImageClick = {
+                                        // 修复：使用 NavController 导航到 ImagePreview
+                                        navController.navigate(ImagePreview(url).createRoute())
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        }
-    }
-}
 
             item { CategoryDropdown(viewModel) }
             item { PaymentSettings(viewModel) }
@@ -242,7 +276,10 @@ fun AppReleaseScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
                         CircularProgressIndicator()
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
@@ -250,7 +287,7 @@ fun AppReleaseScreen(
                                 viewModel.isApkUploading.value -> "正在上传 APK..."
                                 viewModel.isIconUploading.value -> "正在上传图标..."
                                 viewModel.isIntroImagesUploading.value -> "正在上传介绍图..."
-                                viewModel.isReleasing.value -> if(isUpdateMode) "正在提交更新..." else "正在提交发布..."
+                                viewModel.isReleasing.value -> if (isUpdateMode) "正在提交更新..." else "正在提交发布..."
                                 else -> "请稍候..."
                             },
                             style = MaterialTheme.typography.bodyLarge
@@ -337,7 +374,8 @@ private fun PaymentSettings(viewModel: AppReleaseViewModel) {
 @Composable
 private fun CategoryDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedCategoryName = viewModel.categories.getOrNull(viewModel.selectedCategoryIndex.value)?.categoryName ?: "请选择"
+    val selectedCategoryName =
+        viewModel.categories.getOrNull(viewModel.selectedCategoryIndex.value)?.categoryName ?: "请选择"
 
     Column {
         Text("应用分类", style = MaterialTheme.typography.titleMedium)

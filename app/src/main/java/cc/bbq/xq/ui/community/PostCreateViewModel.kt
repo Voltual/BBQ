@@ -66,7 +66,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
             // 检查是否有草稿并决定是否显示对话框
             draftRepository.draftFlow.first().let { draft ->
-                if (draft != null && (draft.title.isNotBlank() || draft.content.isNotBlank() || draft.imageUris.isNotEmpty())) {
+                if (draft != null && (draft.title.isNotBlank() || draft.content.isNotBlank() || draft.imageUrls.isNotBlank())) {
                     if (_preferencesState.value.autoRestoreDraft) {
                         // 自动恢复草稿
                         restoreDraft(draft)
@@ -82,16 +82,13 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
     // 新增：恢复草稿方法
     private fun restoreDraft(draft: PostDraftRepository.DraftDto) {
-        _uiState.update { 
+        _uiState.update {
             it.copy(
                 title = draft.title,
                 content = draft.content,
-                selectedImageUris = draft.imageUris,
                 imageUrls = draft.imageUrls,
-                selectedSubsectionId = draft.subsectionId,
-                imageUriToUrlMap = draft.imageUris.zip(
-                    draft.imageUrls.split(",").filter { s -> s.isNotEmpty() }
-                ).toMap()
+                imageUriToUrlMap = draft.imageUrls.split(",").filter { it.isNotBlank() }.map { Uri.EMPTY to it }.toMap(), // 修改
+                selectedSubsectionId = draft.subsectionId
             )
         }
     }
@@ -122,7 +119,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             draftDataStore.setNoStoreDraft(enabled)
             _preferencesState.value = _preferencesState.value.copy(noStoreDraft = enabled)
-            
+
             // 如果不存储草稿，立即清除当前草稿
             if (enabled) {
                 draftRepository.clearDraft()
@@ -131,27 +128,27 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     // --- Event Handlers ---
-    fun onTitleChange(newTitle: String) { 
+    fun onTitleChange(newTitle: String) {
         if (!_preferencesState.value.noStoreDraft) {
-            _uiState.update { it.copy(title = newTitle) } 
+            _uiState.update { it.copy(title = newTitle) }
         }
     }
-    
-    fun onContentChange(newContent: String) { 
+
+    fun onContentChange(newContent: String) {
         if (!_preferencesState.value.noStoreDraft) {
-            _uiState.update { it.copy(content = newContent) } 
+            _uiState.update { it.copy(content = newContent) }
         }
     }
-    
-    fun onSubsectionChange(newId: Int) { 
+
+    fun onSubsectionChange(newId: Int) {
         if (!_preferencesState.value.noStoreDraft) {
-            _uiState.update { it.copy(selectedSubsectionId = newId) } 
+            _uiState.update { it.copy(selectedSubsectionId = newId) }
         }
     }
-    
-    fun onImageUrlsChange(urls: String) { 
+
+    fun onImageUrlsChange(urls: String) {
         if (!_preferencesState.value.noStoreDraft) {
-            _uiState.update { it.copy(imageUrls = urls) } 
+            _uiState.update { it.copy(imageUrls = urls) }
         }
     }
 
@@ -163,7 +160,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
         viewModelScope.launch {
             _uiState.update { it.copy(showProgressDialog = true, progressMessage = "上传图片中...") }
-            
+
             val realPath = withContext(Dispatchers.IO) {
                 FileUtil.getRealPathFromURI(getApplication(), uri)
             }
@@ -182,22 +179,23 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 if (uploadResult.isSuccess) {
                     uploadResult.getOrNull()?.let {
                         _uiState.update { currentState ->
-                            val newUris = currentState.selectedImageUris + uri
-                            val newUrlMap = currentState.imageUriToUrlMap + (uri to it)
+                            val newUrlMap = currentState.imageUriToUrlMap + (uri to it) // 修改
                             val newUrls = newUrlMap.values.joinToString(",")
                             currentState.copy(
-                                selectedImageUris = newUris,
                                 imageUrls = newUrls,
-                                imageUriToUrlMap = newUrlMap
+                                imageUriToUrlMap = newUrlMap,
+                                showProgressDialog = false
                             )
                         }
                         Toast.makeText(getApplication(), "图片上传成功", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     Toast.makeText(getApplication(), "上传失败: ${uploadResult.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
+                    _uiState.update { it.copy(showProgressDialog = false) }
                 }
             } catch (e: Exception) {
                 Toast.makeText(getApplication(), "上传错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                _uiState.update { it.copy(showProgressDialog = false) }
             } finally {
                 _uiState.update { it.copy(showProgressDialog = false) }
             }
@@ -232,11 +230,9 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     fun removeImage(uri: Uri) {
         if (!_preferencesState.value.noStoreDraft) {
             _uiState.update { currentState ->
-                val newUris = currentState.selectedImageUris - uri
                 val newUrlMap = currentState.imageUriToUrlMap - uri
                 val newUrls = newUrlMap.values.joinToString(",")
                 currentState.copy(
-                    selectedImageUris = newUris,
                     imageUrls = newUrls,
                     imageUriToUrlMap = newUrlMap
                 )
@@ -258,7 +254,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     ) {
         viewModelScope.launch {
             _postStatus.value = PostStatus.Loading
-            
+
             try {
                 val credentials = AuthManager.getCredentials(getApplication())
                 if (credentials == null) {
@@ -267,7 +263,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 }
 
                 val token = credentials.third
-                
+
                 val finalContent = if (mode == "refund") {
                     val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
                     """
@@ -336,13 +332,13 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 if (_preferencesState.value.noStoreDraft) {
                     return@onEach
                 }
-                
-                if (state.title.isNotBlank() || state.content.isNotBlank() || state.selectedImageUris.isNotEmpty()) {
+
+                if (state.title.isNotBlank() || state.content.isNotBlank() || state.imageUrls.isNotBlank()) {
                     draftRepository.saveDraft(
                         PostDraftRepository.DraftDto(
                             title = state.title,
                             content = state.content,
-                            imageUris = state.selectedImageUris,
+                            imageUris = emptyList(), // 修改
                             imageUrls = state.imageUrls,
                             subsectionId = state.selectedSubsectionId
                         )
@@ -357,7 +353,6 @@ data class PostCreateUiState(
     val title: String = "",
     val content: String = "",
     val selectedSubsectionId: Int = 11,
-    val selectedImageUris: List<Uri> = emptyList(),
     val imageUrls: String = "",
     val imageUriToUrlMap: Map<Uri, String> = emptyMap(),
     val showProgressDialog: Boolean = false,

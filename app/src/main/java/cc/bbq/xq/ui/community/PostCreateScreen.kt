@@ -42,13 +42,14 @@ import cc.bbq.xq.AuthManager
 import coil.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.flow.first
-import cc.bbq.xq.ui.theme.ImagePreviewItem
-import cc.bbq.xq.ui.theme.ImageUploadSection
+import cc.bbq.xq.ui.theme.ImagePreviewItem // 导入 ImagePreviewItem
+import cc.bbq.xq.ui.ImagePreview // 导入 ImagePreview 导航目标
 
 private const val MODE_CREATE = "create"
 private const val MODE_REFUND = "refund"
 
 data class Subsection(val id: Int, val name: String)
+
 val SUBSECTIONS = listOf(
     Subsection(4, "手机应用"),
     Subsection(5, "适配应用"),
@@ -60,6 +61,7 @@ val SUBSECTIONS = listOf(
 )
 
 data class RefundReason(val name: String)
+
 val REFUND_REASONS = listOf(
     RefundReason("无法下载"),
     RefundReason("适配不良"),
@@ -86,14 +88,14 @@ fun PostCreateScreen(
     val postStatus by viewModel.postStatus.collectAsState()
     val preferencesState by viewModel.preferencesState.collectAsState()
     val showRestoreDialog by viewModel.showRestoreDialog.collectAsState()
-    
+
     // 本地 UI 状态
     var bvNumber by rememberSaveable { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var tempDeviceName by rememberSaveable { mutableStateOf("") }
     var manualImageUrls by rememberSaveable { mutableStateOf("") }
     var selectedRefundReason by rememberSaveable { mutableStateOf(REFUND_REASONS.first().name) }
-    
+
     val context = LocalContext.current
     val activity = context as? Activity
     val deviceNameDataStore = remember { DeviceNameDataStore(context) }
@@ -105,9 +107,11 @@ fun PostCreateScreen(
                 onBackClick()
                 viewModel.resetPostStatus()
             }
+
             is PostStatus.Error -> {
                 viewModel.resetPostStatus()
             }
+
             else -> {}
         }
     }
@@ -145,15 +149,16 @@ fun PostCreateScreen(
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
-                if (uiState.selectedImageUris.size < 2) {
+                if (uiState.imageUriToUrlMap.size < 2) {
                     viewModel.uploadImage(uri)
                 } else {
-                    android.widget.Toast.makeText(context, "最多只能上传两张图片", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, "最多只能上传两张图片", android.widget.Toast.LENGTH_SHORT)
+                        .show()
                 }
             }
         }
     }
-    
+
     val startImagePicker = {
         activity?.let {
             ImagePicker.with(it)
@@ -163,7 +168,7 @@ fun PostCreateScreen(
                 .createIntent { intent -> imagePickerLauncher.launch(intent) }
         }
     }
-    
+
     if (uiState.showProgressDialog) {
         AlertDialog(
             onDismissRequest = { /* 不允许取消 */ },
@@ -194,7 +199,7 @@ fun PostCreateScreen(
             confirmButton = {}
         )
     }
-    
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -212,7 +217,9 @@ fun PostCreateScreen(
             onExpandedChange = { expanded = it }
         ) {
             OutlinedTextField(
-                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
                 readOnly = true,
                 value = selectedTopicName,
                 onValueChange = {},
@@ -264,7 +271,9 @@ fun PostCreateScreen(
             value = uiState.content,
             onValueChange = { viewModel.onContentChange(it) },
             label = { Text(if (isRefundMode) "详细描述问题 (12字以上)" else "内容") },
-            modifier = Modifier.fillMaxWidth().height(200.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp),
             maxLines = 10
         )
 
@@ -280,26 +289,41 @@ fun PostCreateScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-ImageUploadSection(
-    images = uiState.selectedImageUris,
-    onAddClick = { startImagePicker() },
-    onRemoveClick = { uri -> viewModel.removeImage(uri) },
-    onImageClick = { uri ->
-        // 暂时处理本地 Uri 预览 - 后续可以扩展 ImagePreviewScreen 支持本地 Uri
-        val imageUrl = uiState.imageUriToUrlMap[uri]
-        if (imageUrl != null) {
-            // 如果图片已上传，使用 URL 导航到预览
-            navController.navigate(ImagePreview(imageUrl).createRoute())
-        } else {
-            // 对于本地 Uri，可以显示一个临时预览对话框或 toast
-            Toast.makeText(context, "图片尚未上传，无法预览", Toast.LENGTH_SHORT).show()
+        // 使用 ImagePreviewItem 替代 ImageUploadSection
+        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+            Text(
+                "图片上传 (最多2张)",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(uiState.imageUriToUrlMap.values.toList()) { imageUrl ->
+                    ImagePreviewItem(
+                        imageUrl = imageUrl,
+                        onRemoveClick = {
+                            // 找到与imageUrl对应的uri并移除
+                            val uriToRemove = uiState.imageUriToUrlMap.entries.firstOrNull { it.value == imageUrl }?.key
+                            if (uriToRemove != null) {
+                                viewModel.removeImage(uriToRemove)
+                            }
+                        },
+                        onImageClick = {
+                            // 导航到图片预览
+                            navController.navigate(ImagePreview(imageUrl).createRoute())
+                        }
+                    )
+                }
+                if (uiState.imageUriToUrlMap.size < 2) {
+                    item {
+                        OutlinedButton(onClick = startImagePicker, modifier = Modifier.size(80.dp)) {
+                            Icon(Icons.Default.Add, "添加图片")
+                        }
+                    }
+                }
+            }
         }
-    },
-    maxImages = 2,
-    title = "图片上传"
-)
 
-Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
             value = bvNumber,
@@ -335,12 +359,15 @@ Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
                 if (uiState.title.isBlank()) {
-                    android.widget.Toast.makeText(context, "请填写标题", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, "请填写标题", android.widget.Toast.LENGTH_SHORT)
+                        .show()
                 } else if (uiState.content.isBlank()) {
                     val message = if (isRefundMode) "请详细描述问题" else "请填写内容"
-                    android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT)
+                        .show()
                 } else if (isRefundMode && uiState.content.length < 12) {
-                    android.widget.Toast.makeText(context, "问题描述不能少于12个字", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, "问题描述不能少于12个字", android.widget.Toast.LENGTH_SHORT)
+                        .show()
                 } else {
                     // 合并图片URL
                     val uploadedUrlsList = uiState.imageUrls.split(",").filter { it.isNotBlank() }
@@ -388,7 +415,7 @@ private fun DraftPreferencesSection(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            
+
             // 自动恢复草稿选项
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -404,9 +431,9 @@ private fun DraftPreferencesSection(
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // 不存储草稿选项
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -422,7 +449,7 @@ private fun DraftPreferencesSection(
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
-            
+
             // 说明文本
             if (noStoreDraft) {
                 Text(
