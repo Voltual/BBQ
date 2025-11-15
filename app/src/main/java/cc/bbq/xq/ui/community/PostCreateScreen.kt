@@ -318,15 +318,7 @@ fun PostCreateScreen(
                         }
                     )
                 }
-                if (uiState.imageUriToUrlMap.size < 2) {
-                    item {
-                        OutlinedButton(onClick = startImagePicker, modifier = Modifier.size(80.dp)) {
-                            Icon(Icons.Default.Add, "添加图片")
-                        }
-                    }
-                }
-            }
-        }
+
 
         Spacer(modifier = Modifier.height(8.dp))
 
