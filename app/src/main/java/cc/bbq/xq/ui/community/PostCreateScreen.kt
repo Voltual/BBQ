@@ -41,6 +41,8 @@ import cc.bbq.xq.ui.ImagePreview // 导入 ImagePreview
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
 import android.widget.Toast // 导入 Toast
+import androidx.compose.ui.text.input.KeyboardOptions // 导入 KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType // 导入 KeyboardType
 
 private const val MODE_CREATE = "create"
 private const val MODE_REFUND = "refund"
@@ -146,7 +148,7 @@ fun PostCreateScreen(
                 if (uiState.selectedImageUris.size < 2) {
                     viewModel.uploadImage(uri)
                 } else {
-                    Toast.makeText(context, stringResource(id = R.string.maximum_two_images), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, stringResource(R.string.maximum_two_images), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -327,12 +329,12 @@ fun PostCreateScreen(
         Button(
             onClick = {
                 if (uiState.title.isBlank()) {
-                    Toast.makeText(context, stringResource(id = R.string.please_fill_title), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, stringResource(R.string.please_fill_title), Toast.LENGTH_SHORT).show()
                 } else if (uiState.content.isBlank()) {
-                    val message = if (isRefundMode) stringResource(id = R.string.please_describe_problem) else stringResource(id = R.string.please_fill_content)
+                    val message = if (isRefundMode) stringResource(R.string.please_describe_problem) else stringResource(R.string.please_fill_content)
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                 } else if (isRefundMode && uiState.content.length < 12) {
-                    Toast.makeText(context, stringResource(id = R.string.problem_description_at_least_12_words), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, stringResource(R.string.problem_description_at_least_12_words), Toast.LENGTH_SHORT).show()
                 } else {
                     // 合并图片URL
                     val uploadedUrlsList = uiState.imageUrls.split(",").filter { it.isNotBlank() }
@@ -436,6 +438,7 @@ private fun ImagePreviewSection(
     maxImages: Int = 2, // 默认限制
     navController: NavController
 ) {
+    val context = LocalContext.current
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(
             "图片上传 (最多${maxImages}张)",
@@ -448,7 +451,7 @@ private fun ImagePreviewSection(
                     imageUrl = uri.toString(),
                     onRemoveClick = { onRemoveClick(uri) },
                     onImageClick = {
-                        navController.navigate(ImagePreview(uri.toString()).createRoute())
+                        navController.navigate(cc.bbq.xq.ui.ImagePreview(uri.toString()).createRoute())
                     },
                     modifier = Modifier.size(80.dp)
                 )
@@ -456,8 +459,19 @@ private fun ImagePreviewSection(
             if (uris.size < maxImages) {
                 item {
                     OutlinedButton(onClick = onAddClick, modifier = Modifier.size(80.dp)) {
-                        Icon(Icons.Filled.Add, "添加图片")
+                        Icon(Icons.Filled.Add, "添加图片", contentDescription = "添加图片")
                     }
+                }
+            } else {
+
+                // 提示已经到达最大数量
+                item {
+                    Text(
+                        text = stringResource(id = R.string.maximum_images_reached),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
                 }
             }
         }

@@ -35,6 +35,11 @@ import cc.bbq.xq.ui.theme.ImagePreviewItem // 导入 ImagePreviewItem
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
 import androidx.compose.foundation.horizontalScroll // 确保导入此项
+import androidx.compose.ui.Alignment // 确保导入此项
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
+import coil.compose.AsyncImagePainter
+import coil.request.ImageRequest
 
 @Composable
 fun AppReleaseScreen(
@@ -211,22 +216,31 @@ fun AppReleaseScreen(
                         text = { Text("选择图片 (${viewModel.introductionImageUrls.size}/$MAX_INTRO_IMAGES)") }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                     // 使用HorizontalScroll包含展示图片
-                    Row(
-                        modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        viewModel.introductionImageUrls.forEach { url ->
-                            ImagePreviewItem(
-                                imageUrl = url,
-                                onRemoveClick = { viewModel.removeIntroductionImage(url) },
-                                onImageClick = {
-                                    navController.navigate(ImagePreview(url).createRoute())
-                                },
-                                modifier = Modifier.size(100.dp)
-                            )
+                    // 使用HorizontalScroll包含展示图片
+                        Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (viewModel.introductionImageUrls.isNotEmpty()) {
+                                viewModel.introductionImageUrls.forEach { url ->
+                                    ImagePreviewItem(
+                                        imageUrl = url,
+                                        onRemoveClick = { viewModel.removeIntroductionImage(url) },
+                                        onImageClick = {
+                                            navController.navigate(ImagePreview(url).createRoute())
+                                        },
+                                        modifier = Modifier.size(100.dp)
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    text = stringResource(id = R.string.no_images_uploaded),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
                         }
-                    }
                 }
             }
 
@@ -287,8 +301,7 @@ fun AppReleaseScreen(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
+private Composable fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
     val services = ApkUploadService.values()
     val selectedService by viewModel.selectedApkUploadService
