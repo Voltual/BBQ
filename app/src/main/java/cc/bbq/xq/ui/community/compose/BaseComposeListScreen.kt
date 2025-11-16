@@ -11,6 +11,8 @@ package cc.bbq.xq.ui.community.compose
 import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.Add
@@ -197,7 +199,7 @@ fun BaseComposeListScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, // 确保使用正确的引用
                             contentDescription = "返回",
                             tint = MaterialTheme.colorScheme.primary
                         )

@@ -588,6 +588,7 @@ fun CommunityScreen(navController: NavController, viewModel: CommunityViewModel,
         onRefresh = { viewModel.refresh() },
         onSearchClick = { navController.navigate(Search.route) },
         onCreateClick = { navController.navigate(CreatePost.route) },
+        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
         historyClick = { navController.navigate(BrowseHistory.route) },
         totalPages = totalPages,
         onJumpToPage = { page -> viewModel.jumpToPage(page) },
@@ -639,6 +640,7 @@ fun MyLikesScreen(navController: NavController, viewModel: MyLikesViewModel,snac
         onRefresh = { viewModel.refresh() },
         onSearchClick = { navController.navigate(Search.route) },
         onCreateClick = { navController.navigate(CreatePost.route) },
+        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
         historyClick = { navController.navigate(BrowseHistory.route) },
         totalPages = totalPages,
         onJumpToPage = { page -> viewModel.jumpToPage(page) },
@@ -690,6 +692,7 @@ fun HotPostsScreen(navController: NavController, viewModel: HotPostsViewModel,sn
         onRefresh = { viewModel.refresh() },
         onSearchClick = { navController.navigate(Search.route) },
         onCreateClick = { navController.navigate(CreatePost.route) },
+        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
         historyClick = { navController.navigate(BrowseHistory.route) },
         totalPages = totalPages,
         onJumpToPage = { page -> viewModel.jumpToPage(page) },
@@ -740,6 +743,7 @@ fun FollowingPostsScreen(navController: NavController, viewModel: FollowingPosts
         onLoadMore = { viewModel.loadNextPage() },
         onRefresh = { viewModel.refresh() },
         onSearchClick = { navController.navigate(Search.route) },
+        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
         onCreateClick = { navController.navigate(CreatePost.route) },
         historyClick = { navController.navigate(BrowseHistory.route) },
         totalPages = totalPages,
