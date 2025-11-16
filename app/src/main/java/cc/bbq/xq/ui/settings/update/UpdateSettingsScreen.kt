@@ -41,7 +41,7 @@ fun UpdateSettingsScreen(
             checked = autoCheckUpdates,
             onCheckedChange = { checked ->
                 scope.launch {
-                    viewModel.setAutoCheckUpdates(context, checked)
+                    viewModel.setAutoCheckUpdates(_context, checked)
                 }
             }
         )

@@ -96,21 +96,21 @@ class UserListViewModel(application: Application) : AndroidViewModel(application
                             )
                         } else {
                             _uiState.value = _uiState.value.copy(
-                                errorMessage = response.msg ?: "未知错误",
+                                errorMessage = response.msg,
                                 isLoading = false
                             )
                         }
                     }
                     else -> {
                         _uiState.value = _uiState.value.copy(
-                            errorMessage = result.exceptionOrNull()?.message ?: "未知错误",
+                            errorMessage = result.exceptionOrNull()?.message,
                             isLoading = false
                         )
                     }
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
-                    errorMessage = e.message ?: "网络错误",
+                    errorMessage = e.message,
                     isLoading = false
                 )
             }

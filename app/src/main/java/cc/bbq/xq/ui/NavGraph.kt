@@ -280,9 +280,9 @@ composable(route = FollowList.route) {
         users = state.users,
         isLoading = state.isLoading,
         errorMessage = state.errorMessage,
-        isEmpty = state.users.isEmpty() && !state.isLoading && state.errorMessage.isNullOrEmpty(),
+//        isEmpty = state.users.isEmpty() && !state.isLoading && state.errorMessage.isNullOrEmpty(),
         onLoadMore = { viewModel.loadNextPage() },
-        onRefresh = { viewModel.refresh() },
+//        onRefresh = { viewModel.refresh() },
         onUserClick = { userId -> navController.navigate(UserDetail(userId).createRoute()) },
         modifier = Modifier.fillMaxSize()
     )
@@ -303,9 +303,9 @@ composable(route = FanList.route) {
         users = state.users,
         isLoading = state.isLoading,
         errorMessage = state.errorMessage,
-        isEmpty = state.users.isEmpty() && !state.isLoading && state.errorMessage.isNullOrEmpty(),
+  //      isEmpty = state.users.isEmpty() && !state.isLoading && state.errorMessage.isNullOrEmpty(),
         onLoadMore = { viewModel.loadNextPage() },
-        onRefresh = { viewModel.refresh() },
+    //    onRefresh = { viewModel.refresh() },
         onUserClick = { userId -> navController.navigate(UserDetail(userId).createRoute()) },
         modifier = Modifier.fillMaxSize()
     )
