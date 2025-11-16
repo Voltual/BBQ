@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.DeviceNameDataStore
-import cc.bbq.xq.util.FileUtil // 修复：使用正确的 import 路径
+import cc.bbq.xq.util.FileUtil
 import coil.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.CoroutineScope
@@ -105,26 +105,29 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
                 avatarUrl = avatarUrl,
                 onAvatarSelected = { uri ->
                     avatarUri = uri
-                    coroutineScope.launch {
-                        uploadAvatar(context, uri, snackbarHostState = snackbarHostState,
-                            onProgress = { message ->
-                                showProgressDialog = true
-                                progressMessage = message
-                            },
-                            onComplete = {
-                                showProgressDialog = false
-                            },
-                            onError = { error ->
-                                showProgressDialog = false
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        message = error,
-                                        duration = SnackbarDuration.Short
-                                    )
-                                }
+                    // 直接调用非Composable函数
+                    uploadAvatar(
+                        context = context,
+                        uri = uri,
+                        coroutineScope = coroutineScope,
+                        snackbarHostState = snackbarHostState,
+                        onProgress = { message ->
+                            showProgressDialog = true
+                            progressMessage = message
+                        },
+                        onComplete = {
+                            showProgressDialog = false
+                        },
+                        onError = { error ->
+                            showProgressDialog = false
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = error,
+                                    duration = SnackbarDuration.Short
+                                )
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             )
 
@@ -132,11 +135,19 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
 
             Button(
                 onClick = {
-                    saveChanges(context, nickname, qqNumber, snackbarHostState) {
-                        coroutineScope.launch {
-                            deviceNameDataStore.saveDeviceName(deviceName)
+                    // 直接调用非Composable函数
+                    saveChanges(
+                        context = context,
+                        nickname = nickname,
+                        qqNumber = qqNumber,
+                        coroutineScope = coroutineScope,
+                        snackbarHostState = snackbarHostState,
+                        onDeviceNameSaved = {
+                            coroutineScope.launch {
+                                deviceNameDataStore.saveDeviceName(deviceName)
+                            }
                         }
-                    }
+                    )
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -221,19 +232,19 @@ fun AvatarUploadSection(
     }
 }
 
-@Composable
+// 移除了 @Composable 注解，这是一个普通的挂起函数操作
 fun uploadAvatar(
     context: Context,
     uri: Uri,
+    coroutineScope: CoroutineScope,
     snackbarHostState: SnackbarHostState,
     onProgress: (String) -> Unit = {},
     onComplete: () -> Unit = {},
     onError: (String) -> Unit = {}
 ) {
     val credentials = AuthManager.getCredentials(context)
-    val scope = rememberCoroutineScope()
 
-    scope.launch(Dispatchers.IO) {
+    coroutineScope.launch(Dispatchers.IO) {
         try {
             withContext(Dispatchers.Main) {
                 onProgress("上传头像中...")
@@ -264,7 +275,6 @@ fun uploadAvatar(
                 val response = uploadResult.getOrNull()
                 if (response?.code == 1) {
                     withContext(Dispatchers.Main) {
-                        //Toast.makeText(context, "头像上传成功", Toast.LENGTH_SHORT).show()
                         onComplete()
                     }
                 } else {
@@ -285,19 +295,19 @@ fun uploadAvatar(
     }
 }
 
-@Composable
+// 移除了 @Composable 注解，这是一个普通的挂起函数操作
 fun saveChanges(
     context: Context,
     nickname: String,
     qqNumber: String,
+    coroutineScope: CoroutineScope,
     snackbarHostState: SnackbarHostState,
     onDeviceNameSaved: () -> Unit
 ) {
     val credentials = AuthManager.getCredentials(context)
     val token = credentials?.third ?: ""
-    val scope = rememberCoroutineScope()
 
-    scope.launch(Dispatchers.IO) {
+    coroutineScope.launch(Dispatchers.IO) {
         try {
             if (nickname.isNotEmpty()) {
                 val nicknameResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
@@ -309,20 +319,18 @@ fun saveChanges(
                 if (nicknameResponse.isSuccess) {
                     withContext(Dispatchers.Main) {
                         if (nicknameResponse.getOrNull()?.code == 1) {
-                            // Toast.makeText(context, "昵称修改成功", Toast.LENGTH_SHORT).show()
-                            scope.launch {
+                            coroutineScope.launch {
                                 snackbarHostState.showSnackbar(
                                     message = context.getString(R.string.nickname_changed),
                                     duration = SnackbarDuration.Short
                                 )
                             }
                         } else {
-                            // Toast.makeText(context, "昵称修改失败: ${nicknameResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
-                            scope.launch {
+                            coroutineScope.launch {
                                 snackbarHostState.showSnackbar(
                                     message = context.getString(
                                         R.string.nickname_change_failed,
-                                        nicknameResponse.getOrNull()?.msg
+                                        nicknameResponse.getOrNull()?.msg ?: ""
                                     ),
                                     duration = SnackbarDuration.Short
                                 )
@@ -342,20 +350,18 @@ fun saveChanges(
                 if (qqResponse.isSuccess) {
                     withContext(Dispatchers.Main) {
                         if (qqResponse.getOrNull()?.code == 1) {
-                            //Toast.makeText(context, "QQ号修改成功", Toast.LENGTH_SHORT).show()
-                            scope.launch {
+                            coroutineScope.launch {
                                 snackbarHostState.showSnackbar(
                                     message = context.getString(R.string.qq_changed),
                                     duration = SnackbarDuration.Short
                                 )
                             }
                         } else {
-                            //Toast.makeText(context, "QQ号修改失败: ${qqResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
-                            scope.launch {
+                            coroutineScope.launch {
                                 snackbarHostState.showSnackbar(
                                     message = context.getString(
                                         R.string.qq_change_failed,
-                                        qqResponse.getOrNull()?.msg
+                                        qqResponse.getOrNull()?.msg ?: ""
                                     ),
                                     duration = SnackbarDuration.Short
                                 )
@@ -371,10 +377,9 @@ fun saveChanges(
 
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                // Toast.makeText(context, "保存修改失败: ${e.message}", Toast.LENGTH_SHORT).show()
-                scope.launch {
+                coroutineScope.launch {
                     snackbarHostState.showSnackbar(
-                        message = context.getString(R.string.save_change_failed, e.message),
+                        message = context.getString(R.string.save_change_failed, e.message ?: ""),
                         duration = SnackbarDuration.Short
                     )
                 }
