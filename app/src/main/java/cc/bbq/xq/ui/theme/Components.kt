@@ -57,7 +57,10 @@ import coil.compose.rememberAsyncImagePainter
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest // 确保导入 ImageRequest
-// -----------------
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarData
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 
 // 基础按钮组件
 @Composable
@@ -340,7 +343,7 @@ fun BBQErrorSnackbar(
     BBQSnackbar(
         snackbarData = snackbarData,
         modifier = modifier,
-        actionOnNewNewLine = actionOnNewLine,
+        actionOnNewLine = actionOnNewLine, // 修正参数名
         shape = shape,
         containerColor = MaterialTheme.colorScheme.errorContainer,
         contentColor = MaterialTheme.colorScheme.onErrorContainer
