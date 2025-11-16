@@ -9,7 +9,6 @@
 
 package cc.bbq.xq.ui.user
 
-import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -45,6 +44,16 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import cc.bbq.xq.R
+import cc.bbq.xq.AuthManager
+import cc.bbq.xq.ui.theme.AppShapes
+import cc.bbq.xq.ui.theme.BBQButton
+import cc.bbq.xq.ui.theme.BBQCard
+import cc.bbq.xq.ui.theme.BBQOutlinedButton
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -56,7 +65,7 @@ fun UserDetailScreen(
     onResourcesClick: (Long) -> Unit,
     onImagePreview: (String) -> Unit,
     modifier: Modifier = Modifier,
-    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
+    snackbarHostState: SnackbarHostState
 ) {
     // 下拉刷新状态
     var refreshing by remember { mutableStateOf(false) }
@@ -80,7 +89,7 @@ fun UserDetailScreen(
             onPostsClick = onPostsClick,
             onResourcesClick = onResourcesClick,
             onImagePreview = onImagePreview,
-            snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+            snackbarHostState = snackbarHostState
         )
 
         PullRefreshIndicator(
@@ -102,7 +111,7 @@ private fun ScreenContent(
     onPostsClick: () -> Unit,
     onResourcesClick: (Long) -> Unit,
     onImagePreview: (String) -> Unit,
-    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
+    snackbarHostState: SnackbarHostState
 ) {
     Box(
         modifier = modifier
@@ -118,7 +127,7 @@ private fun ScreenContent(
                 onPostsClick = onPostsClick,
                 onResourcesClick = onResourcesClick,
                 onImagePreview = onImagePreview,
-                snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+                snackbarHostState = snackbarHostState
             )
         }
     }
@@ -130,7 +139,7 @@ private fun UserProfileContent(
     onPostsClick: () -> Unit,
     onResourcesClick: (Long) -> Unit,
     onImagePreview: (String) -> Unit,
-    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
+    snackbarHostState: SnackbarHostState
 ) {
     Column(
         modifier = Modifier
@@ -151,7 +160,7 @@ private fun UserProfileContent(
         ActionButtonsRow(
             userData = userData,
             onResourcesClick = { onResourcesClick(userData.id) },
-            snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+            snackbarHostState = snackbarHostState
         )
 
         StatsCard(
@@ -163,7 +172,6 @@ private fun UserProfileContent(
     }
 }
 
-// 其他组件保持不变...
 @Composable
 private fun HeaderCard(
     userData: KtorClient.UserInformationData,
@@ -257,7 +265,7 @@ private fun UserBasicInfo(userData: KtorClient.UserInformationData) {
 private fun ActionButtonsRow(
     userData: KtorClient.UserInformationData,
     onResourcesClick: () -> Unit,
-    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
+    snackbarHostState: SnackbarHostState
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -272,7 +280,6 @@ private fun ActionButtonsRow(
             onClick = {
                 val token = AuthManager.getCredentials(context)?.third
                 if (token.isNullOrBlank()) {
-                    //Toast.makeText(context, "请先登录", Toast.LENGTH_SHORT).show()
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(
                             message = context.getString(R.string.login_first),
@@ -288,11 +295,6 @@ private fun ActionButtonsRow(
                             is KtorClient.BaseResponse -> {
                                 if (response.code == 1) {
                                     isFollowing.value = !isFollowing.value
-                                    //Toast.makeText(
-                                    //    context,
-                                    //    if (isFollowing.value) "关注成功" else "取消关注成功",
-                                    //    Toast.LENGTH_SHORT
-                                    //).show()
                                     val message = if (isFollowing.value) "关注成功" else "取消关注成功"
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar(
@@ -301,9 +303,7 @@ private fun ActionButtonsRow(
                                         )
                                     }
                                 } else {
-                                    // 修复：移除不必要的 Elvis 操作符，因为 response.msg 是非空字符串
-                                    //Toast.makeText(context, response.msg, Toast.LENGTH_SHORT).show()
-                                     coroutineScope.launch {
+                                    coroutineScope.launch {
                                         snackbarHostState.showSnackbar(
                                             message = response.msg,
                                             duration = SnackbarDuration.Short
@@ -312,27 +312,21 @@ private fun ActionButtonsRow(
                                 }
                             }
                             else -> {
-                                 coroutineScope.launch {
+                                coroutineScope.launch {
                                     snackbarHostState.showSnackbar(
                                         message = result.exceptionOrNull()?.message ?: "操作失败",
                                         duration = SnackbarDuration.Short
                                     )
                                 }
-                                //Toast.makeText(
-                                //    context,
-                                //    result.exceptionOrNull()?.message ?: "操作失败",
-                                //    Toast.LENGTH_SHORT
-                                //).show()
                             }
                         }
                     } catch (e: Exception) {
-                        //Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
-                          coroutineScope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message =  context.getString(R.string.network_error, e.message),
-                                    duration = SnackbarDuration.Short
-                                )
-                            }
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "网络错误: ${e.message}",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
                     }
                 }
             },
@@ -540,52 +534,6 @@ private fun EmptyState(modifier: Modifier = Modifier) {
         Text(
             text = "未找到用户数据",
             color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-fun UserDetailScreen(
-    userData: KtorClient.UserInformationData?,
-    isLoading: Boolean,
-    errorMessage: String?,
-    onPostsClick: () -> Unit,
-    onResourcesClick: (Long) -> Unit,
-    onImagePreview: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
-) {
-    // 下拉刷新状态
-    var refreshing by remember { mutableStateOf(false) }
-
-    val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = {
-        refreshing = true
-        //viewModel.refresh()
-        refreshing = false
-    })
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .pullRefresh(pullRefreshState)
-    ) {
-        ScreenContent(
-            modifier = Modifier.fillMaxSize(),
-            userData = userData,
-            isLoading = isLoading,
-            errorMessage = errorMessage,
-            onPostsClick = onPostsClick,
-            onResourcesClick = onResourcesClick,
-            onImagePreview = onImagePreview,
-            snackbarHostState = snackbarHostState // 传递 SnackbarHostState
-        )
-
-        PullRefreshIndicator(
-            refreshing = refreshing,
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
-            contentColor = MaterialTheme.colorScheme.primary,
-            backgroundColor = MaterialTheme.colorScheme.surface
         )
     }
 }

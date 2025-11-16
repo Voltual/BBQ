@@ -570,6 +570,7 @@ fun AppDetailContent(
                     onReply = { onCommentReply(comment) },
                     onDelete = { onCommentDelete(comment.id) },
                     clipboardManager = clipboardManager,
+                    snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
                     context = context
                 )
             }

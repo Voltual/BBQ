@@ -702,10 +702,9 @@ fun CommentItem(
     onDelete: () -> Unit,
     clipboardManager: ClipboardManager,
     context: Context,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: SnackbarHostState // 添加 snackbarHostState 参数
 ) {
     val scope = rememberCoroutineScope()
-
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     if (showDeleteDialog) {
@@ -738,7 +737,6 @@ fun CommentItem(
                     onDoubleTap = {
                         val clipData = ClipData.newPlainText("评论内容", comment.content)
                         clipboardManager.setPrimaryClip(clipData)
-                        //Toast.makeText(context, "评论已复制", Toast.LENGTH_SHORT).show()
                         scope.launch {
                             snackbarHostState.showSnackbar(
                                 message = context.getString(R.string.comment_copied),
@@ -788,24 +786,66 @@ fun CommentItem(
             )
 
             comment.image_path?.firstOrNull()?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
-    Spacer(Modifier.height(8.dp))
-    AsyncImage(
-        model = imageUrl,
-        contentDescription = "评论图片",
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(150.dp)
-            .clip(MaterialTheme.shapes.medium)
-            .clickable { 
-                // 导航到图片预览
-                navController.navigate(
-                    ImagePreview(
-                        imageUrl = imageUrl
-                    ).createRoute()
+                Spacer(Modifier.height(8.dp))
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "评论图片",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .clickable { 
+                            navController.navigate(
+                                ImagePreview(
+                                    imageUrl = imageUrl
+                                ).createRoute()
+                            )
+                        },
+                    contentScale = ContentScale.Crop
                 )
-            },
-        contentScale = ContentScale.Crop
-    )
+            }
+
+            if (!comment.parentnickname.isNullOrEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "回复 @${comment.parentnickname}:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                LinkifyText(
+                    text = comment.parentcontent ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    navController = navController
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onReply) {
+                    Text("回复")
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                val credentials = AuthManager.getCredentials(context)
+                val currentUserId = credentials?.fourth
+                if (comment.userid == currentUserId) {
+                    TextButton(
+                        onClick = { showDeleteDialog = true },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("删除")
+                    }
+                }
+            }
+        }
+    }
 }
 
             if (!comment.parentnickname.isNullOrEmpty()) {
