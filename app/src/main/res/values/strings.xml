@@ -63,5 +63,6 @@
     <string name="check_update_failed">检查更新失败</string>
     <string name="check_update_error">检查更新出错</string>
     <string name="image_link_copied">已复制图片链接</string>
+    <string name="copied_logs">已复制 %d 条日志</string>
     
 </resources>

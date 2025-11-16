@@ -14,7 +14,6 @@ package cc.bbq.xq.ui.log
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -41,18 +40,21 @@ import cc.bbq.xq.ui.theme.billing_expense_dark
 import cc.bbq.xq.ui.theme.billing_income
 import cc.bbq.xq.ui.theme.billing_income_dark
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import cc.bbq.xq.R
 
 @Composable
 fun LogScreen(
     viewModel: LogViewModel,
 //    onBackClick: () -> Unit,
+    snackbarHostState: SnackbarHostState, // 添加 SnackbarHostState 参数
     modifier: Modifier = Modifier
 ) {
     val logs by viewModel.logs.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
     val selectedCount = viewModel.selectedItems.collectAsState().value.size
     val context = LocalContext.current
-  //  val coroutineScope = rememberCoroutineScope()
+    val coroutineScope = rememberCoroutineScope()
 
     var showClearAllDialog by remember { mutableStateOf(false) }
     var showSelectionOptions by remember { mutableStateOf(false) }
@@ -63,7 +65,13 @@ fun LogScreen(
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("QUBOT Logs", textToCopy)
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(context, "已复制 $count 条日志", Toast.LENGTH_SHORT).show()
+            //Toast.makeText(context, "已复制 $count 条日志", Toast.LENGTH_SHORT).show()
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    message = context.getString(R.string.copied_logs, count),
+                    duration = SnackbarDuration.Short
+                )
+            }
         }
     }
 
