@@ -26,9 +26,7 @@ import coil.imageLoader // 导入 imageLoader
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class) // 添加 ExperimentalCoilApi
 @Composable
-fun StoreManagerScreen(
-    _viewModel: StoreManagerViewModel = viewModel()
-) {
+fun StoreManagerScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // 注释掉超级缓存状态
