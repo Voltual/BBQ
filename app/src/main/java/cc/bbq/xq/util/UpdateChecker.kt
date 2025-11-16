@@ -14,6 +14,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import cc.bbq.xq.BuildConfig
+import cc.bbq.xq.MainActivity // 添加 MainActivity 导入
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.UpdateInfo
 import kotlinx.coroutines.CoroutineScope
