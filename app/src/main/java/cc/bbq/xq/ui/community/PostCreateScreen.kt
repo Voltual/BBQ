@@ -318,8 +318,7 @@ fun PostCreateScreen(
     // 导航到图片预览，并传递 snackbarHostState
     navController.navigate(
         ImagePreview(
-            imageUrl = imageUrl,
-            snackbarHostState = snackbarHostState
+            imageUrl = imageUrl
         ).createRoute()
     )
 }

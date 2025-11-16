@@ -162,8 +162,7 @@ fun AppDetailScreen(
                 onImagePreview = { imageUrl ->
     navController.navigate(
         ImagePreview(
-            imageUrl = imageUrl,
-            snackbarHostState = snackbarHostState  // 添加这行
+            imageUrl = imageUrl
         ).createRoute()
     )
 }

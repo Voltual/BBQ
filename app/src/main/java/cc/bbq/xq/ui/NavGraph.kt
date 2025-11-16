@@ -266,13 +266,14 @@ composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { back
     )
 }
         composable(route = MyPosts(0).route, arguments = MyPosts.arguments) { backStackEntry ->
-            val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
-            MyPostsScreen(
-                viewModel = myPostsViewModel,
-                userId = userId,
-                navController = navController
-            )
-        }
+    val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
+    MyPostsScreen(
+        viewModel = myPostsViewModel,
+        userId = userId,
+        navController = navController,
+        snackbarHostState = snackbarHostState // 添加这行
+    )
+}
 
         // 在 NavGraph.kt 中更新 UserListScreen 的调用
 
@@ -497,10 +498,10 @@ composable(route = UpdateSettings.route) {
 }
 
         // --- 列表屏幕 ---
-        composable(Community.route) { CommunityScreen(navController, communityViewModel) }
-        composable(MyLikes.route) { MyLikesScreen(navController, myLikesViewModel) }
-        composable(HotPosts.route) { HotPostsScreen(navController, hotPostsViewModel) }
-        composable(FollowingPosts.route) { FollowingPostsScreen(navController, followingPostsViewModel) }
+composable(Community.route) { CommunityScreen(navController, communityViewModel, snackbarHostState) }
+composable(MyLikes.route) { MyLikesScreen(navController, myLikesViewModel, snackbarHostState) }
+composable(HotPosts.route) { HotPostsScreen(navController, hotPostsViewModel, snackbarHostState) }
+composable(FollowingPosts.route) { FollowingPostsScreen(navController, followingPostsViewModel, snackbarHostState) }
 
         // --- 其他 ---
         composable(route = RankingList.route) {

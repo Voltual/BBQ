@@ -290,11 +290,10 @@ postDetail?.img_url?.let { imgUrls ->
                 .height(200.dp)
                 .clip(MaterialTheme.shapes.medium)
                 .clickable {
-                    // 修正：传递 snackbarHostState
+                    // 导航到图片预览
                     navController.navigate(
                         ImagePreview(
-                            imageUrl = imageUrl,
-                            snackbarHostState = snackbarHostState  // 添加这行
+                            imageUrl = imageUrl
                         ).createRoute()
                     )
                 },
@@ -781,11 +780,10 @@ fun CommentItem(
             .height(150.dp)
             .clip(MaterialTheme.shapes.medium)
             .clickable { 
-                // 修正：传递 snackbarHostState
+                // 导航到图片预览
                 navController.navigate(
                     ImagePreview(
-                        imageUrl = imageUrl,
-                        snackbarHostState = snackbarHostState  // 添加这行
+                        imageUrl = imageUrl
                     ).createRoute()
                 )
             },

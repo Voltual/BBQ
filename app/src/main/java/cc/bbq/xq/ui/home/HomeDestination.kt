@@ -111,7 +111,7 @@ fun HomeDestination(
                 if (userId != null) {
                     navController.navigate(ResourcePlaza(isMyResource = true, userId = userId).createRoute())
                 } else {
-                     viewModel.showSnackbar(context, stringResource(id = R.string.login_first_my_resources))
+                     viewModel.showSnackbar(context, context.getString(R.string.login_first_my_resources))
                     //Toast.makeText(context, "请先登录以查看我的资源", Toast.LENGTH_SHORT).show()
                     navController.navigate(Login.route)
                 }

@@ -46,7 +46,7 @@ import cc.bbq.xq.R
 @Composable
 fun ImagePreviewScreen(
     imageUrl: String,
-    snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
+    snackbarHostState: SnackbarHostState, // 添加类型注解
     onClose: () -> Unit
 ) {
     val context = LocalContext.current

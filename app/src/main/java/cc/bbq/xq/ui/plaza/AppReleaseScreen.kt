@@ -263,11 +263,9 @@ fun AppReleaseScreen(
                         imageUrl = url,
                         onRemoveClick = { viewModel.removeIntroductionImage(url) },
                         onImageClick = {
-                            // 修正：传递 snackbarHostState
                             navController.navigate(
                                 ImagePreview(
-                                    imageUrl = url,
-                                    snackbarHostState = snackbarHostState  // 添加这行
+                                    imageUrl = url
                                 ).createRoute()
                             )
                         }
