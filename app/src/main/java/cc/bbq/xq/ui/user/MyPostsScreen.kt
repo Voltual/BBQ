@@ -62,6 +62,7 @@ fun MyPostsScreen(
         onLoadMore = { viewModel.loadNextPage() },
         onRefresh = { viewModel.refresh() },
         onSearchClick = { navController.navigate(Search.route) },
+        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
         onCreateClick = { navController.navigate(CreatePost.route) },
         historyClick = { navController.navigate(BrowseHistory.route) },
         totalPages = totalPages,
