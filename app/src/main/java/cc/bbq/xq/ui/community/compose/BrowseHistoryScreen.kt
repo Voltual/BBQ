@@ -14,7 +14,6 @@ package cc.bbq.xq.ui.community
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.navigation.NavController
@@ -23,37 +22,49 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
+import cc.bbq.xq.data.db.BrowseHistory
+import cc.bbq.xq.ui.compose.PostItem
+import cc.bbq.xq.ui.UserDetail
+import androidx.compose.ui.res.stringResource
+import cc.bbq.xq.R
 
 @Composable
 fun BrowseHistoryScreen(
     viewModel: BrowseHistoryViewModel = viewModel(),
     onPostClick: (Long) -> Unit,
-//    navController: NavController,
+    snackbarHostState: SnackbarHostState, // 添加 SnackbarHostState 参数
     modifier: Modifier = Modifier
 ) {
     val history by viewModel.historyList.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
     val selectedCount = viewModel.selectedItems.collectAsState().value.size
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     // 监听复制事件
     LaunchedEffect(Unit) {
-        // 核心修正 #3: 解构 Pair，获取正确的 count
         viewModel.copyEvent.collect { (textToCopy, count) ->
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("BBQ History Links", textToCopy)
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(context, "已复制 $count 条链接", Toast.LENGTH_SHORT).show()
+            //Toast.makeText(context, "已复制 $count 条链接", Toast.LENGTH_SHORT).show()
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = context.getString(R.string.copied_links_count, count),
+                        duration = SnackbarDuration.Short
+                    )
+                }
         }
     }
 
@@ -75,10 +86,11 @@ fun BrowseHistoryScreen(
                     HistoryListItem(
                         history = item,
                         isSelected = isSelected,
+                        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
                         isSelectionMode = isSelectionMode,
                         onToggleSelection = { viewModel.toggleSelection(item.postId) },
                         onStartSelection = { viewModel.startSelectionMode(item.postId) },
-                        onPostClick = onPostClick
+                        onPostClick = onPostClick,
                     )
                 }
             }
@@ -89,6 +101,7 @@ fun BrowseHistoryScreen(
             SelectionActionFABs(
                 onDelete = { viewModel.deleteSelected() },
                 onCopy = { viewModel.copyShareLinks() },
+                snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
@@ -109,21 +122,24 @@ fun BrowseHistoryScreen(
 private fun SelectionActionFABs(
     onDelete: () -> Unit,
     onCopy: () -> Unit,
+    snackbarHostState: SnackbarHostState, // 添加 SnackbarHostState 参数
     modifier: Modifier = Modifier
 ) {
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current 
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         SmallFloatingActionButton(
-            onClick = onCopy,
+            onClick = { onCopy() },
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         ) {
             Icon(Icons.Default.ContentCopy, "复制")
         }
         FloatingActionButton(
-            onClick = onDelete,
+            onClick = { onDelete() },
             containerColor = MaterialTheme.colorScheme.errorContainer
         ) {
             Icon(Icons.Default.Delete, "删除")
@@ -139,7 +155,8 @@ private fun HistoryListItem(
     isSelectionMode: Boolean,
     onToggleSelection: () -> Unit,
     onStartSelection: () -> Unit,
-    onPostClick: (Long) -> Unit
+    onPostClick: (Long) -> Unit,
+    snackbarHostState: SnackbarHostState, // 添加 SnackbarHostState 参数
 ) {
     val backgroundColor = if (isSelected) {
         MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)

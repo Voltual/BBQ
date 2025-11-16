@@ -9,56 +9,42 @@
 
 package cc.bbq.xq.ui.user
 
-import android.widget.Toast
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import cc.bbq.xq.KtorClient
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+//import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.ui.*
+import cc.bbq.xq.ui.community.compose.CommentItem
+import cc.bbq.xq.ui.compose.LinkifyText
+import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import cc.bbq.xq.AuthManager
-import cc.bbq.xq.KtorClient
-import cc.bbq.xq.R
-import cc.bbq.xq.ui.theme.AppShapes
-import cc.bbq.xq.ui.theme.BBQButton
-import cc.bbq.xq.ui.theme.BBQCard
-import cc.bbq.xq.ui.theme.BBQOutlinedButton
-import coil.compose.AsyncImage
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.*
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -70,14 +56,14 @@ fun UserDetailScreen(
     onResourcesClick: (Long) -> Unit,
     onImagePreview: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: UserDetailViewModel = viewModel()
+    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
 ) {
     // 下拉刷新状态
     var refreshing by remember { mutableStateOf(false) }
 
     val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = {
         refreshing = true
-        viewModel.refresh()
+        //viewModel.refresh()
         refreshing = false
     })
 
@@ -93,7 +79,8 @@ fun UserDetailScreen(
             errorMessage = errorMessage,
             onPostsClick = onPostsClick,
             onResourcesClick = onResourcesClick,
-            onImagePreview = onImagePreview
+            onImagePreview = onImagePreview,
+            snackbarHostState = snackbarHostState // 传递 SnackbarHostState
         )
 
         PullRefreshIndicator(
@@ -114,7 +101,8 @@ private fun ScreenContent(
     errorMessage: String?,
     onPostsClick: () -> Unit,
     onResourcesClick: (Long) -> Unit,
-    onImagePreview: (String) -> Unit
+    onImagePreview: (String) -> Unit,
+    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
 ) {
     Box(
         modifier = modifier
@@ -129,7 +117,8 @@ private fun ScreenContent(
                 userData = userData,
                 onPostsClick = onPostsClick,
                 onResourcesClick = onResourcesClick,
-                onImagePreview = onImagePreview
+                onImagePreview = onImagePreview,
+                snackbarHostState = snackbarHostState // 传递 SnackbarHostState
             )
         }
     }
@@ -141,10 +130,10 @@ private fun UserProfileContent(
     onPostsClick: () -> Unit,
     onResourcesClick: (Long) -> Unit,
     onImagePreview: (String) -> Unit,
-    modifier: Modifier = Modifier
+    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
 ) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
@@ -161,7 +150,8 @@ private fun UserProfileContent(
 
         ActionButtonsRow(
             userData = userData,
-            onResourcesClick = { onResourcesClick(userData.id) }
+            onResourcesClick = { onResourcesClick(userData.id) },
+            snackbarHostState = snackbarHostState // 传递 SnackbarHostState
         )
 
         StatsCard(
@@ -266,7 +256,8 @@ private fun UserBasicInfo(userData: KtorClient.UserInformationData) {
 @Composable
 private fun ActionButtonsRow(
     userData: KtorClient.UserInformationData,
-    onResourcesClick: () -> Unit
+    onResourcesClick: () -> Unit,
+    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -281,7 +272,13 @@ private fun ActionButtonsRow(
             onClick = {
                 val token = AuthManager.getCredentials(context)?.third
                 if (token.isNullOrBlank()) {
-                    Toast.makeText(context, "请先登录", Toast.LENGTH_SHORT).show()
+                    //Toast.makeText(context, "请先登录", Toast.LENGTH_SHORT).show()
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = context.getString(R.string.login_first),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
                     return@BBQButton
                 }
                 coroutineScope.launch {
@@ -291,26 +288,51 @@ private fun ActionButtonsRow(
                             is KtorClient.BaseResponse -> {
                                 if (response.code == 1) {
                                     isFollowing.value = !isFollowing.value
-                                    Toast.makeText(
-                                        context,
-                                        if (isFollowing.value) "关注成功" else "取消关注成功",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    //Toast.makeText(
+                                    //    context,
+                                    //    if (isFollowing.value) "关注成功" else "取消关注成功",
+                                    //    Toast.LENGTH_SHORT
+                                    //).show()
+                                    val message = if (isFollowing.value) "关注成功" else "取消关注成功"
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = message,
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
                                 } else {
                                     // 修复：移除不必要的 Elvis 操作符，因为 response.msg 是非空字符串
-                                    Toast.makeText(context, response.msg, Toast.LENGTH_SHORT).show()
+                                    //Toast.makeText(context, response.msg, Toast.LENGTH_SHORT).show()
+                                     coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = response.msg,
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
                                 }
                             }
                             else -> {
-                                Toast.makeText(
-                                    context,
-                                    result.exceptionOrNull()?.message ?: "操作失败",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                 coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = result.exceptionOrNull()?.message ?: "操作失败",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                                //Toast.makeText(
+                                //    context,
+                                //    result.exceptionOrNull()?.message ?: "操作失败",
+                                //    Toast.LENGTH_SHORT
+                                //).show()
                             }
                         }
                     } catch (e: Exception) {
-                        Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                        //Toast.makeText(context, "网络错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                          coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message =  context.getString(R.string.network_error, e.message),
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
                     }
                 }
             },
@@ -518,6 +540,52 @@ private fun EmptyState(modifier: Modifier = Modifier) {
         Text(
             text = "未找到用户数据",
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+fun UserDetailScreen(
+    userData: KtorClient.UserInformationData?,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onPostsClick: () -> Unit,
+    onResourcesClick: (Long) -> Unit,
+    onImagePreview: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
+) {
+    // 下拉刷新状态
+    var refreshing by remember { mutableStateOf(false) }
+
+    val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = {
+        refreshing = true
+        //viewModel.refresh()
+        refreshing = false
+    })
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        ScreenContent(
+            modifier = Modifier.fillMaxSize(),
+            userData = userData,
+            isLoading = isLoading,
+            errorMessage = errorMessage,
+            onPostsClick = onPostsClick,
+            onResourcesClick = onResourcesClick,
+            onImagePreview = onImagePreview,
+            snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+        )
+
+        PullRefreshIndicator(
+            refreshing = refreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            contentColor = MaterialTheme.colorScheme.primary,
+            backgroundColor = MaterialTheme.colorScheme.surface
         )
     }
 }

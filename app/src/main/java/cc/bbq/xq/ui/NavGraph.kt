@@ -208,12 +208,12 @@ composable(route = CreateRefundPost(0, 0, "", 0).route, arguments = CreateRefund
 
         // 在 NavGraph.kt 中更新 BrowseHistoryScreen 的调用
         composable(route = BrowseHistory.route) {
-            BrowseHistoryScreen(
-                onPostClick = { postId -> navController.navigate(PostDetail(postId).createRoute()) },
-                modifier = Modifier.fillMaxSize()//,
-//                navController = navController // 传递 navController
-            )
-        }
+    BrowseHistoryScreen(
+        onPostClick = { postId -> navController.navigate(PostDetail(postId).createRoute()) },
+        modifier = Modifier.fillMaxSize(),
+        snackbarHostState = snackbarHostState
+    )
+}
 
         composable(route = ImagePreview("").route, arguments = ImagePreview.arguments) { backStackEntry ->
             val imageUrl = backStackEntry.arguments?.getString(AppDestination.ARG_IMAGE_URL)?.let {
@@ -250,6 +250,7 @@ composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { back
     UserDetailScreen(
         userData = userData,
         isLoading = isLoading,
+        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
         errorMessage = errorMessage,
 //        onBackClick = { navController.popBackStack() },
         onPostsClick = { 
