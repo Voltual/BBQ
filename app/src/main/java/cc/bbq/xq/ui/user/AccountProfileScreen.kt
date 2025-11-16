@@ -12,7 +12,6 @@ package cc.bbq.xq.ui.user
 import android.app.Activity
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -42,12 +41,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
 import java.io.File
+import androidx.compose.ui.res.stringResource
+import cc.bbq.xq.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountProfileScreen(modifier: Modifier = Modifier) {
+fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: SnackbarHostState) {
     var nickname by rememberSaveable { mutableStateOf("") }
     var qqNumber by rememberSaveable { mutableStateOf("") }
     var avatarUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -112,7 +112,13 @@ fun AccountProfileScreen(modifier: Modifier = Modifier) {
                         },
                         onError = { error ->
                             showProgressDialog = false
-                            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                            //Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                             coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = error,
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
                         }
                     )
                 }
@@ -123,7 +129,7 @@ fun AccountProfileScreen(modifier: Modifier = Modifier) {
 
         Button(
             onClick = {
-                saveChanges(context, nickname, qqNumber) {
+                saveChanges(context, nickname, qqNumber, snackbarHostState) {
                     coroutineScope.launch {
                         deviceNameDataStore.saveDeviceName(deviceName)
                     }
@@ -246,7 +252,7 @@ suspend fun uploadAvatar(
             val response = uploadResult.getOrNull()
             if (response?.code == 1) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "头像上传成功", Toast.LENGTH_SHORT).show()
+                //    Toast.makeText(context, "头像上传成功", Toast.LENGTH_SHORT).show()
                 }
                 onComplete()
             } else {
@@ -260,9 +266,10 @@ suspend fun uploadAvatar(
     }
 }
 
-fun saveChanges(context: Context, nickname: String, qqNumber: String, onDeviceNameSaved: () -> Unit) {
+fun saveChanges(context: Context, nickname: String, qqNumber: String, snackbarHostState: SnackbarHostState,  onDeviceNameSaved: () -> Unit) {
     val credentials = AuthManager.getCredentials(context)
     val token = credentials?.third ?: ""
+    val scope = rememberCoroutineScope()
 
     CoroutineScope(Dispatchers.IO).launch {
         try {
@@ -276,9 +283,21 @@ fun saveChanges(context: Context, nickname: String, qqNumber: String, onDeviceNa
                 if (nicknameResponse.isSuccess){
                     withContext(Dispatchers.Main) {
                         if (nicknameResponse.getOrNull()?.code == 1) {
-                            Toast.makeText(context, "昵称修改成功", Toast.LENGTH_SHORT).show()
+                           // Toast.makeText(context, "昵称修改成功", Toast.LENGTH_SHORT).show()
+                           scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = context.getString(R.string.nickname_changed),
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
                         } else {
-                            Toast.makeText(context, "昵称修改失败: ${nicknameResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
+                           // Toast.makeText(context, "昵称修改失败: ${nicknameResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = context.getString(R.string.nickname_change_failed,nicknameResponse.getOrNull()?.msg),
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
                         }
                     }
                 }
@@ -294,9 +313,21 @@ fun saveChanges(context: Context, nickname: String, qqNumber: String, onDeviceNa
                 if (qqResponse.isSuccess){
                     withContext(Dispatchers.Main) {
                         if (qqResponse.getOrNull()?.code == 1) {
-                            Toast.makeText(context, "QQ号修改成功", Toast.LENGTH_SHORT).show()
+                            //Toast.makeText(context, "QQ号修改成功", Toast.LENGTH_SHORT).show()
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = context.getString(R.string.qq_changed),
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
                         } else {
-                            Toast.makeText(context, "QQ号修改失败: ${qqResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
+                            //Toast.makeText(context, "QQ号修改失败: ${qqResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message =context.getString(R.string.qq_change_failed,qqResponse.getOrNull()?.msg),
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
                         }
                     }
                 }
@@ -308,7 +339,13 @@ fun saveChanges(context: Context, nickname: String, qqNumber: String, onDeviceNa
 
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "保存修改失败: ${e.message}", Toast.LENGTH_SHORT).show()
+               // Toast.makeText(context, "保存修改失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = context.getString(R.string.save_change_failed, e.message),
+                        duration = SnackbarDuration.Short
+                    )
+                }
             }
         }
     }

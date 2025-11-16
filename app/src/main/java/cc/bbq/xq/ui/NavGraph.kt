@@ -325,7 +325,8 @@ composable(route = FanList.route) {
 
         composable(route = AccountProfile.route) {
             AccountProfileScreen(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                snackbarHostState = snackbarHostState // 传递 SnackbarHostState
             )
         }
 

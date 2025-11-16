@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             MainComposeApp(snackbarHostState = snackbarHostState) // 传递 SnackbarHostState
                             // 检查更新
-                            CheckForUpdates()
+                            CheckForUpdates(snackbarHostState) // 传递 snackbarHostState
                         }
                     }
                 )
@@ -160,7 +160,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun CheckForUpdates() {
+fun CheckForUpdates(snackbarHostState: SnackbarHostState) { // 添加 snackbarHostState 参数
     val context = LocalContext.current
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var showDialog by remember { mutableStateOf(false) }
@@ -168,16 +168,32 @@ fun CheckForUpdates() {
     LaunchedEffect(Unit) {
         val autoCheckUpdates = UpdateSettingsDataStore.autoCheckUpdates.first()
         if (autoCheckUpdates) {
-            UpdateChecker.checkForUpdates(context) { update ->
-                if (update != null) {
-                    updateInfo = update
-                    showDialog = true
+            // 调用 UpdateChecker 并处理回调结果
+            UpdateChecker.checkForUpdates(context) { result ->
+                when (result) {
+                    is UpdateCheckResult.Success -> {
+                        // 有新版本，显示更新对话框
+                        updateInfo = result.updateInfo
+                        showDialog = true
+                    }
+                    is UpdateCheckResult.NoUpdate -> {
+                        // 当前已是最新版本，显示 Snackbar
+                        scope.launch {
+                            snackbarHostState.showSnackbar(result.message)
+                        }
+                    }
+                    is UpdateCheckResult.Error -> {
+                        // 检查更新出错，显示 Snackbar
+                        scope.launch {
+                            snackbarHostState.showSnackbar(result.message)
+                        }
+                    }
                 }
             }
         }
     }
 
-    // 显示更新对话框
+    // 显示更新对话框 (这部分逻辑保持不变)
     if (showDialog && updateInfo != null) {
         UpdateDialog(updateInfo = updateInfo!!) {
             showDialog = false

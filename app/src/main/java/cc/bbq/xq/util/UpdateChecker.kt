@@ -7,31 +7,24 @@
 package cc.bbq.xq.util
 
 import android.content.Context
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
 import cc.bbq.xq.BuildConfig
-import cc.bbq.xq.MainActivity // 添加 MainActivity 导入
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.UpdateInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import io.ktor.client.call.body
-import android.app.Activity
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.window.DialogWindowProvider
-import androidx.compose.ui.res.stringResource
-import cc.bbq.xq.R
-import android.content.ContextWrapper
+
+// 定义一个密封类来封装检查更新的结果
+sealed class UpdateCheckResult {
+    data class Success(val updateInfo: UpdateInfo) : UpdateCheckResult()
+    data class NoUpdate(val message: String) : UpdateCheckResult()
+    data class Error(val message: String) : UpdateCheckResult()
+}
 
 object UpdateChecker {
-    fun checkForUpdates(context: Context, onUpdate: (UpdateInfo?) -> Unit) {
+    // 修改函数签名，使用回调传递结果
+    fun checkForUpdates(context: Context, onUpdateResult: (UpdateCheckResult) -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val result = KtorClient.ApiServiceImpl.getLatestRelease()
@@ -41,62 +34,37 @@ object UpdateChecker {
                         val currentVersion = BuildConfig.VERSION_NAME
                         val newVersion = update.tag_name.replace(Regex("[^\\d.]"), "")
                         if (newVersion > currentVersion) {
+                            // 有新版本，传递 UpdateInfo
                             withContext(Dispatchers.Main) {
-                                onUpdate(update)
+                                onUpdateResult(UpdateCheckResult.Success(update))
                             }
                         } else {
+                            // 当前已是最新版本
                             withContext(Dispatchers.Main) {
-                                //Toast.makeText(context, "当前已是最新版本", Toast.LENGTH_SHORT).show()
-                                showSnackbar(context, context.getString(R.string.already_latest_version))
+                                onUpdateResult(UpdateCheckResult.NoUpdate(context.getString(R.string.already_latest_version)))
                             }
                         }
                     } else {
+                        // 获取更新信息失败
                         withContext(Dispatchers.Main) {
-                            //Toast.makeText(context, "获取更新信息失败", Toast.LENGTH_SHORT).show()
-                            showSnackbar(context, context.getString(R.string.failed_to_get_update_info))
+                            onUpdateResult(UpdateCheckResult.Error(context.getString(R.string.failed_to_get_update_info)))
                         }
                     }
                 } else {
+                    // 检查更新失败
+                    val errorMsg = context.getString(R.string.check_update_failed) + ": ${result.exceptionOrNull()?.message}"
                     withContext(Dispatchers.Main) {
-                        //Toast.makeText(context, "检查更新失败: ${result.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
-                        showSnackbar(context, context.getString(R.string.check_update_failed) + ": ${result.exceptionOrNull()?.message}")
+                        onUpdateResult(UpdateCheckResult.Error(errorMsg))
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                // 检查更新出错
+                val errorMsg = context.getString(R.string.check_update_error) + ": ${e.message}"
                 withContext(Dispatchers.Main) {
-                    //Toast.makeText(context, "检查更新出错: ${e.message}", Toast.LENGTH_SHORT).show()
-                    showSnackbar(context, context.getString(R.string.check_update_error) + ": ${e.message}")
-                    onUpdate(null)
+                    onUpdateResult(UpdateCheckResult.Error(errorMsg))
                 }
             }
         }
     }
-
-    private fun showSnackbar(context: Context, message: String) {
-        val activity = context.getActivity() ?: return
-        val snackbarHostState = activity.snackbarHostState ?: return
-        CoroutineScope(Dispatchers.Main).launch {
-            snackbarHostState.showSnackbar(message)
-        }
-    }
-}
-
-// 扩展函数，用于在 Context 中查找 SnackbarHostState
-private val Activity.snackbarHostState: SnackbarHostState?
-    get() = (this as? MainActivity)?.let {
-        val composeView = window.decorView.findViewById<androidx.compose.ui.platform.ComposeView>(android.R.id.content)
-        composeView?.let {
-            var hostState: SnackbarHostState? = null
-            it.setContent {
-                hostState = remember { SnackbarHostState() }
-            }
-            hostState
-        }
-    }
-
-fun Context.getActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.getActivity()
-    else -> null
 }
