@@ -34,68 +34,86 @@ import cc.bbq.xq.data.db.LogEntry
 import kotlinx.coroutines.flow.first
 import android.content.ClipboardManager
 import android.content.ClipData
-import android.widget.Toast
+import androidx.compose.ui.res.stringResource
+import cc.bbq.xq.R
 
 class CrashLogActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
+        super.onCreate(savedInstanceState)
 
-    // 先从 Intent 获取，如果没有再从数据库加载
-    val initialCrashReport = intent.getStringExtra("CRASH_REPORT")
-    
-    setContent {
-        val crashReportState = remember { mutableStateOf(initialCrashReport ?: "Loading...") }
-        val context = LocalContext.current
+        // 先从 Intent 获取，如果没有再从数据库加载
+        val initialCrashReport = intent.getStringExtra("CRASH_REPORT")
 
-        LaunchedEffect(Unit) {
-            if (initialCrashReport == null) { // 如果没有传递参数，才从数据库加载
-                CoroutineScope(Dispatchers.IO).launch {
-                    val logEntry = BBQApplication.instance.database.logDao().getAllLogs().first()
-                        .firstOrNull { it.type == "CRASH" }
-                    val crashReport = logEntry?.responseBody ?: "No crash report available."
-                    crashReportState.value = crashReport
-                }
-            }
-        }
+        setContent {
+            val crashReportState = remember { mutableStateOf(initialCrashReport ?: "Loading...") }
+            val context = LocalContext.current
+            val snackbarHostState = remember { SnackbarHostState() } // 创建 SnackbarHostState
+            val scope = rememberCoroutineScope() // 创建 CoroutineScope
 
-            BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        CrashLogScreen(crashReport = crashReportState.value)
-
-                        FloatingActionButton(
-                            onClick = {
-                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val clip = ClipData.newPlainText("Crash Report", crashReportState.value)
-                                clipboard.setPrimaryClip(clip)
-                                Toast.makeText(context, "崩溃报告已复制到剪贴板", Toast.LENGTH_SHORT).show()
-                            },
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(16.dp)
-                        ) {
-                            Icon(Icons.Filled.ContentCopy, "复制崩溃报告")
-                        }
+            LaunchedEffect(Unit) {
+                if (initialCrashReport == null) { // 如果没有传递参数，才从数据库加载
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val logEntry = BBQApplication.instance.database.logDao().getAllLogs().first()
+                            .firstOrNull { it.type == "CRASH" }
+                        val crashReport = logEntry?.responseBody ?: "No crash report available."
+                        crashReportState.value = crashReport
                     }
                 }
+            }
+
+            BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
+                Scaffold( // 使用 Scaffold
+                    snackbarHost = { SnackbarHost(snackbarHostState) }, // 添加 SnackbarHost
+                    modifier = Modifier.fillMaxSize(),
+                    content = { innerPadding ->
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding),
+                            color = MaterialTheme.colorScheme.background
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                CrashLogScreen(crashReport = crashReportState.value)
+
+                                FloatingActionButton(
+                                    onClick = {
+                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                        val clip = ClipData.newPlainText("Crash Report", crashReportState.value)
+                                        clipboard.setPrimaryClip(clip)
+                                        //Toast.makeText(context, "崩溃报告已复制到剪贴板", Toast.LENGTH_SHORT).show()
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(
+                                                message = context.getString(R.string.crash_report_copied),// 使用 stringResource 获取字符串
+                                                duration = SnackbarDuration.Short
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(16.dp)
+                                ) {
+                                    Icon(Icons.Filled.ContentCopy, "复制崩溃报告")
+                                }
+                            }
+                        }
+                    }
+                )
             }
         }
     }
 
     companion object {
-    fun start(context: Context, crashReport: String) {
-        val intent = Intent(context, CrashLogActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            putExtra("CRASH_REPORT", crashReport) // 将崩溃报告传递给 Activity
+        fun start(context: Context, crashReport: String) {
+            val intent = Intent(context, CrashLogActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                putExtra("CRASH_REPORT", crashReport) // 将崩溃报告传递给 Activity
+            }
+            context.startActivity(intent)
         }
-        context.startActivity(intent)
     }
 }
-}
+
 @Composable
 fun CrashLogScreen(crashReport: String) {
     Column(

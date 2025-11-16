@@ -68,9 +68,14 @@ class MainActivity : ComponentActivity() {
         if (customDpiEnabled) {
             applyDpiAndFontScale(this)
         }
+        
+        companion object {
+        var snackbarHostState: SnackbarHostState? = null
+    }
 
         setContent {
-            val snackbarHostState = remember { SnackbarHostState() } // 创建 SnackbarHostState
+            val snackbarHostState = remember { SnackbarHostState() }
+            MainActivity.snackbarHostState = snackbarHostState // 存储 SnackbarHostState 的引用
 
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
                 Scaffold( // 使用 Scaffold

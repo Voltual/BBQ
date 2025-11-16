@@ -57,4 +57,9 @@
     <string name="clear_all_history_text">您确定要清空所有搜索历史记录吗？此操作不可恢复。</string>
     <string name="confirm">确认</string>
     <string name="cancel">取消</string>
+    <string name="crash_report_copied">崩溃报告已复制到剪贴板</string>
+    <string name="already_latest_version">当前已是最新版本</string>
+    <string name="failed_to_get_update_info">获取更新信息失败</string>
+    <string name="check_update_failed">检查更新失败</string>
+    <string name="check_update_error">检查更新出错</string>
 </resources>
