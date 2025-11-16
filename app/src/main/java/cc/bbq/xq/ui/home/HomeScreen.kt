@@ -10,9 +10,12 @@ package cc.bbq.xq.ui.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import cc.bbq.xq.restartMainActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

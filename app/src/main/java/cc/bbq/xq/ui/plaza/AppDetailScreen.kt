@@ -160,8 +160,13 @@ fun AppDetailScreen(
                     shareApp()
                 },
                 onImagePreview = { imageUrl ->
-                    navController.navigate(ImagePreview(imageUrl).createRoute())
-                }
+    navController.navigate(
+        ImagePreview(
+            imageUrl = imageUrl,
+            snackbarHostState = snackbarHostState  // 添加这行
+        ).createRoute()
+    )
+}
             )
         }
 

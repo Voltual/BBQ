@@ -279,23 +279,29 @@ fun PostDetailScreen(
                                 )
 
                         // 使用安全调用符 ?. 和 let 函数来处理 img_url 可能为空的情况
-                        postDetail?.img_url?.let { imgUrls ->
-                            imgUrls.forEach { imageUrl ->
-                                Spacer(Modifier.height(16.dp))
-                                AsyncImage(
-                                    model = imageUrl,
-                                    contentDescription = "帖子图片",
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp)
-                                        .clip(MaterialTheme.shapes.medium)
-                                        .clickable {
-                                            navController.navigate(ImagePreview(imageUrl).createRoute())
-                                        },
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                        }
+postDetail?.img_url?.let { imgUrls ->
+    imgUrls.forEach { imageUrl ->
+        Spacer(Modifier.height(16.dp))
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = "帖子图片",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(MaterialTheme.shapes.medium)
+                .clickable {
+                    // 修正：传递 snackbarHostState
+                    navController.navigate(
+                        ImagePreview(
+                            imageUrl = imageUrl,
+                            snackbarHostState = snackbarHostState  // 添加这行
+                        ).createRoute()
+                    )
+                },
+            contentScale = ContentScale.Crop
+        )
+    }
+}
                                 Row(
                                     modifier = Modifier
                                         .padding(top = 16.dp)
@@ -766,18 +772,26 @@ fun CommentItem(
             )
 
             comment.image_path?.firstOrNull()?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
-                Spacer(Modifier.height(8.dp))
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = "评论图片",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(150.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .clickable { navController.navigate(ImagePreview(imageUrl).createRoute()) },
-                    contentScale = ContentScale.Crop
+    Spacer(Modifier.height(8.dp))
+    AsyncImage(
+        model = imageUrl,
+        contentDescription = "评论图片",
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(150.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .clickable { 
+                // 修正：传递 snackbarHostState
+                navController.navigate(
+                    ImagePreview(
+                        imageUrl = imageUrl,
+                        snackbarHostState = snackbarHostState  // 添加这行
+                    ).createRoute()
                 )
-            }
+            },
+        contentScale = ContentScale.Crop
+    )
+}
 
             if (!comment.parentnickname.isNullOrEmpty()) {
                 Spacer(Modifier.height(8.dp))

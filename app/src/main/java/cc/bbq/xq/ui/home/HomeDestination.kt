@@ -120,7 +120,7 @@ fun HomeDestination(
             onLoginClick = onLoginClick,
             onSettingsClick = { navController.navigate(ThemeCustomize.route) },
             onSignClick = { viewModel.signIn(context) },
-            onAboutClick = { navController.navigate(About.route, snackbarHostState) },
+            onAboutClick = { navController.navigate(About.route) },
             onAccountProfileClick = { navController.navigate(AccountProfile.route) },
             onRecalculateDays = { viewModel.recalculateDaysDiff() },
              viewModel = viewModel,

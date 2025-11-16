@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 fun AppReleaseScreen(
     viewModel: AppReleaseViewModel,
     navController: NavController, // 添加 NavController 参数
+    snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -242,35 +243,40 @@ fun AppReleaseScreen(
             }
 
             item {
-                Column {
-                    Text("2. 上传应用介绍图 (至氪云)", style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    BBQOutlinedButton(
-                        onClick = { imageLauncher.launch("image/*") },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = viewModel.introductionImageUrls.size < MAX_INTRO_IMAGES,
-                        text = { Text("选择图片 (${viewModel.introductionImageUrls.size}/$MAX_INTRO_IMAGES)") }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    if (viewModel.introductionImageUrls.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier.horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            viewModel.introductionImageUrls.forEach { url ->
-                                ImagePreviewItem(
+    Column {
+        Text("2. 上传应用介绍图 (至氪云)", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        BBQOutlinedButton(
+            onClick = { imageLauncher.launch("image/*") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = viewModel.introductionImageUrls.size < MAX_INTRO_IMAGES,
+            text = { Text("选择图片 (${viewModel.introductionImageUrls.size}/$MAX_INTRO_IMAGES)") }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        if (viewModel.introductionImageUrls.isNotEmpty()) {
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                viewModel.introductionImageUrls.forEach { url ->
+                    ImagePreviewItem(
+                        imageUrl = url,
+                        onRemoveClick = { viewModel.removeIntroductionImage(url) },
+                        onImageClick = {
+                            // 修正：传递 snackbarHostState
+                            navController.navigate(
+                                ImagePreview(
                                     imageUrl = url,
-                                    onRemoveClick = { viewModel.removeIntroductionImage(url) },
-                                    onImageClick = {
-                                        // 修复：使用 NavController 导航到 ImagePreview
-                                        navController.navigate(ImagePreview(url).createRoute())
-                                    }
-                                )
-                            }
+                                    snackbarHostState = snackbarHostState  // 添加这行
+                                ).createRoute()
+                            )
                         }
-                    }
+                    )
                 }
             }
+        }
+    }
+}
 
             item { CategoryDropdown(viewModel) }
             item { PaymentSettings(viewModel) }

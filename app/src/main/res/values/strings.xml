@@ -70,5 +70,7 @@
     <string name="unable_to_get_userid">无法获取用户ID</string>
 <string name="theme_changed">已切换至%s模式</string>
 <string name="login_first_my_resources">请先登录以查看我的资源</string>
+<string name="login_first">请先登录</string>
+<string name="no_image_selected">未选择任何图片</string>
     
 </resources>

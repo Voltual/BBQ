@@ -33,7 +33,6 @@ import cc.bbq.xq.BuildConfig
 import cc.bbq.xq.R
 import android.content.Context
 import androidx.compose.ui.platform.LocalView
-import cc.bbq.xq.ui.getActivity
 import kotlinx.coroutines.launch
 
 @Composable

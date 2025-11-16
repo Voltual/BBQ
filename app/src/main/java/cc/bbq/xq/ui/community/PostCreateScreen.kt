@@ -315,9 +315,14 @@ fun PostCreateScreen(
                             }
                         },
                         onImageClick = {
-                            // 导航到图片预览
-                            navController.navigate(ImagePreview(imageUrl).createRoute()) // 修正
-                        }
+    // 导航到图片预览，并传递 snackbarHostState
+    navController.navigate(
+        ImagePreview(
+            imageUrl = imageUrl,
+            snackbarHostState = snackbarHostState
+        ).createRoute()
+    )
+}
                     )
                 }
                 if (uiState.imageUriToUrlMap.size < 2) {
