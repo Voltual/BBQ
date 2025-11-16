@@ -77,7 +77,6 @@
 <string name="qq_changed">QQ号修改成功</string>
 <string name="qq_change_failed">QQ号修改失败:%s</string>
 <string name="save_change_failed">保存修改失败:%s</string>
-<string name="comment_copied">评论已复制</string>
 <string name="copied_links_count">已复制 %d 条链接</string>
 <string name="copied_link">链接已复制</string>
 <string name="comment_copied">评论已复制</string>
