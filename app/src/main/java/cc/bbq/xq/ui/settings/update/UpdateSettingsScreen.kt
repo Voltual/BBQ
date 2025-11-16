@@ -8,6 +8,7 @@
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.settings.update
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,17 +19,22 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.bbq.xq.ui.theme.SwitchWithText // 添加正确的导入路径
 import kotlinx.coroutines.launch
-import cc.bbq.xq.data.UpdateInfo 
+import cc.bbq.xq.data.UpdateInfo
 import cc.bbq.xq.ui.compose.UpdateDialog
+import cc.bbq.xq.util.UpdateCheckResult
+import cc.bbq.xq.R
+import androidx.compose.ui.res.stringResource
+import cc.bbq.xq.util.UpdateChecker // 导入 UpdateChecker
 
 @Composable
 fun UpdateSettingsScreen(
-    viewModel: UpdateSettingsViewModel = viewModel()
+    viewModel: UpdateSettingsViewModel = viewModel(),
+    snackbarHostState: SnackbarHostState
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val autoCheckUpdates by viewModel.autoCheckUpdates.collectAsState(initial = false)
-    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) } 
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var showDialog by remember { mutableStateOf(false) }
 
     Column(
@@ -51,19 +57,23 @@ fun UpdateSettingsScreen(
         Button(
             onClick = {
                 viewModel.checkForUpdates(context) { result ->
-    when (result) {
-        is UpdateCheckResult.Success -> {
-            updateInfo = result.updateInfo
-            showDialog = true
-        }
-        is UpdateCheckResult.NoUpdate -> {
-            // 处理没有更新的情况
-        }
-        is UpdateCheckResult.Error -> {
-            // 处理错误情况
-        }
-    }
-}
+                    when (result) {
+                        is UpdateCheckResult.Success -> {
+                            updateInfo = result.updateInfo
+                            showDialog = true
+                        }
+                        is UpdateCheckResult.NoUpdate -> {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(result.message)
+                            }
+                        }
+                        is UpdateCheckResult.Error -> {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(result.message)
+                            }
+                        }
+                    }
+                }
             },
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {

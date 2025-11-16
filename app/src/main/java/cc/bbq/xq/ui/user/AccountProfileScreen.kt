@@ -63,91 +63,97 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
         deviceName = deviceNameDataStore.deviceNameFlow.first()
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-        OutlinedTextField(
-            value = nickname,
-            onValueChange = { nickname = it },
-            label = { Text("修改昵称") },
-            modifier = Modifier.fillMaxWidth()
-        )
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        modifier = modifier.fillMaxSize(),
+           ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            OutlinedTextField(
+                value = nickname,
+                onValueChange = { nickname = it },
+                label = { Text("修改昵称") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = qqNumber,
-            onValueChange = { qqNumber = it },
-            label = { Text("修改QQ号") },
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = qqNumber,
+                onValueChange = { qqNumber = it },
+                label = { Text("修改QQ号") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = deviceName,
-            onValueChange = { deviceName = it },
-            label = { Text("设备名称") },
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = deviceName,
+                onValueChange = { deviceName = it },
+                label = { Text("设备名称") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        AvatarUploadSection(
-            avatarUri = avatarUri,
-            avatarUrl = avatarUrl,
-            onAvatarSelected = { uri ->
-                avatarUri = uri
-                coroutineScope.launch {
-                    uploadAvatar(context, uri,
-                        onProgress = { message ->
-                            showProgressDialog = true
-                            progressMessage = message
-                        },
-                        onComplete = {
-                            showProgressDialog = false
-                        },
-                        onError = { error ->
-                            showProgressDialog = false
-                            //Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-                             coroutineScope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = error,
-                                    duration = SnackbarDuration.Short
-                                )
-                            }
-                        }
-                    )
-                }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = {
-                saveChanges(context, nickname, qqNumber, snackbarHostState) {
+            AvatarUploadSection(
+                avatarUri = avatarUri,
+                avatarUrl = avatarUrl,
+                onAvatarSelected = { uri ->
+                    avatarUri = uri
                     coroutineScope.launch {
-                        deviceNameDataStore.saveDeviceName(deviceName)
+                        uploadAvatar(context, uri, snackbarHostState,
+                            onProgress = { message ->
+                                showProgressDialog = true
+                                progressMessage = message
+                            },
+                            onComplete = {
+                                showProgressDialog = false
+                            },
+                            onError = { error ->
+                                showProgressDialog = false
+                                //Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                                 coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = error,
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            }
+                        )
                     }
                 }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("保存修改")
-        }
-    }
+            )
 
-    if (showProgressDialog) {
-        AlertDialog(
-            onDismissRequest = {},
-            title = { Text("上传中") },
-            text = { Text(progressMessage) },
-            confirmButton = {}
-        )
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    saveChanges(context, nickname, qqNumber, snackbarHostState) {
+                        coroutineScope.launch {
+                            deviceNameDataStore.saveDeviceName(deviceName)
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("保存修改")
+            }
+        }
+
+        if (showProgressDialog) {
+            AlertDialog(
+                onDismissRequest = {},
+                title = { Text("上传中") },
+                text = { Text(progressMessage) },
+                confirmButton = {}
+            )
+        }
     }
 }
 
@@ -217,14 +223,17 @@ fun AvatarUploadSection(
     }
 }
 
+@Composable
 suspend fun uploadAvatar(
     context: Context,
     uri: Uri,
+    snackbarHostState: SnackbarHostState,
     onProgress: (String) -> Unit = {},
     onComplete: () -> Unit = {},
     onError: (String) -> Unit = {}
 ) {
     val credentials = AuthManager.getCredentials(context)
+    val scope = rememberCoroutineScope()
 
     try {
         onProgress("上传头像中...")
@@ -252,7 +261,7 @@ suspend fun uploadAvatar(
             val response = uploadResult.getOrNull()
             if (response?.code == 1) {
                 withContext(Dispatchers.Main) {
-                //    Toast.makeText(context, "头像上传成功", Toast.LENGTH_SHORT).show()
+                    //Toast.makeText(context, "头像上传成功", Toast.LENGTH_SHORT).show()
                 }
                 onComplete()
             } else {
@@ -266,6 +275,7 @@ suspend fun uploadAvatar(
     }
 }
 
+@Composable
 fun saveChanges(context: Context, nickname: String, qqNumber: String, snackbarHostState: SnackbarHostState,  onDeviceNameSaved: () -> Unit) {
     val credentials = AuthManager.getCredentials(context)
     val token = credentials?.third ?: ""
