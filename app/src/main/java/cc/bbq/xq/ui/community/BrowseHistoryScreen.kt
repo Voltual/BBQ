@@ -16,7 +16,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.navigation.NavController
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,16 +27,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import cc.bbq.xq.data.db.BrowseHistory
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
 
-// 移除对 PostItem 的导入，因为我们使用自定义的 HistoryListItem
-// import cc.bbq.xq.ui.compose.PostItem // 注释掉这行
+// 移除错误的导入，因为 BrowseHistory 已经在同一个包中
+// import cc.bbq.xq.data.db.BrowseHistory // 这行是错误的，应该删除
 
 @Composable
 fun BrowseHistoryScreen(
@@ -146,7 +145,7 @@ private fun SelectionActionFABs(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HistoryListItem(
-    history: BrowseHistory,
+    history: BrowseHistory, // 现在使用同一包中的 BrowseHistory
     isSelected: Boolean,
     isSelectionMode: Boolean,
     onToggleSelection: () -> Unit,
@@ -164,7 +163,7 @@ private fun HistoryListItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clip(MaterialTheme.shapes.medium)
+            .clip(MaterialTheme.shapes.medium) // 这里使用了 clip
             .combinedClickable(
                 onClick = {
                     if (isSelectionMode) {

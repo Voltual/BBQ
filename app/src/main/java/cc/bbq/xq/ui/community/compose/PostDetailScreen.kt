@@ -84,6 +84,7 @@ fun PostDetailScreen(
     postId: Long,
     navController: NavController,
     onPostDeleted: () -> Unit,
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     val viewModel: PostDetailViewModel = viewModel()
