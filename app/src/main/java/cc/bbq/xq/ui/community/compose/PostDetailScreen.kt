@@ -358,7 +358,8 @@ postDetail?.img_url?.let { imgUrls ->
                     onReply = { viewModel.openReplyDialog(comment) },
                     onDelete = { viewModel.deleteComment(comment.id) },
                     clipboardManager = clipboardManager,
-                    context = context
+                    context = context,
+                    snackbarHostState = snackbarHostState
                 )
             }
 
@@ -804,49 +805,6 @@ fun CommentItem(
                     contentScale = ContentScale.Crop
                 )
             }
-
-            if (!comment.parentnickname.isNullOrEmpty()) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "回复 @${comment.parentnickname}:",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                LinkifyText(
-                    text = comment.parentcontent ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    navController = navController
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onReply) {
-                    Text("回复")
-                }
-
-                Spacer(Modifier.width(8.dp))
-
-                val credentials = AuthManager.getCredentials(context)
-                val currentUserId = credentials?.fourth
-                if (comment.userid == currentUserId) {
-                    TextButton(
-                        onClick = { showDeleteDialog = true },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Text("删除")
-                    }
-                }
-            }
-        }
-    }
-}
 
             if (!comment.parentnickname.isNullOrEmpty()) {
                 Spacer(Modifier.height(8.dp))
