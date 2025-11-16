@@ -50,12 +50,20 @@ fun UpdateSettingsScreen(
 
         Button(
             onClick = {
-                viewModel.checkForUpdates(context) { update ->
-                    update?.let {
-                        updateInfo = it
-                        showDialog = true
-                    }
-                }
+                viewModel.checkForUpdates(context) { result ->
+    when (result) {
+        is UpdateCheckResult.Success -> {
+            updateInfo = result.updateInfo
+            showDialog = true
+        }
+        is UpdateCheckResult.NoUpdate -> {
+            // 处理没有更新的情况
+        }
+        is UpdateCheckResult.Error -> {
+            // 处理错误情况
+        }
+    }
+}
             },
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {

@@ -9,7 +9,6 @@
 package cc.bbq.xq.ui.settings.update
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -39,9 +38,9 @@ class UpdateSettingsViewModel : ViewModel() {
         UpdateSettingsDataStore.setAutoCheckUpdates(value)
     }
 
-    fun checkForUpdates(context: Context, onUpdate: (cc.bbq.xq.util.UpdateCheckResult) -> Unit) {
-    UpdateChecker.checkForUpdates(context, onUpdate)
-}
+    fun checkForUpdates(context: Context, onUpdateResult: (cc.bbq.xq.util.UpdateCheckResult) -> Unit) {
+        UpdateChecker.checkForUpdates(context, onUpdateResult)
+    }
     
     @Composable
     private fun showUpdateDialog(updateInfo: UpdateInfo) {
