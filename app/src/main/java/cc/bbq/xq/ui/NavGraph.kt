@@ -75,7 +75,7 @@ import cc.bbq.xq.ui.settings.update.UpdateSettingsScreen //导入更新屏幕
 @Composable
 fun AppNavHost(
     navController: NavHostController,
-    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
+    snackbarHostState: SnackbarHostState, // 添加 SnackbarHostState 参数
     modifier: Modifier = Modifier//,
 //    restartAppCallback: (() -> Unit)? = null
 ) {
@@ -171,7 +171,7 @@ composable(route = CreatePost.route) {
     PostCreateScreen(
         viewModel = postCreateViewModel,
         navController = navController, // 传递 navController
-        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
         onBackClick = { navController.popBackStack() },
         // 移除 onSubmitClick 参数
         mode = "create",
@@ -189,7 +189,7 @@ composable(route = CreateRefundPost(0, 0, "", 0).route, arguments = CreateRefund
         navController = navController, // 传递 navController
         onBackClick = { navController.popBackStack() },
         // 移除 onSubmitClick 参数
-        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
         mode = "refund",
         refundAppName = URLDecoder.decode(args.getString(AppDestination.ARG_APP_NAME, ""), StandardCharsets.UTF_8.toString()),
         refundAppId = args.getLong(AppDestination.ARG_APP_ID),
@@ -214,7 +214,7 @@ composable(route = CreateRefundPost(0, 0, "", 0).route, arguments = CreateRefund
             } ?: ""
             ImagePreviewScreen(
                 imageUrl = imageUrl,
-                snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+                snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
                 onClose = { navController.popBackStack() }
             )
         }
@@ -407,7 +407,7 @@ composable(route = UpdateAppRelease("").route, arguments = UpdateAppRelease.argu
             val logViewModel: LogViewModel = org.koin.androidx.compose.koinViewModel()
             LogScreen(
                 viewModel = logViewModel,
-                snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+                snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
 //                onBackClick = { navController.popBackStack() },
                 modifier = Modifier.fillMaxSize() // 添加 modifier
             )
