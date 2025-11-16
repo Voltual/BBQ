@@ -32,6 +32,7 @@ import cc.bbq.xq.ui.MyPosts
 fun MyPostsScreen(
     viewModel: MyPostsViewModel,
     userId: Long,
+    snackbarHostState: SnackbarHostState,
     navController: NavController
 ) {
     val posts by viewModel.posts.collectAsState()

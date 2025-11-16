@@ -57,7 +57,7 @@ import kotlinx.coroutines.launch
 fun AppReleaseScreen(
     viewModel: AppReleaseViewModel,
     navController: NavController, // 添加 NavController 参数
-    snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
+    snackbarHostState: SnackbarHostState
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current

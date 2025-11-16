@@ -10,7 +10,6 @@ package cc.bbq.xq.ui.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import cc.bbq.xq.restartMainActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.res.painterResource
@@ -65,7 +64,7 @@ import cc.bbq.xq.R
 import cc.bbq.xq.ui.theme.AppShapes
 import cc.bbq.xq.ui.theme.BBQBackgroundCard
 import coil.compose.AsyncImage
-import cc.bbq.xq.ui.restartMainActivity
+import cc.bbq.xq.MainActivity
 import cc.bbq.xq.ui.*
 
 @Composable

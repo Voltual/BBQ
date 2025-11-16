@@ -566,7 +566,7 @@ private fun BotSettingsNavHost(navController: NavHostController) {
 // 在 NavGraph.kt 中修复社区屏幕的导航逻辑
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommunityScreen(navController: NavController, viewModel: CommunityViewModel) {
+fun CommunityScreen(navController: NavController, viewModel: CommunityViewModel,snackbarHostState: SnackbarHostState) {
     val totalPages by viewModel.totalPages.collectAsStateWithLifecycle()
     val posts by viewModel.posts.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -611,14 +611,13 @@ fun CommunityScreen(navController: NavController, viewModel: CommunityViewModel)
                 }
             }
         },
-        onBackClick = { navController.popBackStack() },
-        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+        onBackClick = { navController.popBackStack() }
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyLikesScreen(navController: NavController, viewModel: MyLikesViewModel) {
+fun MyLikesScreen(navController: NavController, viewModel: MyLikesViewModel,snackbarHostState: SnackbarHostState) {
     val totalPages by viewModel.totalPages.collectAsStateWithLifecycle()
     val posts by viewModel.posts.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -663,14 +662,13 @@ fun MyLikesScreen(navController: NavController, viewModel: MyLikesViewModel) {
                 }
             }
         },
-        onBackClick = { navController.popBackStack() },
-        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+        onBackClick = { navController.popBackStack() }
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HotPostsScreen(navController: NavController, viewModel: HotPostsViewModel) {
+fun HotPostsScreen(navController: NavController, viewModel: HotPostsViewModel,snackbarHostState: SnackbarHostState) {
     val totalPages by viewModel.totalPages.collectAsStateWithLifecycle()
     val posts by viewModel.posts.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -715,14 +713,13 @@ fun HotPostsScreen(navController: NavController, viewModel: HotPostsViewModel) {
                 }
             }
         },
-        onBackClick = { navController.popBackStack() },
-        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+        onBackClick = { navController.popBackStack() }
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FollowingPostsScreen(navController: NavController, viewModel: FollowingPostsViewModel) {
+fun FollowingPostsScreen(navController: NavController, viewModel: FollowingPostsViewModel,snackbarHostState: SnackbarHostState) {
     val totalPages by viewModel.totalPages.collectAsStateWithLifecycle()
     val posts by viewModel.posts.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -767,7 +764,6 @@ fun FollowingPostsScreen(navController: NavController, viewModel: FollowingPosts
                 }
             }
         },
-        onBackClick = { navController.popBackStack() },
-        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+        onBackClick = { navController.popBackStack() }
     )
 }
