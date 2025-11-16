@@ -15,7 +15,6 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.util.DisplayMetrics
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -62,7 +61,7 @@ import cc.bbq.xq.util.UpdateChecker//导入公共的更新函数
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)               
+        super.onCreate(savedInstanceState)
 
         // 只有在用户启用自定义 DPI 的情况下才执行
         val customDpiEnabled = ThemeColorStore.loadCustomDpiEnabled(this)
@@ -71,15 +70,25 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            val snackbarHostState = remember { SnackbarHostState() } // 创建 SnackbarHostState
+
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
-                Surface(
+                Scaffold( // 使用 Scaffold
+                    snackbarHost = { SnackbarHost(snackbarHostState) }, // 添加 SnackbarHost
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    MainComposeApp()
-                    // 检查更新
-                    CheckForUpdates()
-                }
+                    content = { innerPadding ->
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding), // 应用内边距
+                            color = MaterialTheme.colorScheme.background
+                        ) {
+                            MainComposeApp(snackbarHostState = snackbarHostState) // 传递 SnackbarHostState
+                            // 检查更新
+                            CheckForUpdates()
+                        }
+                    }
+                )
             }
         }
 
@@ -91,7 +100,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    
+
     init {
         // 设置崩溃处理
         Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
@@ -111,7 +120,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    
+
     private fun getCrashReport(throwable: Throwable): String {
         val stackTrace = throwable.stackTraceToString()
         val deviceInfo = """
@@ -200,7 +209,8 @@ private fun tryAutoLogin(
     username: String,
     password: String,
     context: Context,
-    navController: NavController
+    navController: NavController,
+    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
 ) {
     CoroutineScope(Dispatchers.IO).launch {
         try {
@@ -228,13 +238,15 @@ private fun tryAutoLogin(
                                 // 登录成功，不需要额外导航，因为已经在主页面
                             } else {
                                 AuthManager.clearCredentials(context)
-                                Toast.makeText(context, "登录数据为空", Toast.LENGTH_SHORT).show()
+                                //Toast.makeText(context, "登录数据为空", Toast.LENGTH_SHORT).show()
+                                scope.launch { snackbarHostState.showSnackbar("登录数据为空") }
                                 navController.navigate(Login.route)
                             }
                         } else {
                             AuthManager.clearCredentials(context)
                             val errorMsg = loginResponse?.msg ?: "登录失败"
-                            Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                            //Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                            scope.launch { snackbarHostState.showSnackbar(errorMsg) }
                             navController.navigate(Login.route)
                         }
                     }
@@ -251,7 +263,8 @@ private fun tryAutoLogin(
                             }
                             else -> "登录异常: ${exception?.message ?: "未知错误"}"
                         }
-                        Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                        //Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                        scope.launch { snackbarHostState.showSnackbar(errorMsg) }
                         navController.navigate(Login.route)
                     }
                 }
@@ -259,7 +272,8 @@ private fun tryAutoLogin(
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
                 AuthManager.clearCredentials(context)
-                Toast.makeText(context, "登录异常: ${e.message}", Toast.LENGTH_SHORT).show()
+                //Toast.makeText(context, "登录异常: ${e.message}", Toast.LENGTH_SHORT).show()
+                scope.launch { snackbarHostState.showSnackbar("登录异常: ${e.message}") }
                 navController.navigate(Login.route)
             }
         }
@@ -318,7 +332,7 @@ fun getTitleForDestination(backStackEntry: NavBackStackEntry?): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainComposeApp() {
+fun MainComposeApp(snackbarHostState: SnackbarHostState) { // 添加 SnackbarHostState 参数
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -367,7 +381,7 @@ fun MainComposeApp() {
     LaunchedEffect(Unit) {
         val credentials = AuthManager.getCredentials(context)
         if (credentials != null) {
-            tryAutoLogin(credentials.first, credentials.second, context, navController)
+            tryAutoLogin(credentials.first, credentials.second, context, navController, snackbarHostState) // 传递 snackbarHostState
         }
     }
 
@@ -453,6 +467,7 @@ fun MainComposeApp() {
                     )
                 }
             },
+
             content = { innerPadding ->
                 // 为播放器和社区屏幕应用不同的内边距（无顶栏时使用 0.dp）
                 val contentPadding = when {
