@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -34,16 +33,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import cc.bbq.xq.data.db.BrowseHistory
-import cc.bbq.xq.ui.compose.PostItem
-import cc.bbq.xq.ui.UserDetail
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
+
+// 移除对 PostItem 的导入，因为我们使用自定义的 HistoryListItem
+// import cc.bbq.xq.ui.compose.PostItem // 注释掉这行
 
 @Composable
 fun BrowseHistoryScreen(
     viewModel: BrowseHistoryViewModel = viewModel(),
     onPostClick: (Long) -> Unit,
-    snackbarHostState: SnackbarHostState, // 添加 SnackbarHostState 参数
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     val history by viewModel.historyList.collectAsState()
@@ -58,13 +58,12 @@ fun BrowseHistoryScreen(
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("BBQ History Links", textToCopy)
             clipboard.setPrimaryClip(clip)
-            //Toast.makeText(context, "已复制 $count 条链接", Toast.LENGTH_SHORT).show()
-                scope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = context.getString(R.string.copied_links_count, count),
-                        duration = SnackbarDuration.Short
-                    )
-                }
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    message = context.getString(R.string.copied_links_count, count),
+                    duration = SnackbarDuration.Short
+                )
+            }
         }
     }
 
@@ -86,7 +85,7 @@ fun BrowseHistoryScreen(
                     HistoryListItem(
                         history = item,
                         isSelected = isSelected,
-                        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
+                        snackbarHostState = snackbarHostState,
                         isSelectionMode = isSelectionMode,
                         onToggleSelection = { viewModel.toggleSelection(item.postId) },
                         onStartSelection = { viewModel.startSelectionMode(item.postId) },
@@ -101,7 +100,7 @@ fun BrowseHistoryScreen(
             SelectionActionFABs(
                 onDelete = { viewModel.deleteSelected() },
                 onCopy = { viewModel.copyShareLinks() },
-                snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
+                snackbarHostState = snackbarHostState,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
@@ -110,11 +109,8 @@ fun BrowseHistoryScreen(
     }
 
     // 选择模式下的顶部应用栏状态管理
-    // 注意：实际的 TopAppBar 现在由 MainActivity 统一管理
-    // 这里我们通过状态来影响 MainActivity 的标题显示
     LaunchedEffect(isSelectionMode, selectedCount) {
         // 这里可以添加逻辑来更新 MainActivity 的标题状态
-        // 例如通过共享的 ViewModel 或回调
     }
 }
 
@@ -122,7 +118,7 @@ fun BrowseHistoryScreen(
 private fun SelectionActionFABs(
     onDelete: () -> Unit,
     onCopy: () -> Unit,
-    snackbarHostState: SnackbarHostState, // 添加 SnackbarHostState 参数
+    snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -156,7 +152,7 @@ private fun HistoryListItem(
     onToggleSelection: () -> Unit,
     onStartSelection: () -> Unit,
     onPostClick: (Long) -> Unit,
-    snackbarHostState: SnackbarHostState, // 添加 SnackbarHostState 参数
+    snackbarHostState: SnackbarHostState,
 ) {
     val backgroundColor = if (isSelected) {
         MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
@@ -164,7 +160,6 @@ private fun HistoryListItem(
         MaterialTheme.colorScheme.surface
     }
 
-    // 使用 PostItem 几乎可以完美复用，但为了点击逻辑分离，我们自定义一个
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -201,8 +196,6 @@ private fun HistoryListItem(
 }
 
 // 选择模式状态管理
-// 由于我们移除了内部的 TopAppBar，选择模式的状态需要由外部管理
-// 这里我们提供一个状态类来帮助管理选择模式
 class BrowseHistorySelectionState {
     var isSelectionMode by mutableStateOf(false)
     var selectedCount by mutableStateOf(0)
