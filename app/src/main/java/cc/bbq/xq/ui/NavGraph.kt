@@ -131,9 +131,11 @@ fun AppNavHost(
 
         // 在 NavGraph.kt 中更新 AboutScreen 的调用
         composable(route = About.route) {
-            AboutScreen(modifier = Modifier.fillMaxSize()),
-            snackbarHostState = snackbarHostState // 传递 SnackbarHostState
-        }
+    AboutScreen(
+        modifier = Modifier.fillMaxSize(),
+        snackbarHostState = snackbarHostState
+    )
+}
 
         composable(route = Search.route) {
             SearchScreen(
