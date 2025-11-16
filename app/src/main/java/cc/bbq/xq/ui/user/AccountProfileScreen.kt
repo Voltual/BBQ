@@ -235,11 +235,15 @@ fun uploadAvatar(
 
     scope.launch(Dispatchers.IO) {
         try {
-            onProgress("上传头像中...")
+            withContext(Dispatchers.Main) {
+                onProgress("上传头像中...")
+            }
 
             val realPath = FileUtil.getRealPathFromURI(context, uri)
             if (realPath == null) {
-                onError("无法获取图片路径")
+                withContext(Dispatchers.Main) {
+                    onError("无法获取图片路径")
+                }
                 return@launch
             }
 
@@ -261,16 +265,22 @@ fun uploadAvatar(
                 if (response?.code == 1) {
                     withContext(Dispatchers.Main) {
                         //Toast.makeText(context, "头像上传成功", Toast.LENGTH_SHORT).show()
+                        onComplete()
                     }
-                    onComplete()
                 } else {
-                    onError("头像上传失败: ${response?.msg ?: "未知错误"}")
+                    withContext(Dispatchers.Main) {
+                        onError("头像上传失败: ${response?.msg ?: "未知错误"}")
+                    }
                 }
             } else {
-                onError("头像上传失败: ${uploadResult.exceptionOrNull()?.message ?: "未知错误"}")
+                withContext(Dispatchers.Main) {
+                    onError("头像上传失败: ${uploadResult.exceptionOrNull()?.message ?: "未知错误"}")
+                }
             }
         } catch (e: Exception) {
-            onError("上传错误: ${e.message}")
+            withContext(Dispatchers.Main) {
+                onError("上传错误: ${e.message}")
+            }
         }
     }
 }
