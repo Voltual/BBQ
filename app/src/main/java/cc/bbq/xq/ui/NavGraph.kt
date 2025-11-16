@@ -610,7 +610,8 @@ fun CommunityScreen(navController: NavController, viewModel: CommunityViewModel)
                 }
             }
         },
-        onBackClick = { navController.popBackStack() }
+        onBackClick = { navController.popBackStack() },
+        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
     )
 }
 
@@ -661,7 +662,8 @@ fun MyLikesScreen(navController: NavController, viewModel: MyLikesViewModel) {
                 }
             }
         },
-        onBackClick = { navController.popBackStack() }
+        onBackClick = { navController.popBackStack() },
+        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
     )
 }
 
@@ -712,7 +714,8 @@ fun HotPostsScreen(navController: NavController, viewModel: HotPostsViewModel) {
                 }
             }
         },
-        onBackClick = { navController.popBackStack() }
+        onBackClick = { navController.popBackStack() },
+        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
     )
 }
 
@@ -763,6 +766,7 @@ fun FollowingPostsScreen(navController: NavController, viewModel: FollowingPosts
                 }
             }
         },
-        onBackClick = { navController.popBackStack() }
+        onBackClick = { navController.popBackStack() },
+        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
     )
 }
