@@ -2,7 +2,6 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
@@ -57,6 +56,10 @@ import kotlinx.serialization.decodeFromString
 import cc.bbq.xq.data.UpdateSettingsDataStore
 import kotlinx.coroutines.flow.first
 import cc.bbq.xq.util.UpdateChecker//导入公共的更新函数
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
+import cc.bbq.xq.ui.getActivity
+import android.app.Activity
 
 class MainActivity : ComponentActivity() {
 
@@ -68,14 +71,9 @@ class MainActivity : ComponentActivity() {
         if (customDpiEnabled) {
             applyDpiAndFontScale(this)
         }
-        
-        companion object {
-        var snackbarHostState: SnackbarHostState? = null
-    }
 
         setContent {
             val snackbarHostState = remember { SnackbarHostState() }
-            MainActivity.snackbarHostState = snackbarHostState // 存储 SnackbarHostState 的引用
 
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
                 Scaffold( // 使用 Scaffold
@@ -244,14 +242,14 @@ private fun tryAutoLogin(
                             } else {
                                 AuthManager.clearCredentials(context)
                                 //Toast.makeText(context, "登录数据为空", Toast.LENGTH_SHORT).show()
-                                scope.launch { snackbarHostState.showSnackbar("登录数据为空") }
+                                CoroutineScope(Dispatchers.Main).launch { snackbarHostState.showSnackbar("登录数据为空") }
                                 navController.navigate(Login.route)
                             }
                         } else {
                             AuthManager.clearCredentials(context)
                             val errorMsg = loginResponse?.msg ?: "登录失败"
                             //Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                            scope.launch { snackbarHostState.showSnackbar(errorMsg) }
+                            CoroutineScope(Dispatchers.Main).launch { snackbarHostState.showSnackbar(errorMsg) }
                             navController.navigate(Login.route)
                         }
                     }
@@ -269,7 +267,7 @@ private fun tryAutoLogin(
                             else -> "登录异常: ${exception?.message ?: "未知错误"}"
                         }
                         //Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                        scope.launch { snackbarHostState.showSnackbar(errorMsg) }
+                        CoroutineScope(Dispatchers.Main).launch { snackbarHostState.showSnackbar(errorMsg) }
                         navController.navigate(Login.route)
                     }
                 }
@@ -278,7 +276,7 @@ private fun tryAutoLogin(
             withContext(Dispatchers.Main) {
                 AuthManager.clearCredentials(context)
                 //Toast.makeText(context, "登录异常: ${e.message}", Toast.LENGTH_SHORT).show()
-                scope.launch { snackbarHostState.showSnackbar("登录异常: ${e.message}") }
+                CoroutineScope(Dispatchers.Main).launch { snackbarHostState.showSnackbar("登录异常: ${e.message}") }
                 navController.navigate(Login.route)
             }
         }
@@ -488,4 +486,23 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) { // 添加 SnackbarHos
             }
         )
     }
+}
+
+// 扩展函数，用于在 Context 中查找 SnackbarHostState
+private val Activity.snackbarHostState: SnackbarHostState?
+    get() = (this as? MainActivity)?.let {
+        val composeView = window.decorView.findViewById<androidx.compose.ui.platform.ComposeView>(android.R.id.content)
+        composeView?.let {
+            var hostState: SnackbarHostState? = null
+            it.setContent {
+                hostState = remember { SnackbarHostState() }
+            }
+            hostState
+        }
+    }
+
+fun Context.getActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.getActivity()
+    else -> null
 }

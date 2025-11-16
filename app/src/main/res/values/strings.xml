@@ -62,5 +62,6 @@
     <string name="failed_to_get_update_info">获取更新信息失败</string>
     <string name="check_update_failed">检查更新失败</string>
     <string name="check_update_error">检查更新出错</string>
+    <string name="image_link_copied">已复制图片链接</string>
     
 </resources>
