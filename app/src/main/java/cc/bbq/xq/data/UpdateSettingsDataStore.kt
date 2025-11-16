@@ -35,3 +35,4 @@ suspend fun setAutoCheckUpdates(value: Boolean) {
         it[AUTO_CHECK_UPDATES] = value
     }
 }
+}
