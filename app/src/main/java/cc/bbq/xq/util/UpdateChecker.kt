@@ -26,7 +26,6 @@ import io.ktor.client.call.body
 import android.app.Activity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogWindowProvider
-import cc.bbq.xq.ui.getActivity
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
 import android.content.ContextWrapper

@@ -11,7 +11,6 @@ package cc.bbq.xq.ui.home
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,7 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,14 +31,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.BuildConfig
 import cc.bbq.xq.R
+import android.content.Context
+import androidx.compose.ui.platform.LocalView
+import cc.bbq.xq.ui.getActivity
+import kotlinx.coroutines.launch
 
 @Composable
 fun AboutScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
 ) {
     val context = LocalContext.current
     val versionName = BuildConfig.VERSION_NAME
     val versionCode = BuildConfig.VERSION_CODE
+    val scope = rememberCoroutineScope() // 创建 CoroutineScope
 
     Column(
         modifier = modifier
@@ -83,7 +88,13 @@ fun AboutScreen(
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://gitee.com/Voltula/bbq/blob/master/LICENSE"))
                     context.startActivity(intent)
                 } catch (e: Exception) {
-                    Toast.makeText(context, "无法打开浏览器", Toast.LENGTH_SHORT).show()
+                    //Toast.makeText(context, "无法打开浏览器", Toast.LENGTH_SHORT).show()
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = context.getString(R.string.unable_to_open_browser),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
                 }
             }
         )
@@ -94,7 +105,13 @@ fun AboutScreen(
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://gitee.com/Voltula/bbq"))
                     context.startActivity(intent)
                 } catch (e: Exception) {
-                    Toast.makeText(context, "无法打开浏览器", Toast.LENGTH_SHORT).show()
+                    //Toast.makeText(context, "无法打开浏览器", Toast.LENGTH_SHORT).show()
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = context.getString(R.string.unable_to_open_browser),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
                 }
             },
             onReleasesClick = {
@@ -102,7 +119,13 @@ fun AboutScreen(
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://gitee.com/Voltula/bbq/releases/"))
                     context.startActivity(intent)
                 } catch (e: Exception) {
-                    Toast.makeText(context, "无法打开浏览器", Toast.LENGTH_SHORT).show()
+                    //Toast.makeText(context, "无法打开浏览器", Toast.LENGTH_SHORT).show()
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = context.getString(R.string.unable_to_open_browser),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
                 }
             }
         )
@@ -167,10 +190,10 @@ fun OpenSourceCard(onGiteeClick: () -> Unit, onReleasesClick: () -> Unit) {
             ClickableTextItem(text = "下载可安装的APK包 (Releases)", onClick = onReleasesClick)
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-    text = "提示：如果您不了解如何编译代码，请点击上方\"下载可安装的APK包\"链接，下载后缀为 .apk 的文件进行安装。",
-    style = MaterialTheme.typography.bodySmall,
-    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-)
+                text = "提示：如果您不了解如何编译代码，请点击上方\"下载可安装的APK包\"链接，下载后缀为 .apk 的文件进行安装。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "本页面基于 Bilimiao 项目的代码修改而来，遵循 GPLv3 协议。",
