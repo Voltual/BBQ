@@ -10,6 +10,7 @@ package cc.bbq.xq
 import android.app.ActivityOptions
 import android.content.Context
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import cc.bbq.xq.util.UpdateCheckResult
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -170,26 +171,26 @@ fun CheckForUpdates(snackbarHostState: SnackbarHostState) { // 添加 snackbarHo
         if (autoCheckUpdates) {
             // 调用 UpdateChecker 并处理回调结果
             UpdateChecker.checkForUpdates(context) { result ->
-                when (result) {
-                    is UpdateCheckResult.Success -> {
-                        // 有新版本，显示更新对话框
-                        updateInfo = result.updateInfo
-                        showDialog = true
-                    }
-                    is UpdateCheckResult.NoUpdate -> {
-                        // 当前已是最新版本，显示 Snackbar
-                        scope.launch {
-                            snackbarHostState.showSnackbar(result.message)
-                        }
-                    }
-                    is UpdateCheckResult.Error -> {
-                        // 检查更新出错，显示 Snackbar
-                        scope.launch {
-                            snackbarHostState.showSnackbar(result.message)
-                        }
-                    }
-                }
+    when (result) {
+        is UpdateCheckResult.Success -> {
+            // 有新版本，显示更新对话框
+            updateInfo = result.updateInfo
+            showDialog = true
+        }
+        is UpdateCheckResult.NoUpdate -> {
+            // 当前已是最新版本，显示 Snackbar
+            CoroutineScope(Dispatchers.Main).launch {
+                snackbarHostState.showSnackbar(result.message)
             }
+        }
+        is UpdateCheckResult.Error -> {
+            // 检查更新出错，显示 Snackbar
+            CoroutineScope(Dispatchers.Main).launch {
+                snackbarHostState.showSnackbar(result.message)
+            }
+        }
+    }
+}
         }
     }
 

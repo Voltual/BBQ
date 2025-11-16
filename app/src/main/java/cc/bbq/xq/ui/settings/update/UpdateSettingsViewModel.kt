@@ -39,9 +39,9 @@ class UpdateSettingsViewModel : ViewModel() {
         UpdateSettingsDataStore.setAutoCheckUpdates(value)
     }
 
-    fun checkForUpdates(context: Context, onUpdate: (UpdateInfo?) -> Unit) {
-        UpdateChecker.checkForUpdates(context, onUpdate)
-    }
+    fun checkForUpdates(context: Context, onUpdate: (cc.bbq.xq.util.UpdateCheckResult) -> Unit) {
+    UpdateChecker.checkForUpdates(context, onUpdate)
+}
     
     @Composable
     private fun showUpdateDialog(updateInfo: UpdateInfo) {

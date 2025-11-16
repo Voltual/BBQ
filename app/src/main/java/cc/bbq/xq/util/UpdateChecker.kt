@@ -12,6 +12,7 @@ import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.UpdateInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import cc.bbq.xq.R
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
