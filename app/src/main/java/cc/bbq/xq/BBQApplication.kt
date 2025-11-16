@@ -56,9 +56,6 @@ class BBQApplication : Application() {
         // 加载并应用保存的自定义颜色
         ThemeManager.customColorSet = ThemeColorStore.loadColors(this)
         
-        // 新增：加载并应用保存的自定义 DPI 启用状态
-        val customDpiEnabled = ThemeColorStore.loadCustomDpiEnabled(this)
-
         // 初始化 Koin
         startKoin {
             androidContext(this@BBQApplication)

@@ -42,9 +42,9 @@ fun UserListScreen(
     users: List<KtorClient.UserItem>,
     isLoading: Boolean,
     errorMessage: String?,
-    isEmpty: Boolean,
+    //isEmpty: Boolean,
     onLoadMore: () -> Unit,
-    onRefresh: () -> Unit, // 添加 onRefresh 参数
+  //  onRefresh: () -> Unit, // 添加 onRefresh 参数
     onUserClick: (Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: UserListViewModel = viewModel()

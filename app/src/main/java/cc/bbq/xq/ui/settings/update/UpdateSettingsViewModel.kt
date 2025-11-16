@@ -35,17 +35,17 @@ class UpdateSettingsViewModel : ViewModel() {
 
     val autoCheckUpdates: Flow<Boolean> = UpdateSettingsDataStore.autoCheckUpdates
 
-    suspend fun setAutoCheckUpdates(context: Context, value: Boolean) {
-        UpdateSettingsDataStore.setAutoCheckUpdates(context, value)
+    suspend fun setAutoCheckUpdates(value: Boolean) {
+        UpdateSettingsDataStore.setAutoCheckUpdates(value)
     }
 
-fun checkForUpdates(context: Context, onUpdate: (UpdateInfo?) -> Unit) {
-    UpdateChecker.checkForUpdates(context, onUpdate)
-}
+    fun checkForUpdates(context: Context, onUpdate: (UpdateInfo?) -> Unit) {
+        UpdateChecker.checkForUpdates(context, onUpdate)
+    }
     
-        @Composable
-    private fun showUpdateDialog(context: Context, updateInfo: UpdateInfo) {
-         val context = LocalContext.current
+    @Composable
+    private fun showUpdateDialog(updateInfo: UpdateInfo) {
+        val context = LocalContext.current
         UpdateDialog(updateInfo = updateInfo) {
             //showDialog = false
         }
