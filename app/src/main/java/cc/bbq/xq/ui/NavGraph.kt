@@ -495,7 +495,8 @@ composable(route = UpdateAppRelease("").route, arguments = UpdateAppRelease.argu
         // 新增更新设置屏幕
 
 composable(route = UpdateSettings.route) {
-    UpdateSettingsScreen()
+    UpdateSettingsScreen(),
+    snackbarHostState = snackbarHostState // 传递 SnackbarHostState
 }
 
         // --- 列表屏幕 ---

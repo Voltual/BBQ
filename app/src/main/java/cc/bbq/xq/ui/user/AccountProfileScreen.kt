@@ -45,7 +45,6 @@ import java.io.File
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: SnackbarHostState) {
     var nickname by rememberSaveable { mutableStateOf("") }
@@ -107,7 +106,7 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
                 onAvatarSelected = { uri ->
                     avatarUri = uri
                     coroutineScope.launch {
-                        uploadAvatar(context, uri, snackbarHostState,
+                        uploadAvatar(context, uri, snackbarHostState = snackbarHostState,
                             onProgress = { message ->
                                 showProgressDialog = true
                                 progressMessage = message
@@ -128,7 +127,7 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
                         )
                     }
                 }
-            )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -224,7 +223,7 @@ fun AvatarUploadSection(
 }
 
 @Composable
-suspend fun uploadAvatar(
+fun uploadAvatar(
     context: Context,
     uri: Uri,
     snackbarHostState: SnackbarHostState,
@@ -235,6 +234,7 @@ suspend fun uploadAvatar(
     val credentials = AuthManager.getCredentials(context)
     val scope = rememberCoroutineScope()
 
+    LaunchedEffect(Unit) {
     try {
         onProgress("上传头像中...")
 
@@ -273,6 +273,8 @@ suspend fun uploadAvatar(
     } catch (e: Exception) {
         onError("上传错误: ${e.message}")
     }
+        
+}
 }
 
 @Composable
@@ -281,6 +283,7 @@ fun saveChanges(context: Context, nickname: String, qqNumber: String, snackbarHo
     val token = credentials?.third ?: ""
     val scope = rememberCoroutineScope()
 
+    LaunchedEffect(Unit) {
     CoroutineScope(Dispatchers.IO).launch {
         try {
             if (nickname.isNotEmpty()) {
