@@ -65,7 +65,7 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = modifier.fillMaxSize(),
-           ) { paddingValues ->
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .padding(paddingValues)
@@ -116,8 +116,7 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
                             },
                             onError = { error ->
                                 showProgressDialog = false
-                                //Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-                                 coroutineScope.launch {
+                                coroutineScope.launch {
                                     snackbarHostState.showSnackbar(
                                         message = error,
                                         duration = SnackbarDuration.Short
@@ -127,7 +126,7 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
                         )
                     }
                 }
-            }
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -234,57 +233,61 @@ fun uploadAvatar(
     val credentials = AuthManager.getCredentials(context)
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-    try {
-        onProgress("上传头像中...")
+    scope.launch(Dispatchers.IO) {
+        try {
+            onProgress("上传头像中...")
 
-        val realPath = FileUtil.getRealPathFromURI(context, uri)
-        if (realPath == null) {
-            onError("无法获取图片路径")
-            return
-        }
-
-        val file = File(realPath) // 修复：明确使用 String 构造函数
-        val bytes = file.readBytes()
-
-        val appid = 1
-        val token = credentials?.third ?: ""
-
-        val uploadResult = KtorClient.ApiServiceImpl.uploadAvatar(
-            appid = appid,
-            token = token,
-            file = bytes,
-            filename = file.name
-        )
-
-        if (uploadResult.isSuccess) {
-            val response = uploadResult.getOrNull()
-            if (response?.code == 1) {
-                withContext(Dispatchers.Main) {
-                    //Toast.makeText(context, "头像上传成功", Toast.LENGTH_SHORT).show()
-                }
-                onComplete()
-            } else {
-                onError("头像上传失败: ${response?.msg ?: "未知错误"}")
+            val realPath = FileUtil.getRealPathFromURI(context, uri)
+            if (realPath == null) {
+                onError("无法获取图片路径")
+                return@launch
             }
-        } else {
-            onError("头像上传失败: ${uploadResult.exceptionOrNull()?.message ?: "未知错误"}")
+
+            val file = File(realPath)
+            val bytes = file.readBytes()
+
+            val appid = 1
+            val token = credentials?.third ?: ""
+
+            val uploadResult = KtorClient.ApiServiceImpl.uploadAvatar(
+                appid = appid,
+                token = token,
+                file = bytes,
+                filename = file.name
+            )
+
+            if (uploadResult.isSuccess) {
+                val response = uploadResult.getOrNull()
+                if (response?.code == 1) {
+                    withContext(Dispatchers.Main) {
+                        //Toast.makeText(context, "头像上传成功", Toast.LENGTH_SHORT).show()
+                    }
+                    onComplete()
+                } else {
+                    onError("头像上传失败: ${response?.msg ?: "未知错误"}")
+                }
+            } else {
+                onError("头像上传失败: ${uploadResult.exceptionOrNull()?.message ?: "未知错误"}")
+            }
+        } catch (e: Exception) {
+            onError("上传错误: ${e.message}")
         }
-    } catch (e: Exception) {
-        onError("上传错误: ${e.message}")
     }
-        
-}
 }
 
 @Composable
-fun saveChanges(context: Context, nickname: String, qqNumber: String, snackbarHostState: SnackbarHostState,  onDeviceNameSaved: () -> Unit) {
+fun saveChanges(
+    context: Context,
+    nickname: String,
+    qqNumber: String,
+    snackbarHostState: SnackbarHostState,
+    onDeviceNameSaved: () -> Unit
+) {
     val credentials = AuthManager.getCredentials(context)
     val token = credentials?.third ?: ""
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-    CoroutineScope(Dispatchers.IO).launch {
+    scope.launch(Dispatchers.IO) {
         try {
             if (nickname.isNotEmpty()) {
                 val nicknameResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
@@ -293,21 +296,24 @@ fun saveChanges(context: Context, nickname: String, qqNumber: String, snackbarHo
                     nickname = nickname,
                     qq = null
                 )
-                if (nicknameResponse.isSuccess){
+                if (nicknameResponse.isSuccess) {
                     withContext(Dispatchers.Main) {
                         if (nicknameResponse.getOrNull()?.code == 1) {
-                           // Toast.makeText(context, "昵称修改成功", Toast.LENGTH_SHORT).show()
-                           scope.launch {
+                            // Toast.makeText(context, "昵称修改成功", Toast.LENGTH_SHORT).show()
+                            scope.launch {
                                 snackbarHostState.showSnackbar(
                                     message = context.getString(R.string.nickname_changed),
                                     duration = SnackbarDuration.Short
                                 )
                             }
                         } else {
-                           // Toast.makeText(context, "昵称修改失败: ${nicknameResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
+                            // Toast.makeText(context, "昵称修改失败: ${nicknameResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
                             scope.launch {
                                 snackbarHostState.showSnackbar(
-                                    message = context.getString(R.string.nickname_change_failed,nicknameResponse.getOrNull()?.msg),
+                                    message = context.getString(
+                                        R.string.nickname_change_failed,
+                                        nicknameResponse.getOrNull()?.msg
+                                    ),
                                     duration = SnackbarDuration.Short
                                 )
                             }
@@ -323,7 +329,7 @@ fun saveChanges(context: Context, nickname: String, qqNumber: String, snackbarHo
                     nickname = null,
                     qq = qqNumber
                 )
-                if (qqResponse.isSuccess){
+                if (qqResponse.isSuccess) {
                     withContext(Dispatchers.Main) {
                         if (qqResponse.getOrNull()?.code == 1) {
                             //Toast.makeText(context, "QQ号修改成功", Toast.LENGTH_SHORT).show()
@@ -337,7 +343,10 @@ fun saveChanges(context: Context, nickname: String, qqNumber: String, snackbarHo
                             //Toast.makeText(context, "QQ号修改失败: ${qqResponse.getOrNull()?.msg}", Toast.LENGTH_SHORT).show()
                             scope.launch {
                                 snackbarHostState.showSnackbar(
-                                    message =context.getString(R.string.qq_change_failed,qqResponse.getOrNull()?.msg),
+                                    message = context.getString(
+                                        R.string.qq_change_failed,
+                                        qqResponse.getOrNull()?.msg
+                                    ),
                                     duration = SnackbarDuration.Short
                                 )
                             }
@@ -352,7 +361,7 @@ fun saveChanges(context: Context, nickname: String, qqNumber: String, snackbarHo
 
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-               // Toast.makeText(context, "保存修改失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                // Toast.makeText(context, "保存修改失败: ${e.message}", Toast.LENGTH_SHORT).show()
                 scope.launch {
                     snackbarHostState.showSnackbar(
                         message = context.getString(R.string.save_change_failed, e.message),
