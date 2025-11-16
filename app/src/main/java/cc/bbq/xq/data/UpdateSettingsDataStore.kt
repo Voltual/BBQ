@@ -30,7 +30,7 @@ object UpdateSettingsDataStore {
             preferences[AUTO_CHECK_UPDATES] ?: true
         }
 
-    suspend fun setAutoCheckUpdates(context: Context, value: Boolean) {
+    suspend fun setAutoCheckUpdates(value: Boolean) {
         context.updateSettingsDataStore.edit { preferences ->
             preferences[AUTO_CHECK_UPDATES] = value
         }
