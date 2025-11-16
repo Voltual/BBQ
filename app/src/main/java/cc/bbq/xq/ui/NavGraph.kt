@@ -111,8 +111,11 @@ fun AppNavHost(
     ) {
         // --- 核心屏幕 ---
         composable(route = Home.route) {
-            HomeDestination(navController = navController)
-        }
+    HomeDestination(
+        navController = navController,
+        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+    )
+}
 
         composable(route = Login.route) {
             val loginViewModel: LoginViewModel = org.koin.androidx.compose.koinViewModel()
@@ -376,6 +379,7 @@ composable(route = AppDetail(0, 0).route, arguments = AppDetail.arguments) { bac
             AppReleaseScreen(
                 viewModel = appReleaseViewModel,
                 navController = navController, // 传递 navController
+                snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -395,6 +399,7 @@ composable(route = UpdateAppRelease("").route, arguments = UpdateAppRelease.argu
     AppReleaseScreen(
         viewModel = appReleaseViewModel,
         navController = navController,
+        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
         modifier = Modifier.fillMaxSize()
     )
 }

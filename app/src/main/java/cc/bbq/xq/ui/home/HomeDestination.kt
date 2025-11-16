@@ -8,7 +8,6 @@
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 package cc.bbq.xq.ui.home
 
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,10 +20,14 @@ import cc.bbq.xq.restartMainActivity
 import cc.bbq.xq.ui.theme.BBQTheme
 import cc.bbq.xq.ui.theme.ThemeManager
 import cc.bbq.xq.ui.*
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.res.stringResource
+import cc.bbq.xq.R
 
 @Composable
 fun HomeDestination(
-    navController: NavController
+    navController: NavController,
+    snackbarHostState: SnackbarHostState // 添加 SnackbarHostState 参数
 ) {
     val context = LocalContext.current
     val viewModel: HomeViewModel = viewModel()
@@ -45,7 +48,8 @@ fun HomeDestination(
             if (!uiState.showLoginPrompt) {
                 viewModel.toggleDarkMode()
                 val modeName = if (ThemeManager.isAppDarkTheme) "深色" else "亮色"
-                Toast.makeText(context, "已切换至${modeName}模式", Toast.LENGTH_SHORT).show()
+                viewModel.showSnackbar(context, context.getString(R.string.theme_changed,modeName))
+               // Toast.makeText(context, "已切换至${modeName}模式", Toast.LENGTH_SHORT).show()
             } else {
                 navController.navigate(Login.route)
             }
@@ -99,14 +103,16 @@ fun HomeDestination(
                 if (userId != null) {
                     navController.navigate(MyPosts(userId).createRoute())
                 } else {
-                    Toast.makeText(context, "无法获取用户ID", Toast.LENGTH_SHORT).show()
+                     viewModel.showSnackbar(context, context.getString(R.string.unable_to_get_userid))
+                    //Toast.makeText(context, "无法获取用户ID", Toast.LENGTH_SHORT).show()
                 }
             },
             onMyResourcesClick = {
                 if (userId != null) {
                     navController.navigate(ResourcePlaza(isMyResource = true, userId = userId).createRoute())
                 } else {
-                    Toast.makeText(context, "请先登录以查看我的资源", Toast.LENGTH_SHORT).show()
+                     viewModel.showSnackbar(context, stringResource(id = R.string.login_first_my_resources))
+                    //Toast.makeText(context, "请先登录以查看我的资源", Toast.LENGTH_SHORT).show()
                     navController.navigate(Login.route)
                 }
             },
@@ -114,9 +120,11 @@ fun HomeDestination(
             onLoginClick = onLoginClick,
             onSettingsClick = { navController.navigate(ThemeCustomize.route) },
             onSignClick = { viewModel.signIn(context) },
-            onAboutClick = { navController.navigate(About.route) },
+            onAboutClick = { navController.navigate(About.route, snackbarHostState) },
             onAccountProfileClick = { navController.navigate(AccountProfile.route) },
-            onRecalculateDays = { viewModel.recalculateDaysDiff() }
+            onRecalculateDays = { viewModel.recalculateDaysDiff() },
+             viewModel = viewModel,
+            snackbarHostState = snackbarHostState
         )
     }
 }

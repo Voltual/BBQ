@@ -5,7 +5,7 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.home
 
 import android.content.Context
@@ -22,6 +22,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.res.stringResource
+import cc.bbq.xq.R
 
 // 添加数据加载状态
 sealed class DataLoadState {
@@ -59,35 +62,43 @@ class HomeViewModel : ViewModel() {
     var uiState = mutableStateOf(HomeUiState())
         private set
 
+    // 新增：Snackbar HostState
+    var snackbarHostState = mutableStateOf<SnackbarHostState?>(null)
+        private set
+
+    fun setSnackbarHostState(hostState: SnackbarHostState) {
+        snackbarHostState.value = hostState
+    }
+
     fun loadUserData(context: Context, forceRefresh: Boolean = false) {
         val credentials = AuthManager.getCredentials(context) ?: return
-        
+
         // 如果数据已经加载且不是强制刷新，则跳过
         if (!forceRefresh && uiState.value.dataLoadState == DataLoadState.Loaded) {
             return
         }
-        
+
         viewModelScope.launch {
             try {
                 uiState.value = uiState.value.copy(
                     isLoading = true,
                     dataLoadState = DataLoadState.Loading
                 )
-                
+
                 // 使用 KtorClient 发起网络请求
                 val response = withContext(Dispatchers.IO) {
                     //KtorClient.instance.getUserInfo(token = credentials.third)
                     KtorClient.ApiServiceImpl.getUserInfo(token = credentials.third)
                 }
-                
+
                 response.onSuccess { result ->
                     result.data.let { userData ->
                         // 计算时间差（创建时间到上次签到时间）
                         val daysDiff = calculateDaysDiff(
-                            userData.create_time, 
+                            userData.create_time,
                             userData.signlasttime
                         )
-                        
+
                         uiState.value = uiState.value.copy(
                             showLoginPrompt = false,
                             avatarUrl = userData.usertx,
@@ -122,12 +133,12 @@ class HomeViewModel : ViewModel() {
             }
         }
     }
-    
+
     // 强制刷新用户数据
     fun refreshUserData(context: Context) {
         loadUserData(context, forceRefresh = true)
     }
-    
+
     // 重置加载状态（用于用户登出等情况）
     fun resetLoadState() {
         uiState.value = uiState.value.copy(
@@ -135,63 +146,63 @@ class HomeViewModel : ViewModel() {
             showLoginPrompt = true
         )
     }
-    
+
     // 签到功能
     fun signIn(context: Context) {
-    // 直接尝试获取凭证，即使为null也继续请求
-    val token = AuthManager.getCredentials(context)?.third ?: ""
+        // 直接尝试获取凭证，即使为null也继续请求
+        val token = AuthManager.getCredentials(context)?.third ?: ""
 
-    viewModelScope.launch {
-        try {
-            uiState.value = uiState.value.copy(isLoading = true)
-            
-            // 使用 KtorClient 发起网络请求
-            val response = withContext(Dispatchers.IO) {
-                //RetrofitClient.instance.userSignIn(token = token)
-                KtorClient.ApiServiceImpl.userSignIn(token = token)
-            }
-            
-            response.onSuccess { result ->
-                // 处理服务器返回的401错误
-                if (result.code == 401) {
-                    uiState.value = uiState.value.copy(
-                        signStatusMessage = "登录已过期，请长按头像刷新",
-                        showLoginPrompt = true,
-                        isLoading = false
-                    )
-                    // 重置加载状态，因为登录已过期
-                    resetLoadState()
-                } else {
-                    // 正常处理成功响应
-                    uiState.value = uiState.value.copy(
-                        signStatusMessage = result.msg,
-                        isLoading = false
-                    )
-                    
-                    // 2秒后清除状态消息
-                    launch {
-                        delay(2000)
-                        uiState.value = uiState.value.copy(signStatusMessage = null)
-                    }
-                    
-                    // 重新加载用户数据（强制刷新）
-                    refreshUserData(context)
+        viewModelScope.launch {
+            try {
+                uiState.value = uiState.value.copy(isLoading = true)
+
+                // 使用 KtorClient 发起网络请求
+                val response = withContext(Dispatchers.IO) {
+                    //RetrofitClient.instance.userSignIn(token = token)
+                    KtorClient.ApiServiceImpl.userSignIn(token = token)
                 }
-            }.onFailure { _ ->
+
+                response.onSuccess { result ->
+                    // 处理服务器返回的401错误
+                    if (result.code == 401) {
+                        uiState.value = uiState.value.copy(
+                            signStatusMessage = "登录已过期，请长按头像刷新",
+                            showLoginPrompt = true,
+                            isLoading = false
+                        )
+                        // 重置加载状态，因为登录已过期
+                        resetLoadState()
+                    } else {
+                        // 正常处理成功响应
+                        uiState.value = uiState.value.copy(
+                            signStatusMessage = result.msg,
+                            isLoading = false
+                        )
+
+                        // 2秒后清除状态消息
+                        launch {
+                            delay(2000)
+                            uiState.value = uiState.value.copy(signStatusMessage = null)
+                        }
+
+                        // 重新加载用户数据（强制刷新）
+                        refreshUserData(context)
+                    }
+                }.onFailure { _ ->
+                    uiState.value = uiState.value.copy(
+                        signStatusMessage = "签到失败: 网络请求错误",
+                        isLoading = false
+                    )
+                }
+            } catch (e: Exception) {
                 uiState.value = uiState.value.copy(
-                    signStatusMessage = "签到失败: 网络请求错误",
+                    signStatusMessage = "网络错误: ${e.message}",
                     isLoading = false
                 )
             }
-        } catch (e: Exception) {
-            uiState.value = uiState.value.copy(
-                signStatusMessage = "网络错误: ${e.message}",
-                isLoading = false
-            )
         }
     }
-}
-    
+
     // 计算两个日期之间的天数差
     fun calculateDaysDiff(startDate: String, endDate: String): Int {
         return try {
@@ -204,7 +215,7 @@ class HomeViewModel : ViewModel() {
             0
         }
     }
-    
+
     // 重新计算时间差（创建时间到当前时间）
     fun recalculateDaysDiff() {
         val currentTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -212,16 +223,23 @@ class HomeViewModel : ViewModel() {
         val daysDiff = calculateDaysDiff(uiState.value.createTime, currentTime)
         uiState.value = uiState.value.copy(displayDaysDiff = daysDiff)
     }
-    
+
     fun toggleDarkMode() {
         ThemeManager.toggleTheme()
     }
-    
+
     fun updateLoginState(isLoggedIn: Boolean) {
         uiState.value = uiState.value.copy(showLoginPrompt = !isLoggedIn)
         // 如果用户登出，重置加载状态
         if (!isLoggedIn) {
             resetLoadState()
+        }
+    }
+
+    // 新增：显示 Snackbar 的方法
+    fun showSnackbar(context:Context ,message: String) {
+        viewModelScope.launch {
+            snackbarHostState.value?.showSnackbar(message)
         }
     }
 }
