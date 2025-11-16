@@ -169,6 +169,7 @@ fun AppNavHost(
                 navController = navController,
 //                onBack = { navController.popBackStack() },
                 onPostDeleted = { navController.popBackStack() },
+                snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
                 modifier = Modifier.fillMaxSize() // 添加 modifier
             )
         }

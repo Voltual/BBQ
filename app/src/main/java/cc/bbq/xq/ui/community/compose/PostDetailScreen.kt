@@ -5,7 +5,7 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.community.compose
 
 import android.app.Activity
@@ -14,7 +14,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import cc.bbq.xq.KtorClient
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -77,6 +76,8 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import cc.bbq.xq.ui.theme.SwitchWithText // 导入移动到公共位置的 SwitchWithText
+import androidx.compose.ui.res.stringResource
+import cc.bbq.xq.R
 
 @Composable
 fun PostDetailScreen(
@@ -103,6 +104,9 @@ fun PostDetailScreen(
     val clipboardManager = remember {
         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     }
+    
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     var showShareDialog by remember { mutableStateOf(false) }
     var showMoreOptions by remember { mutableStateOf(false) }
@@ -131,8 +135,7 @@ fun PostDetailScreen(
         }
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
+   
 
     LaunchedEffect(errorMessage) {
         if (errorMessage.isNotEmpty()) {
@@ -406,8 +409,13 @@ postDetail?.img_url?.let { imgUrls ->
                     onClick = {
                         val clipData = ClipData.newPlainText("分享链接", shareText)
                         clipboardManager.setPrimaryClip(clipData)
+                         coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = context.getString(R.string.copied_link),
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
                         showShareDialog = false
-                        Toast.makeText(context, "链接已复制", Toast.LENGTH_SHORT).show()
                     }
                 ) {
                     Text("复制链接")
@@ -498,19 +506,19 @@ fun CommentDialog(
                     // 修复：移除不必要的 null 检查，因为 response.body() 返回非空类型
                     if ((responseBody.code == 1 || responseBody.code == 0) && !responseBody.downurl.isNullOrBlank()) {
                         onSuccess(responseBody.downurl)
-                        Toast.makeText(context, "图片上传成功", Toast.LENGTH_SHORT).show()
+                       // Toast.makeText(context, "图片上传成功", Toast.LENGTH_SHORT).show()
                     } else {
                         // 修复：直接访问 msg，因为它是非空类型
-                        Toast.makeText(context, "上传失败: ${responseBody.msg}", Toast.LENGTH_SHORT).show()
+                       // Toast.makeText(context, "上传失败: ${responseBody.msg}", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(context, "上传失败: 网络错误 ${response.status}", Toast.LENGTH_SHORT).show()
+                   // Toast.makeText(context, "上传失败: 网络错误 ${response.status}", Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
                 showProgressDialog = false
-                Toast.makeText(context, "上传错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                //Toast.makeText(context, "上传错误: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -693,8 +701,11 @@ fun CommentItem(
     onReply: () -> Unit,
     onDelete: () -> Unit,
     clipboardManager: ClipboardManager,
-    context: Context
+    context: Context,
+    snackbarHostState: SnackbarHostState
 ) {
+    val scope = rememberCoroutineScope()
+
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     if (showDeleteDialog) {
@@ -727,7 +738,13 @@ fun CommentItem(
                     onDoubleTap = {
                         val clipData = ClipData.newPlainText("评论内容", comment.content)
                         clipboardManager.setPrimaryClip(clipData)
-                        Toast.makeText(context, "评论已复制", Toast.LENGTH_SHORT).show()
+                        //Toast.makeText(context, "评论已复制", Toast.LENGTH_SHORT).show()
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = context.getString(R.string.comment_copied),
+                                duration = SnackbarDuration.Short
+                            )
+                        }
                     },
                     onLongPress = {
                         showDeleteDialog = true
