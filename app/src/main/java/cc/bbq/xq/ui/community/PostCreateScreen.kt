@@ -2,7 +2,6 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>。
@@ -44,10 +43,8 @@ import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.flow.first
 import cc.bbq.xq.ui.theme.ImagePreviewItem // 导入 ImagePreviewItem
 import cc.bbq.xq.ui.ImagePreview // 导入 ImagePreview 导航目标
-// --- 新增导入 ---
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
-// -----------------
 
 private const val MODE_CREATE = "create"
 private const val MODE_REFUND = "refund"
@@ -86,6 +83,7 @@ fun PostCreateScreen(
     refundAppId: Long,
     refundVersionId: Long,
     refundPayMoney: Int,
+    snackbarHostState: SnackbarHostState, // 添加 SnackbarHostState 参数
     modifier: Modifier = Modifier
 ) {
     val isRefundMode = mode == MODE_REFUND
@@ -104,6 +102,11 @@ fun PostCreateScreen(
     val context = LocalContext.current
     val activity = context as? Activity
     val deviceNameDataStore = remember { DeviceNameDataStore(context) }
+
+    // 设置 SnackbarHostState
+    LaunchedEffect(Unit) {
+        viewModel.setSnackbarHostState(snackbarHostState)
+    }
 
     // 处理发帖状态
     LaunchedEffect(postStatus) {
@@ -157,8 +160,7 @@ fun PostCreateScreen(
                 if (uiState.imageUriToUrlMap.size < 2) {
                     viewModel.uploadImage(uri)
                 } else {
-                    android.widget.Toast.makeText(context, "最多只能上传两张图片", android.widget.Toast.LENGTH_SHORT)
-                        .show()
+                   // android.widget.Toast.makeText(context, "最多只能上传两张图片", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -364,15 +366,12 @@ fun PostCreateScreen(
         Button(
             onClick = {
                 if (uiState.title.isBlank()) {
-                    android.widget.Toast.makeText(context, "请填写标题", android.widget.Toast.LENGTH_SHORT)
-                        .show()
+                    //android.widget.Toast.makeText(context, "请填写标题", android.widget.Toast.LENGTH_SHORT).show()
                 } else if (uiState.content.isBlank()) {
                     val message = if (isRefundMode) "请详细描述问题" else "请填写内容"
-                    android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT)
-                        .show()
+                   // android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
                 } else if (isRefundMode && uiState.content.length < 12) {
-                    android.widget.Toast.makeText(context, "问题描述不能少于12个字", android.widget.Toast.LENGTH_SHORT)
-                        .show()
+                    //android.widget.Toast.makeText(context, "问题描述不能少于12个字", android.widget.Toast.LENGTH_SHORT).show()
                 } else {
                     // 合并图片URL
                     val uploadedUrlsList = uiState.imageUrls.split(",").filter { it.isNotBlank() }

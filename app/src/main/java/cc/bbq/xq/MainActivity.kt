@@ -58,7 +58,6 @@ import kotlinx.coroutines.flow.first
 import cc.bbq.xq.util.UpdateChecker//导入公共的更新函数
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogWindowProvider
-import cc.bbq.xq.ui.getActivity
 import android.app.Activity
 
 class MainActivity : ComponentActivity() {
@@ -480,29 +479,11 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) { // 添加 SnackbarHos
 
                 AppNavHost(
                     navController = navController,
-                    modifier = Modifier.padding(contentPadding)//,
+                    modifier = Modifier.padding(contentPadding),
+                    snackbarHostState = snackbarHostState // 传递 SnackbarHostState
 //                    restartAppCallback = restartAppCallback
                 )
             }
         )
     }
-}
-
-// 扩展函数，用于在 Context 中查找 SnackbarHostState
-private val Activity.snackbarHostState: SnackbarHostState?
-    get() = (this as? MainActivity)?.let {
-        val composeView = window.decorView.findViewById<androidx.compose.ui.platform.ComposeView>(android.R.id.content)
-        composeView?.let {
-            var hostState: SnackbarHostState? = null
-            it.setContent {
-                hostState = remember { SnackbarHostState() }
-            }
-            hostState
-        }
-    }
-
-fun Context.getActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.getActivity()
-    else -> null
 }

@@ -13,7 +13,6 @@ import android.app.Application
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import android.net.Uri
-import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
@@ -34,6 +33,7 @@ import io.ktor.utils.io.*
 import io.ktor.http.content.*
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.HttpResponse
+import androidx.compose.material3.SnackbarHostState
 
 class PostCreateViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -53,6 +53,12 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     // 新增：对话框状态
     private val _showRestoreDialog = MutableStateFlow(false)
     val showRestoreDialog: StateFlow<Boolean> = _showRestoreDialog.asStateFlow()
+
+    // 新增：Snackbar 回调
+    private var _snackbarHostState: SnackbarHostState? = null
+    fun setSnackbarHostState(snackbarHostState: SnackbarHostState) {
+        _snackbarHostState = snackbarHostState
+    }
 
     init {
         viewModelScope.launch {
@@ -154,7 +160,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
     fun uploadImage(uri: Uri) {
         if (_preferencesState.value.noStoreDraft) {
-            Toast.makeText(getApplication(), "草稿存储已禁用", Toast.LENGTH_SHORT).show()
+            showSnackbar("草稿存储已禁用")
             return
         }
 
@@ -167,7 +173,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
             if (realPath == null) {
                 _uiState.update { it.copy(showProgressDialog = false) }
-                Toast.makeText(getApplication(), "无法获取图片路径", Toast.LENGTH_SHORT).show()
+                showSnackbar("无法获取图片路径")
                 return@launch
             }
 
@@ -187,14 +193,14 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                                 showProgressDialog = false
                             )
                         }
-                        Toast.makeText(getApplication(), "图片上传成功", Toast.LENGTH_SHORT).show()
+                        showSnackbar("图片上传成功")
                     }
                 } else {
-                    Toast.makeText(getApplication(), "上传失败: ${uploadResult.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
+                    showSnackbar("上传失败: ${uploadResult.exceptionOrNull()?.message}")
                     _uiState.update { it.copy(showProgressDialog = false) }
                 }
             } catch (e: Exception) {
-                Toast.makeText(getApplication(), "上传错误: ${e.message}", Toast.LENGTH_SHORT).show()
+                showSnackbar("上传错误: ${e.message}")
                 _uiState.update { it.copy(showProgressDialog = false) }
             } finally {
                 _uiState.update { it.copy(showProgressDialog = false) }
@@ -259,6 +265,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 val credentials = AuthManager.getCredentials(getApplication())
                 if (credentials == null) {
                     _postStatus.value = PostStatus.Error("请先登录")
+                    showSnackbar("请先登录")
                     return@launch
                 }
 
@@ -299,16 +306,16 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                     if (!_preferencesState.value.noStoreDraft) {
                         draftRepository.clearDraft()
                     }
-                    Toast.makeText(getApplication(), "发帖成功", Toast.LENGTH_SHORT).show()
+                    showSnackbar("发帖成功")
                 } else {
                     val errorMsg = createPostResult.exceptionOrNull()?.message ?: "发帖失败"
                     _postStatus.value = PostStatus.Error(errorMsg)
-                    Toast.makeText(getApplication(), "发帖失败: $errorMsg", Toast.LENGTH_SHORT).show()
+                    showSnackbar("发帖失败: $errorMsg")
                 }
             } catch (e: Exception) {
                 val errorMsg = "网络错误: ${e.message}"
                 _postStatus.value = PostStatus.Error(errorMsg)
-                Toast.makeText(getApplication(), errorMsg, Toast.LENGTH_SHORT).show()
+                showSnackbar(errorMsg)
             }
         }
     }
@@ -346,6 +353,13 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 }
             }
             .launchIn(viewModelScope)
+    }
+
+    // 新增：显示 Snackbar 的方法
+    private fun showSnackbar(message: String) {
+        viewModelScope.launch {
+            _snackbarHostState?.showSnackbar(message)
+        }
     }
 }
 
