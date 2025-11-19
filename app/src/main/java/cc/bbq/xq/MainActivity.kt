@@ -486,6 +486,8 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) { // 添加 SnackbarHos
                     )
                 }
             },
+            // 将 SnackbarHost 替换为 BBQSnackbarHost
+            snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState) },
 
             content = { innerPadding ->
                 // 为播放器和社区屏幕应用不同的内边距（无顶栏时使用 0.dp）
