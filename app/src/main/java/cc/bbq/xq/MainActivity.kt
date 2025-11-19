@@ -60,6 +60,8 @@ import cc.bbq.xq.util.UpdateChecker//导入公共的更新函数
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogWindowProvider
 import android.app.Activity
+// 导入 BBQSnackbarHost
+import cc.bbq.xq.ui.theme.BBQSnackbarHost
 
 class MainActivity : ComponentActivity() {
 
@@ -77,7 +79,7 @@ class MainActivity : ComponentActivity() {
 
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
                 Scaffold( // 使用 Scaffold
-                    snackbarHost = { SnackbarHost(snackbarHostState) }, // 添加 SnackbarHost
+                    snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState) }, // 添加 SnackbarHost
                     modifier = Modifier.fillMaxSize(),
                     content = { innerPadding ->
                         Surface(
@@ -171,26 +173,26 @@ fun CheckForUpdates(snackbarHostState: SnackbarHostState) { // 添加 snackbarHo
         if (autoCheckUpdates) {
             // 调用 UpdateChecker 并处理回调结果
             UpdateChecker.checkForUpdates(context) { result ->
-    when (result) {
-        is UpdateCheckResult.Success -> {
-            // 有新版本，显示更新对话框
-            updateInfo = result.updateInfo
-            showDialog = true
-        }
-        is UpdateCheckResult.NoUpdate -> {
-            // 当前已是最新版本，显示 Snackbar
-            CoroutineScope(Dispatchers.Main).launch {
-                snackbarHostState.showSnackbar(result.message)
+                when (result) {
+                    is UpdateCheckResult.Success -> {
+                        // 有新版本，显示更新对话框
+                        updateInfo = result.updateInfo
+                        showDialog = true
+                    }
+                    is UpdateCheckResult.NoUpdate -> {
+                        // 当前已是最新版本，显示 Snackbar
+                        CoroutineScope(Dispatchers.Main).launch {
+                            snackbarHostState.showSnackbar(result.message)
+                        }
+                    }
+                    is UpdateCheckResult.Error -> {
+                        // 检查更新出错，显示 Snackbar
+                        CoroutineScope(Dispatchers.Main).launch {
+                            snackbarHostState.showSnackbar(result.message)
+                        }
+                    }
+                }
             }
-        }
-        is UpdateCheckResult.Error -> {
-            // 检查更新出错，显示 Snackbar
-            CoroutineScope(Dispatchers.Main).launch {
-                snackbarHostState.showSnackbar(result.message)
-            }
-        }
-    }
-}
         }
     }
 
