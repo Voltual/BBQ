@@ -62,6 +62,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import android.app.Activity
 // 导入 BBQSnackbarHost
 import cc.bbq.xq.ui.theme.BBQSnackbarHost
+import cc.bbq.xq.roundScreenAdaptation // 导入 roundScreenAdaptation
 
 class MainActivity : ComponentActivity() {
 
@@ -500,7 +501,9 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) { // 添加 SnackbarHos
 
                 AppNavHost(
                     navController = navController,
-                    modifier = Modifier.padding(contentPadding),
+                    modifier = Modifier
+                        .padding(contentPadding)
+                        .roundScreenAdaptation(0.1f), // 应用自定义 Modifier，设置内边距比例为 10%
                     snackbarHostState = snackbarHostState // 传递 SnackbarHostState
 //                    restartAppCallback = restartAppCallback
                 )
