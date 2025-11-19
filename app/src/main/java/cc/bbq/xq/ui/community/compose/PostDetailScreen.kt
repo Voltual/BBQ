@@ -44,6 +44,7 @@ import androidx.compose.animation.AnimatedVisibility
 import cc.bbq.xq.ui.animation.materialSharedAxisYIn
 import cc.bbq.xq.ui.animation.materialSharedAxisYOut
 import cc.bbq.xq.ui.animation.rememberSlideDistance
+import cc.bbq.xq.ui.theme.BBQSnackbarHost // 导入 BBQSnackbarHost
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -452,7 +453,7 @@ postDetail?.img_url?.let { imgUrls ->
 
     // Snackbar 宿主
     Box(modifier = Modifier.fillMaxSize()) {
-        SnackbarHost(
+        BBQSnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )

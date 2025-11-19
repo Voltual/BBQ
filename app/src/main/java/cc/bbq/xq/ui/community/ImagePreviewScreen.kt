@@ -14,6 +14,7 @@ import android.content.Context
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.compose.foundation.background
+import cc.bbq.xq.ui.theme.BBQSnackbarHost // 导入 BBQSnackbarHost
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,7 +57,7 @@ fun ImagePreviewScreen(
 
     Scaffold(
         containerColor = Color.Black,
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { BBQSnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Box(
             modifier = Modifier

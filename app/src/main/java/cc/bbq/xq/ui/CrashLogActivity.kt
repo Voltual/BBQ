@@ -11,6 +11,7 @@ package cc.bbq.xq.ui
 
 import android.content.Context
 import android.content.Intent
+import cc.bbq.xq.ui.theme.BBQSnackbarHost // 导入 BBQSnackbarHost
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -64,7 +65,7 @@ class CrashLogActivity : ComponentActivity() {
 
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
                 Scaffold( // 使用 Scaffold
-                    snackbarHost = { SnackbarHost(snackbarHostState) }, // 添加 SnackbarHost
+                    snackbarHost = { BBQSnackbarHost(snackbarHostState) }, // 添加 SnackbarHost
                     modifier = Modifier.fillMaxSize(),
                     content = { innerPadding ->
                         Surface(

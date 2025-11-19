@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import cc.bbq.xq.ui.theme.BBQSnackbarHost // 导入 BBQSnackbarHost
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -325,7 +326,7 @@ fun AppReleaseScreen(
 
     // Snackbar 宿主
     Box(modifier = Modifier.fillMaxSize()) {
-        SnackbarHost(
+        BBQSnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )

@@ -34,6 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.InputStream
+import cc.bbq.xq.ui.theme.BBQSnackbarHost // 导入 BBQSnackbarHost
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,12 +55,12 @@ fun LoginScreen(
     Box(modifier = modifier.fillMaxSize()) {
         if (isRegistering) {
             RegisterContent(
-                viewModel = viewModel, 
+                viewModel = viewModel,
                 onBackToLogin = { isRegistering = false }
             )
         } else {
             LoginContent(
-                viewModel = viewModel, 
+                viewModel = viewModel,
                 onNavigateToRegister = { isRegistering = true }
             )
         }
@@ -86,7 +87,7 @@ fun LoginContent(
         }
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+    Scaffold(snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState) }) { padding ->
         Column(
             modifier = Modifier.padding(padding).fillMaxSize().padding(24.dp),
             verticalArrangement = Arrangement.Center,
@@ -148,7 +149,7 @@ fun RegisterContent(
     var passwordVisible by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    
+
     // 核心修正 #2: 使用 LaunchedEffect 按需加载验证码
     // 当 RegisterContent 进入组合时，这个 effect 会运行一次
     LaunchedEffect(Unit) {
@@ -161,7 +162,7 @@ fun RegisterContent(
         }
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+    Scaffold(snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState) }) { padding ->
         Column(
             modifier = Modifier.padding(padding).fillMaxSize().padding(24.dp),
             verticalArrangement = Arrangement.Center,

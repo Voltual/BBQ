@@ -14,6 +14,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import cc.bbq.xq.ui.theme.BBQSnackbarHost // 导入 BBQSnackbarHost
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -63,7 +64,7 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { BBQSnackbarHost(snackbarHostState) },
         modifier = modifier.fillMaxSize(),
     ) { paddingValues ->
         Column(
