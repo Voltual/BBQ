@@ -125,7 +125,7 @@ object SineShopClient {
     /**
      * 发起 GET 请求
      */
-    suspend inline fun <reified T> get(
+    internal suspend inline fun <reified T> get(
         url: String,
         parameters: Parameters = Parameters.Empty
     ): Result<T> {
@@ -143,7 +143,7 @@ object SineShopClient {
     /**
      * 发起 POST 请求（表单格式）
      */
-    suspend inline fun <reified T> postForm(
+    internal suspend inline fun <reified T> postForm(
         url: String,
         parameters: Parameters = Parameters.Empty
     ): Result<T> {
@@ -158,7 +158,7 @@ object SineShopClient {
     /**
      * 发起 POST 请求（JSON 格式）
      */
-    suspend inline fun <reified T> postJson(
+    internal suspend inline fun <reified T> postJson(
         url: String,
         body: Any? = null
     ): Result<T> {
@@ -183,6 +183,6 @@ object SineShopClient {
 }
 
 // 扩展函数，便于参数构建
-fun sineShopParameters(block: ParametersBuilder.() -> Unit): Parameters {
+internal fun sineShopParameters(block: ParametersBuilder.() -> Unit): Parameters {
     return Parameters.build(block)
 }
