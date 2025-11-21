@@ -20,6 +20,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.delay
 import kotlinx.serialization.json.Json
 import java.io.IOException
@@ -89,7 +90,7 @@ object SineShopClient {
     /**
      * 安全地执行 Ktor 请求，并处理异常和重试
      */
-    private suspend inline fun <reified T> safeApiCall(block: suspend () -> HttpResponse): Result<T> {
+    internal suspend inline fun <reified T> safeApiCall(block: suspend () -> HttpResponse): Result<T> {
         var attempts = 0
         while (attempts < MAX_RETRIES) {
             try {
@@ -146,10 +147,10 @@ object SineShopClient {
         parameters: Parameters = Parameters.Empty
     ): Result<T> {
         return safeApiCall {
-            httpClient.submitForm(
-                url = url,
-                formParameters = parameters
-            )
+            httpClient.post(url) {
+                contentType(ContentType.Application.FormUrlEncoded)
+                setBody(FormDataContent(parameters))
+            }
         }
     }
 
