@@ -2,7 +2,6 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>。
@@ -18,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 class PostDetailViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -75,10 +75,11 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             try {
                 val context = getApplication<Application>().applicationContext
-                val credentials = AuthManager.getCredentials(context)!!
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()!!
 
                 val result = KtorClient.ApiServiceImpl.getPostDetail(
-                    token = credentials.third,
+                    token = userCredentials.token,
                     postId = postId
                 )
 
@@ -188,11 +189,12 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
             val isCurrentlyLiked = _isLiked.value
 
             try {
-                val context = getApplication<Application>().applicationContext
-                val credentials = AuthManager.getCredentials(context)!!
+                 val context = getApplication<Application>().applicationContext
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()!!
 
                 val result = KtorClient.ApiServiceImpl.likePost(
-                    token = credentials.third,
+                    token = userCredentials.token,
                     postId = postId
                 )
 
@@ -240,13 +242,14 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
     fun submitComment(content: String, imageUrl: String? = null) {
         viewModelScope.launch {
             try {
-                val context = getApplication<Application>().applicationContext
-                val credentials = AuthManager.getCredentials(context)!!
+                 val context = getApplication<Application>().applicationContext
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()!!
                 val postId = postDetail.value?.id ?: return@launch
                 val parentId = _currentReplyComment.value?.id ?: 0L
 
                 val result = KtorClient.ApiServiceImpl.postComment(
-                    token = credentials.third,
+                    token = userCredentials.token,
                     content = content,
                     postId = postId,
                     parentId = parentId,
@@ -277,11 +280,12 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             val postId = postDetail.value?.id ?: return@launch
             val context = getApplication<Application>().applicationContext
-            val credentials = AuthManager.getCredentials(context)!!
+               val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()!!
 
             try {
                 val result = KtorClient.ApiServiceImpl.deletePost(
-                    token = credentials.third,
+                    token = userCredentials.token,
                     postId = postId
                 )
 
@@ -305,11 +309,12 @@ class PostDetailViewModel(application: Application) : AndroidViewModel(applicati
     fun deleteComment(commentId: Long) {
         viewModelScope.launch {
             val context = getApplication<Application>().applicationContext
-            val credentials = AuthManager.getCredentials(context)!!
+             val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()!!
 
             try {
                 val result = KtorClient.ApiServiceImpl.deleteComment(
-                    token = credentials.third,
+                    token = userCredentials.token,
                     commentId = commentId
                 )
 

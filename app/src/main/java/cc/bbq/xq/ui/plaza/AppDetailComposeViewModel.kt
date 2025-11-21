@@ -2,10 +2,9 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
@@ -19,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 
 class AppDetailComposeViewModel(application: Application) : AndroidViewModel(application) {
     private val _appDetail = MutableStateFlow<KtorClient.AppDetail?>(null)
@@ -87,9 +87,10 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val context = getApplication<Application>().applicationContext
-                val credentials = AuthManager.getCredentials(context)
-                val token = credentials?.third ?: ""
+                 val context = getApplication<Application>().applicationContext
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()
+                val token = userCredentials?.token ?: ""
 
                 val result = KtorClient.ApiServiceImpl.getAppsInformation(
                     token = token,
@@ -168,11 +169,11 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
         viewModelScope.launch {
             try {
                 val context = getApplication<Application>().applicationContext
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()
+                val token = userCredentials?.token?:""
                 val appDetail = _appDetail.value ?: return@launch
                 val parentId = _currentReplyComment.value?.id ?: 0L // 确保 parentId 不为空
-
-                val credentials = AuthManager.getCredentials(context)
-                val token = credentials?.third.orEmpty()
 
                 val result = KtorClient.ApiServiceImpl.postAppComment(
                     token = token,
@@ -203,8 +204,10 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
     fun deleteAppComment(commentId: Long) {
         viewModelScope.launch {
             try {
-                val context = getApplication<Application>().applicationContext
-                val token = AuthManager.getCredentials(context)?.third.orEmpty()
+                 val context = getApplication<Application>().applicationContext
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()
+                val token = userCredentials?.token?:""
 
                 val result = KtorClient.ApiServiceImpl.deleteAppComment(token = token, commentId = commentId)
                 if (result.isSuccess) {
@@ -230,7 +233,9 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
         viewModelScope.launch {
             val app = _appDetail.value ?: return@launch
             val context = getApplication<Application>().applicationContext
-            val token = AuthManager.getCredentials(context)?.third ?: ""
+                  val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()
+                val token = userCredentials?.token ?: ""
 
             if (token.isEmpty()) {
                 _errorMessage.value = "未登录"

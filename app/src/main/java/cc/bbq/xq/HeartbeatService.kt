@@ -14,6 +14,7 @@ import android.content.Intent
 import android.os.IBinder
 import android.util.Log
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import org.koin.android.ext.android.inject
 
 class HeartbeatService : Service() {
@@ -34,7 +35,10 @@ class HeartbeatService : Service() {
                 Log.d("HEARTBEAT", "Starting new heartbeat cycle.")
 
                 supervisorScope {
-                    val userToken = AuthManager.getCredentials(this@HeartbeatService)?.third
+                    val context = this@HeartbeatService
+                    val userCredentialsFlow = AuthManager.getCredentials(context)
+
+                    val userToken = userCredentialsFlow.first()?.token
 
                     if (!userToken.isNullOrBlank()) {
                         launch {

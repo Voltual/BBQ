@@ -120,13 +120,10 @@ fun LoginContent(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
             ) {
-                Text("登录小趣空间账号")
+                Text("登录")
             }
             TextButton(onClick = onNavigateToRegister, modifier = Modifier.fillMaxWidth()) {
-                Text("注册小趣空间新账号")
-            }
-            TextButton(onClick = onNavigateToRegister, modifier = Modifier.fillMaxWidth()) {
-                Text("登录弦应用商店")
+                Text("注册新账号")
             }
             if (isLoading) {
                 Spacer(modifier = Modifier.height(16.dp))

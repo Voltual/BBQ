@@ -2,7 +2,6 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
@@ -93,7 +92,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 title = draft.title,
                 content = draft.content,
                 imageUrls = draft.imageUrls,
-                imageUriToUrlMap = draft.imageUrls.split(",").filter { it.isNotBlank() }.map { Uri.EMPTY to it }.toMap(), // 修改
+                imageUriToUrlMap = draft.imageUriToUrlMap,
                 selectedSubsectionId = draft.subsectionId
             )
         }
@@ -262,14 +261,16 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
             _postStatus.value = PostStatus.Loading
 
             try {
-                val credentials = AuthManager.getCredentials(getApplication())
-                if (credentials == null) {
+                val context = getApplication()
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()
+                if (userCredentials == null) {
                     _postStatus.value = PostStatus.Error("请先登录")
                     showSnackbar("请先登录")
                     return@launch
                 }
 
-                val token = credentials.third
+                val token = userCredentials.token
 
                 val finalContent = if (mode == "refund") {
                     val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""

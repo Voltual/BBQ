@@ -215,10 +215,12 @@ private fun ItemContent(
             scope.launch { drawerState.close() }
             when (item.id) {
                 "logout" -> {
-                    AuthManager.clearCredentials(context)
-                    navController.navigate(Home.route) {
-                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                        launchSingleTop = true
+                    scope.launch {
+                        AuthManager.clearCredentials(context)
+                        navController.navigate(Home.route) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }
                 }
                 else -> {

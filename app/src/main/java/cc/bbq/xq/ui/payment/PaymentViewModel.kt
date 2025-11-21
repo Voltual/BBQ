@@ -2,7 +2,6 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>。
@@ -102,8 +101,9 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             try {
                 val context = getApplication<Application>().applicationContext
-                val credentials = AuthManager.getCredentials(context)
-                val token = credentials?.third ?: run {
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()
+                val token = userCredentials?.token ?: run {
                     _errorMessage.value = "用户未登录"
                     return@launch
                 }
@@ -145,7 +145,8 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
             _coinsBalance.value = null     // 重置余额显示
             try {
                 val context = getApplication<Application>().applicationContext
-                val credentials = AuthManager.getCredentials(context) ?: run {
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first() ?: run {
                     _errorMessage.value = "用户未登录"
                     return@launch
                 }
@@ -153,8 +154,8 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                 // 使用 KtorClient 发起请求
                 val response = withContext(Dispatchers.IO) {
                     KtorClient.ApiServiceImpl.getUserInformation(
-                        userId = credentials.fourth,
-                        token = credentials.third
+                        userId = userCredentials.userId,
+                        token = userCredentials.token
                     )
                 }
 
@@ -245,7 +246,8 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                 savePaymentRequestId(requestId)
 
                 val context = getApplication<Application>().applicationContext
-                val credentials = AuthManager.getCredentials(context) ?: run {
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first() ?: run {
                     _errorMessage.value = "用户未登录"
                     _paymentStatus.value = PaymentStatus.FAILED
                     removePaymentRequestId(requestId) // 移除 paymentRequestId
@@ -256,7 +258,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                 val response = when (info.type) {
                     PaymentType.APP_PURCHASE -> {
                         KtorClient.ApiServiceImpl.payForApp(
-                            token = credentials.third,
+                            token = userCredentials.token,
                             appsId = info.appId,
                             appsVersionId = info.versionId,
                             money = amount,
@@ -265,7 +267,7 @@ class PaymentViewModel(application: Application) : AndroidViewModel(application)
                     }
                     PaymentType.POST_REWARD -> {
                         KtorClient.ApiServiceImpl.rewardPost(
-                            token = credentials.third,
+                            token = userCredentials.token,
                             postId = info.postId,
                             money = amount,
                             payment = 0 // 硬币支付

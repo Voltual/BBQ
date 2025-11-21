@@ -99,9 +99,11 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             delay(10000)
-            val credentials = AuthManager.getCredentials(this@MainActivity)
-            if (credentials != null) {
-                startHeartbeatService(this@MainActivity, credentials.third)
+            val context = this@MainActivity
+            val userCredentialsFlow = AuthManager.getCredentials(context)
+            val userCredentials = userCredentialsFlow.first()
+            if (userCredentials != null) {
+                startHeartbeatService(this@MainActivity, userCredentials.token)
             }
         }
     }
@@ -235,8 +237,8 @@ private fun tryAutoLogin(
 ) {
     CoroutineScope(Dispatchers.IO).launch {
         try {
-            val deviceId = AuthManager.getDeviceId(context)
-            val result = KtorClient.ApiServiceImpl.login(
+            val deviceId = AuthManager.getDeviceId(context).first()
+            val loginResult = KtorClient.ApiServiceImpl.login(
                 username = username,
                 password = password,
                 device = deviceId
@@ -400,9 +402,11 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) { // 添加 SnackbarHos
     val drawerHeaderBackgroundUri = if (useDarkTheme) darkBgUri else lightBgUri
 
     LaunchedEffect(Unit) {
-        val credentials = AuthManager.getCredentials(context)
-        if (credentials != null) {
-            tryAutoLogin(credentials.first, credentials.second, context, navController, snackbarHostState) // 传递 snackbarHostState
+        val context = context
+        val userCredentialsFlow = AuthManager.getCredentials(context)
+        val userCredentials = userCredentialsFlow.first()
+        if (userCredentials != null) {
+            tryAutoLogin(userCredentials.username, userCredentials.password, context, navController, snackbarHostState) // 传递 snackbarHostState
         }
     }
 
