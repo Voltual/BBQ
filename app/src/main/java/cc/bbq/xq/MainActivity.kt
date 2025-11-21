@@ -62,7 +62,6 @@ import androidx.compose.ui.window.DialogWindowProvider
 import android.app.Activity
 // 导入 BBQSnackbarHost
 import cc.bbq.xq.ui.theme.BBQSnackbarHost
-import cc.bbq.xq.roundScreenAdaptation // 导入 roundScreenAdaptation
 
 class MainActivity : ComponentActivity() {
 
@@ -361,19 +360,6 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) { // 添加 SnackbarHos
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val context = LocalContext.current
 
-    // 获取屏幕宽度和高度
-    val resources = LocalContext.current.resources
-    val displayMetrics = resources.displayMetrics
-    val screenWidth = displayMetrics.widthPixels.dp
-    val screenHeight = displayMetrics.heightPixels.dp
-
-    // 计算 padding 值，使内容显示在内切正方形区域内
-    val padding = if (screenWidth < screenHeight) {
-        (screenHeight - screenWidth) / 2
-    } else {
-        (screenWidth - screenHeight) / 2
-    }
-
     // 判断是否显示返回按钮：不在首页且不在登录页时显示
     val showBackButton = remember(currentBackStackEntry) {
         val route = currentBackStackEntry?.destination?.route
@@ -512,21 +498,12 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) { // 添加 SnackbarHos
                     else -> innerPadding
                 }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(
-                            start = padding,
-                            end = padding
-                        )
-                ) {
-                    AppNavHost(
-                        navController = navController,
-                        modifier = Modifier.padding(contentPadding),
-                        snackbarHostState = snackbarHostState // 传递 SnackbarHostState
-    //                    restartAppCallback = restartAppCallback
-                    )
-                }
+                AppNavHost(
+                    navController = navController,
+                    modifier = Modifier.padding(contentPadding),
+                    snackbarHostState = snackbarHostState // 传递 SnackbarHostState
+//                    restartAppCallback = restartAppCallback
+                )
             }
         )
     }
