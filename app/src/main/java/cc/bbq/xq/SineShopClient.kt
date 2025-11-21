@@ -1,8 +1,18 @@
+// Copyright (C) 2025 Voltual
+// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
+//（或任意更新的版本）的条款重新分发和/或修改它。
+//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
+// 有关更多细节，请参阅 GNU 通用公共许可证。
+//
+// 你应该已经收到了一份 GNU 通用公共许可证的副本
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+
 @file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 
 package cc.bbq.xq
 
 import io.ktor.client.*
+import io.ktor.client.call.*
 import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -91,7 +101,7 @@ object SineShopClient {
                     throw IOException("Request failed with status: ${response.status}")
                 }
                 val responseBody: T = try {
-                    response.body<T>()
+                    response.body()
                 } catch (e: Exception) {
                     println("SineShop Failed to deserialize response body: ${e.message}")
                     throw e
@@ -138,10 +148,10 @@ object SineShopClient {
         parameters: Parameters = Parameters.Empty
     ): Result<T> {
         return safeApiCall {
-            httpClient.submitForm(
-                url = url,
-                formParameters = parameters
-            )
+            httpClient.post(url) {
+                contentType(ContentType.Application.FormUrlEncoded)
+                setBody(FormDataContent(parameters))
+            }
         }
     }
 
