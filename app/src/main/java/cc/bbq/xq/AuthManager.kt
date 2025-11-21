@@ -10,87 +10,124 @@
 package cc.bbq.xq
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.util.Base64
-import androidx.core.content.edit
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+private val Context.authDataStore: DataStore<Preferences> by preferencesDataStore(name = "auth_preferences")
 
 object AuthManager {
-    private const val PREFS_NAME = "bbq_auth"
-    
-    // --- 用户凭证键 ---
-    private const val KEY_USER_TOKEN = "usertoken"
-    private const val KEY_USER_USERNAME = "username"
-    private const val KEY_USER_PASSWORD = "password"
-    private const val KEY_USER_ID = "userid"
-    private const val KEY_DEVICE = "device_id"
+    // --- 键 ---
+    private val USER_TOKEN = stringPreferencesKey("usertoken")
+    private val USER_USERNAME = stringPreferencesKey("username")
+    private val USER_PASSWORD = stringPreferencesKey("password")
+    private val USER_ID = longPreferencesKey("userid")
+    private val DEVICE_ID = stringPreferencesKey("device_id")
 
-    // --- 用户凭证方法 ---
+    // --- 数据类 ---
+    data class UserCredentials(
+        val username: String,
+        val password: String,
+        val token: String,
+        val userId: Long,
+        val deviceId: String
+    )
 
-    fun saveCredentials(
+    // --- 保存凭证 ---
+    suspend fun saveCredentials(
         context: Context,
         username: String,
         password: String,
         token: String,
         userId: Long
     ) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
-            putString(KEY_USER_USERNAME, Base64.encodeToString(username.toByteArray(), Base64.DEFAULT))
-            putString(KEY_USER_PASSWORD, Base64.encodeToString(password.toByteArray(), Base64.DEFAULT))
-            putString(KEY_USER_TOKEN, token)
-            putLong(KEY_USER_ID, userId)
-            putString(KEY_DEVICE, generateDeviceId())
+        context.authDataStore.edit { preferences ->
+            preferences[USER_USERNAME] = Base64.encodeToString(username.toByteArray(), Base64.DEFAULT)
+            preferences[USER_PASSWORD] = Base64.encodeToString(password.toByteArray(), Base64.DEFAULT)
+            preferences[USER_TOKEN] = token
+            preferences[USER_ID] = userId
+            preferences[DEVICE_ID] = generateDeviceId()
         }
     }
 
-    fun getCredentials(context: Context): Quadruple<String, String, String, Long>? {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val encodedUser = prefs.getString(KEY_USER_USERNAME, null)
-        val encodedPass = prefs.getString(KEY_USER_PASSWORD, null)
-        val token = prefs.getString(KEY_USER_TOKEN, null)
-        val userId = prefs.getLong(KEY_USER_ID, -1)
-        
-        return if (encodedUser != null && encodedPass != null && token != null && userId != -1L) {
-            val username = String(Base64.decode(encodedUser, Base64.DEFAULT))
-            val password = String(Base64.decode(encodedPass, Base64.DEFAULT))
-            Quadruple(username, password, token, userId)
-        } else {
-            null
-        }
+    // --- 获取凭证 ---
+    fun getCredentials(context: Context): Flow<UserCredentials?> {
+        return context.authDataStore.data
+            .map { preferences ->
+                val encodedUser = preferences[USER_USERNAME]
+                val encodedPass = preferences[USER_PASSWORD]
+                val token = preferences[USER_TOKEN]
+                val userId = preferences[USER_ID] ?: -1
+                val deviceId = preferences[DEVICE_ID] ?: generateDeviceId()
+
+                if (encodedUser != null && encodedPass != null && token != null && userId != -1L) {
+                    val username = String(Base64.decode(encodedUser, Base64.DEFAULT))
+                    val password = String(Base64.decode(encodedPass, Base64.DEFAULT))
+                    UserCredentials(username, password, token, userId, deviceId)
+                } else {
+                    null
+                }
+            }
     }
 
     // 新增方法：单独获取userid
-    fun getUserId(context: Context): Long? {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val userId = prefs.getLong(KEY_USER_ID, -1)
-        return if (userId != -1L) userId else null
+    fun getUserId(context: Context): Flow<Long?> {
+        return context.authDataStore.data
+            .map { preferences ->
+                preferences[USER_ID]
+            }
     }
 
-    fun clearCredentials(context: Context) {
-        // 这个方法现在只清除主用户的凭证
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
-            remove(KEY_USER_USERNAME)
-            remove(KEY_USER_PASSWORD)
-            remove(KEY_USER_TOKEN)
-            remove(KEY_USER_ID)
+    // --- 清除凭证 ---
+    suspend fun clearCredentials(context: Context) {
+        context.authDataStore.edit { preferences ->
+            preferences.remove(USER_USERNAME)
+            preferences.remove(USER_PASSWORD)
+            preferences.remove(USER_TOKEN)
+            preferences.remove(USER_ID)
         }
     }
-    
-    // --- 通用方法 ---
 
-    fun getDeviceId(context: Context): String {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_DEVICE, generateDeviceId()) ?: generateDeviceId()
+    // --- 获取设备ID ---
+    fun getDeviceId(context: Context): Flow<String> {
+        return context.authDataStore.data
+            .map { preferences ->
+                preferences[DEVICE_ID] ?: generateDeviceId()
+            }
     }
 
+    // --- 生成设备ID ---
     private fun generateDeviceId(): String {
         return (1..15).joinToString("") { (0..9).random().toString() }
     }
-}
 
-// Quadruple 数据类保持不变
-data class Quadruple<out A, out B, out C, out D>(
-    val first: A,
-    val second: B,
-    val third: C,
-    val fourth: D
-)
+    // --- 迁移 SharedPreferences 到 DataStore ---
+    suspend fun migrateFromSharedPreferences(context: Context) {
+        val sharedPrefs = context.getSharedPreferences("bbq_auth", Context.MODE_PRIVATE)
+
+        val encodedUser = sharedPrefs.getString("username", null)
+        val encodedPass = sharedPrefs.getString("password", null)
+        val token = sharedPrefs.getString("usertoken", null)
+        val userId = sharedPrefs.getLong("userid", -1)
+        val deviceId = sharedPrefs.getString("device_id", null) ?: generateDeviceId()
+
+        if (encodedUser != null && encodedPass != null && token != null && userId != -1L) {
+            context.authDataStore.edit { preferences ->
+                preferences[USER_USERNAME] = encodedUser
+                preferences[USER_PASSWORD] = encodedPass
+                preferences[USER_TOKEN] = token
+                preferences[USER_ID] = userId
+                preferences[DEVICE_ID] = deviceId
+            }
+
+            // 清除 SharedPreferences 中的数据
+            sharedPrefs.edit().clear().apply()
+        }
+    }
+}

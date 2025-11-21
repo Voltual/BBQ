@@ -13,6 +13,9 @@ import android.app.Application
 import cc.bbq.xq.data.ProcessedPostsDataStore
 import cc.bbq.xq.ui.theme.ThemeManager
 import cc.bbq.xq.ui.theme.ThemeColorStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import cc.bbq.xq.data.db.AppDatabase // 导入 AppDatabase
@@ -48,7 +51,12 @@ class BBQApplication : Application() {
         database = AppDatabase.getDatabase(this) // 初始化数据库
         searchHistoryDataStore = SearchHistoryDataStore(this) // 新增
         storageSettingsDataStore = StorageSettingsDataStore(this) // 新增
-        updateSettingsDataStore = UpdateSettingsDataStore // 新增
+        updateSettingsDataStore = UpdateSettingsDataStore(this) // 新增
+
+        // 初始化 AuthManager 并执行迁移
+        CoroutineScope(Dispatchers.IO).launch {
+            AuthManager.migrateFromSharedPreferences(applicationContext)
+        }
 
         // 初始化主题管理器
         ThemeManager.initialize(this)
