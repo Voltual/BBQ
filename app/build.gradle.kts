@@ -3,8 +3,8 @@ plugins {
     id("kotlin-android")
     id("com.google.devtools.ksp") version "2.2.21-2.0.4"
     kotlin("plugin.serialization") version "2.2.21" //Kotlin 序列化插件
-    id("com.google.protobuf") version "0.9.4" // 添加 protobuf 插件
-    id("org.jetbrains.kotlin.plugin.compose") version "2.2.21" //Compose编译器
+    id("com.google.protobuf") version "0.9.4") // 添加 protobuf 插件
+    id("org.jetbrains.kotlin.plugin.compose") version "2.2.21") //Compose编译器
 }
 
 android {
@@ -19,7 +19,8 @@ android {
         versionName = "13.5" // 更新版本名以作区分
         multiDexEnabled = true
         buildConfigField("String", "LICENSE", "\"GPLv3\"")
-        resourceConfigurations.add("zh-rCN")
+        // 修复：使用新的 localeFilters 替代过时的 resourceConfigurations
+        resourceConfigurations += listOf("zh")
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -54,13 +55,24 @@ android {
 
     buildFeatures {
         compose = true
-        android.buildFeatures.buildConfig=true
-    }    
+        buildConfig = true
+    }
 
+    // 修复：移除第61行多余的引号
     packaging {
-        resources {'
+        resources {
             excludes.add("/META-INF/{AL2.0,LGPL2.1}")
         }
+    }
+
+    // 修复：使用新的 compilerOptions DSL 替代过时的 kotlinOptions
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    
+    kotlin {
+        jvmToolchain(17)
     }
 }
 
@@ -123,22 +135,23 @@ dependencies {
 }
 
 protobuf {
-        protoc {
-            artifact = "com.google.protobuf:protoc:4.27.0" // Or the latest version
-        }
-        generateProtoTasks {
-            all().forEach { task ->
-                task.builtins {
-                    create("kotlin") // This enables Kotlin code generation
-                    create("java") // This enables Kotlin code generation
-                }
+    protoc {
+        artifact = "com.google.protobuf:protoc:4.27.0" // Or the latest version
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("kotlin") // This enables Kotlin code generation
+                create("java") // This enables Kotlin code generation
             }
         }
     }
+}
 
+// 修复：使用新的 compilerOptions DSL
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions {
-        jvmTarget = "17"
-        freeCompilerArgs += "-XXLanguage:+UnitConversionsOnArbitraryExpressions"
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        freeCompilerArgs.add("-XXLanguage:+UnitConversionsOnArbitraryExpressions")
     }
 }
