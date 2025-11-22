@@ -415,6 +415,7 @@ if (userCredentials != null && userCredentials.userId > 0) {
         snackbarHostState
     )
 }
+}
 
         
 
