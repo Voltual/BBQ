@@ -121,10 +121,12 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
                             },
                             onError = { error ->
                                 showProgressDialog = false
-                                snackbarHostState.showSnackbar(
-                                    message = error,
-                                    duration = SnackbarDuration.Short
-                                )
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = error,
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
                             }
                         )
                     }
@@ -281,10 +283,18 @@ suspend fun uploadAvatar(
                     onComplete()
                 }
             } else {
-                        withContext(Dispatchers.Main) {
-                    onError("上传错误: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    onError("头像上传失败: ${response?.msg ?: "未知错误"}")
                 }
             }
+        } else {
+            withContext(Dispatchers.Main) {
+                onError("头像上传失败: ${uploadResult.exceptionOrNull()?.message ?: "未知错误"}")
+            }
+        }
+    } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+            onError("上传错误: ${e.message}")
         }
     }
 }
