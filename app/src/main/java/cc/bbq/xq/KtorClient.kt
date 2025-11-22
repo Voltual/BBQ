@@ -619,7 +619,7 @@ data class WanyueyunUploadResponse(
  * 安全地执行 Ktor 请求，并处理异常和重试
  */
  @Suppress("RedundantSuspendModifier")
-private suspend fun <reified T> safeApiCall( block: suspend () -> HttpResponse): Result<T> {
+private suspend fun < T> safeApiCall( block: suspend () -> HttpResponse): Result<T> {
     var attempts = 0
     while (attempts < MAX_RETRIES) {
         try {
