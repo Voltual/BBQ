@@ -108,7 +108,7 @@ dependencies {
     implementation("androidx.palette:palette-ktx:1.0.0")
 
     // ===== ROOM 数据库依赖 =====
-    val room_version = "2.6.1"
+    val room_version = "2.7.2"
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version")
     implementation("io.insert-koin:koin-androidx-compose:4.0.4")
