@@ -368,27 +368,24 @@ suspend fun saveChanges(
                                     qqResponse.getOrNull()?.msg ?: ""
                                 ),
                                 duration = SnackbarDuration.Short
-                            ),
-                                    duration = SnackbarDuration.Short
-                                )
-                            }
+                            )
                         }
                     }
                 }
             }
+        }
 
-            withContext(Dispatchers.Main) {
-                onDeviceNameSaved()
-            }
+        withContext(Dispatchers.Main) {
+            onDeviceNameSaved()
+        }
 
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = context.getString(R.string.save_change_failed, e.message ?: ""),
-                        duration = SnackbarDuration.Short
-                    )
-                }
+    } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    message = context.getString(R.string.save_change_failed, e.message ?: ""),
+                    duration = SnackbarDuration.Short
+                )
             }
         }
     }
