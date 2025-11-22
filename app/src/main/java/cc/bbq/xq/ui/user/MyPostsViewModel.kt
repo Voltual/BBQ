@@ -30,16 +30,34 @@ class MyPostsViewModel : ViewModel() {
     private val _totalPages = MutableStateFlow(1)
     val totalPages: StateFlow<Int> = _totalPages.asStateFlow()
 
-    // 新增：用户ID状态
-    private val _userId = MutableStateFlow<Long?>(null)
+    // 添加状态跟踪，避免重复初始化
+    private var _currentUserId: Long? = null
+    private var _isInitialized = false
 
-    // 暴露用户ID状态
-    val userId: StateFlow<Long?> = _userId.asStateFlow()
-
-    // 设置用户ID
+    // 设置用户ID - 添加防重复逻辑
     fun setUserId(userId: Long) {
-        _userId.value = userId
-        refresh() // 当用户ID改变时刷新数据
+        // 只有当用户ID真正改变时才重置状态
+        if (_currentUserId != userId) {
+            _currentUserId = userId
+            _isInitialized = false
+            resetState()
+            loadDataIfNeeded()
+        }
+    }
+
+    private fun resetState() {
+        _posts.value = emptyList()
+        currentPage = 1
+        _totalPages.value = 1
+        _errorMessage.value = ""
+    }
+
+    // 只在需要时加载数据
+    private fun loadDataIfNeeded() {
+        if (!_isInitialized && _currentUserId != null && !_isLoading.value) {
+            _isInitialized = true
+            loadMyPosts()
+        }
     }
 
     fun jumpToPage(page: Int) {
@@ -58,32 +76,28 @@ class MyPostsViewModel : ViewModel() {
     }
 
     fun refresh() {
+        // 刷新时重置页面但不重置初始化状态
         currentPage = 1
         loadMyPosts()
     }
 
     private fun loadMyPosts() {
-        if (_isLoading.value) return
+        if (_isLoading.value || _currentUserId == null) return
 
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = ""
 
             try {
-                val userId = _userId.value ?: return@launch // 如果没有用户ID，则不加载数据
-
-                // 使用 getPostsList 方法，并传递 userId 参数
                 val myPostsResult = KtorClient.ApiServiceImpl.getPostsList(
                     limit = PAGE_SIZE,
                     page = currentPage,
-                    userId = userId
-                    // 其他参数使用默认值
+                    userId = _currentUserId!!
                 )
 
                 if (myPostsResult.isSuccess) {
                     myPostsResult.getOrNull()?.let { response ->
                         if (response.code == 1) {
-                            // 修复：直接访问 data，因为它是非空类型
                             val data = response.data
                             _totalPages.value = data.pagecount
                             val newPosts = if (currentPage == 1) {
@@ -98,7 +112,6 @@ class MyPostsViewModel : ViewModel() {
                             _posts.value = distinctPosts
                             _errorMessage.value = ""
                         } else {
-                            // 修复：正确处理非空字符串
                             _errorMessage.value = "操作失败: ${if (response.msg.isNotEmpty()) response.msg else "服务器错误"}"
                         }
                     } ?: run {

@@ -44,24 +44,16 @@ fun MyPostsScreen(
 
     val context = navController.context
     
-    // 简化的 LaunchedEffect - 只设置用户ID，加载逻辑在 ViewModel 中处理
+    // 使用单个 LaunchedEffect，避免重复触发
     LaunchedEffect(userId) {
         viewModel.setUserId(userId)
     }
     
-    // 获取当前登录用户的ID
-    val currentUserIdFlow = AuthManager.getUserId(context)
-    // 在 LaunchedEffect 内部获取 currentUserId 的值
-    var title = "用户帖子" // 默认标题
-    LaunchedEffect(Unit) {
-        val currentUserId = currentUserIdFlow.first()
-        title = if (currentUserId == userId) "我的帖子" else "用户帖子"
-    }
+    // 简化的标题逻辑 - 不再需要复杂的标题设置
+    val title = "我的帖子"
     
     BaseComposeListScreen(
-        title = title, // 注意：由于 title 是在 LaunchedEffect 中设置的，这里可能不会立即显示正确的值。
-        // 一个更可靠的方法是直接在 BaseComposeListScreen 中处理标题逻辑，或者将 currentUserId 传递给它。
-        // 为了简化，我们暂时这样处理，实际应用中可能需要更复杂的逻辑。
+        title = title,
         posts = posts,
         isLoading = isLoading,
         errorMessage = errorMessage,
@@ -71,7 +63,7 @@ fun MyPostsScreen(
         onLoadMore = { viewModel.loadNextPage() },
         onRefresh = { viewModel.refresh() },
         onSearchClick = { navController.navigate(Search.route) },
-        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
+        snackbarHostState = snackbarHostState,
         onCreateClick = { navController.navigate(CreatePost.route) },
         historyClick = { navController.navigate(BrowseHistory.route) },
         totalPages = totalPages,
@@ -85,7 +77,6 @@ fun MyPostsScreen(
                 route == "my_likes" -> navController.navigate(MyLikes.route)
                 route.startsWith("my_posts/") -> {
                     val targetUserId = route.removePrefix("my_posts/").toLongOrNull()
-                    // 使用 first() 来获取 Flow 的值
                     if (targetUserId != null && targetUserId != userId) {
                         navController.navigate(MyPosts(targetUserId).createRoute())
                     }
