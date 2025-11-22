@@ -25,6 +25,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.Flow // 添加导入
 
 // 添加数据加载状态
 sealed class DataLoadState {
@@ -71,69 +72,70 @@ class HomeViewModel : ViewModel() {
     }
 
     fun loadUserData(context: Context, forceRefresh: Boolean = false) {
-         viewModelScope.launch {
-            val userCredentialsFlow = AuthManager.getCredentials(context)
-              val userCredentials = userCredentialsFlow.first()
-            if (userCredentials == null) return@launch
+        // 将实际的加载逻辑移到一个协程中
+        viewModelScope.launch {
+            // 显式指定类型
+            val userCredentialsFlow: Flow<AuthManager.UserCredentials?> = AuthManager.getCredentials(context)
+            val userCredentials = userCredentialsFlow.first()
+            if (userCredentials == null) return@launch // 如果没有凭证，则不加载数据
 
             // 如果数据已经加载且不是强制刷新，则跳过
             if (!forceRefresh && uiState.value.dataLoadState == DataLoadState.Loaded) {
                 return@launch
             }
 
-            viewModelScope.launch {
-                try {
-                    uiState.value = uiState.value.copy(
-                        isLoading = true,
-                        dataLoadState = DataLoadState.Loading
-                    )
+            
+            try {
+                uiState.value = uiState.value.copy(
+                    isLoading = true,
+                    dataLoadState = DataLoadState.Loading
+                )
 
-                    // 使用 KtorClient 发起网络请求
-                    val response = withContext(Dispatchers.IO) {
-                        //KtorClient.instance.getUserInfo(token = credentials.third)
-                        KtorClient.ApiServiceImpl.getUserInfo(token = userCredentials.token)
-                    }
+                // 使用 KtorClient 发起网络请求
+                val response = withContext(Dispatchers.IO) {
+                    //KtorClient.instance.getUserInfo(token = credentials.third)
+                    KtorClient.ApiServiceImpl.getUserInfo(token = userCredentials.token)
+                }
 
-                    response.onSuccess { result ->
-                        result.data.let { userData ->
-                            // 计算时间差（创建时间到上次签到时间）
-                            val daysDiff = calculateDaysDiff(
-                                userData.create_time,
-                                userData.signlasttime
-                            )
+                response.onSuccess { result ->
+                    result.data.let { userData ->
+                        // 计算时间差（创建时间到上次签到时间）
+                        val daysDiff = calculateDaysDiff(
+                            userData.create_time,
+                            userData.signlasttime
+                        )
 
-                            uiState.value = uiState.value.copy(
-                                showLoginPrompt = false,
-                                avatarUrl = userData.usertx,
-                                nickname = userData.nickname,
-                                level = userData.hierarchy,
-                                coins = userData.money.toString(),
-                                userId = userData.username,
-                                followersCount = userData.followerscount.toString(),
-                                fansCount = userData.fanscount.toString(),
-                                postsCount = userData.postcount.toString(),
-                                likesCount = userData.likecount.toString(),
-                                seriesDays = userData.series_days,
-                                createTime = userData.create_time,
-                                lastSignTime = userData.signlasttime,
-                                displayDaysDiff = daysDiff,
-                                isLoading = false,
-                                exp = userData.exp, // 更新经验值
-                                dataLoadState = DataLoadState.Loaded
-                            )
-                        }
-                    }.onFailure { _ ->
                         uiState.value = uiState.value.copy(
+                            showLoginPrompt = false,
+                            avatarUrl = userData.usertx,
+                            nickname = userData.nickname,
+                            level = userData.hierarchy,
+                            coins = userData.money.toString(),
+                            userId = userData.username,
+                            followersCount = userData.followerscount.toString(),
+                            fansCount = userData.fanscount.toString(),
+                            postsCount = userData.postcount.toString(),
+                            likesCount = userData.likecount.toString(),
+                            seriesDays = userData.series_days,
+                            createTime = userData.create_time,
+                            lastSignTime = userData.signlasttime,
+                            displayDaysDiff = daysDiff,
                             isLoading = false,
-                            dataLoadState = DataLoadState.Error
+                            exp = userData.exp, // 更新经验值
+                            dataLoadState = DataLoadState.Loaded
                         )
                     }
-                } catch (e: Exception) {
+                }.onFailure { _ ->
                     uiState.value = uiState.value.copy(
                         isLoading = false,
                         dataLoadState = DataLoadState.Error
                     )
                 }
+            } catch (e: Exception) {
+                uiState.value = uiState.value.copy(
+                    isLoading = false,
+                    dataLoadState = DataLoadState.Error
+                )
             }
         }
     }
@@ -153,60 +155,60 @@ class HomeViewModel : ViewModel() {
 
     // 签到功能
     fun signIn(context: Context) {
+        // 将实际的签到逻辑移到一个协程中
+        viewModelScope.launch {
+             // 显式指定类型
+            val userCredentialsFlow: Flow<AuthManager.UserCredentials?> = AuthManager.getCredentials(context)
+            val userCredentials = userCredentialsFlow.first()
+            val token = userCredentials?.token ?: ""
 
-        viewModelScope {
-             val userCredentialsFlow = AuthManager.getCredentials(context)
-              val userCredentials = userCredentialsFlow.first()
-              val token = userCredentials?.token?:""
-            viewModelScope.launch {
-                try {
-                    uiState.value = uiState.value.copy(isLoading = true)
+            
+            try {
+                uiState.value = uiState.value.copy(isLoading = true)
 
-                    // 使用 KtorClient 发起网络请求
-                          // 使用 KtorClient 发起网络请求
-                    val response = withContext(Dispatchers.IO) {
-                        //RetrofitClient.instance.userSignIn(token = token)
-                        KtorClient.ApiServiceImpl.userSignIn(token = token)
-                    }
+                // 使用 KtorClient 发起网络请求
+                val response = withContext(Dispatchers.IO) {
+                    //RetrofitClient.instance.userSignIn(token = token)
+                    KtorClient.ApiServiceImpl.userSignIn(token = token)
+                }
 
-                    response.onSuccess { result ->
-                        // 处理服务器返回的401错误
-                        if (result.code == 401) {
-                            uiState.value = uiState.value.copy(
-                                signStatusMessage = "登录已过期，请长按头像刷新",
-                                showLoginPrompt = true,
-                                isLoading = false
-                            )
-                            // 重置加载状态，因为登录已过期
-                            resetLoadState()
-                        } else {
-                            // 正常处理成功响应
-                            uiState.value = uiState.value.copy(
-                                signStatusMessage = result.msg,
-                                isLoading = false
-                            )
-
-                            // 2秒后清除状态消息
-                            launch {
-                                delay(2000)
-                                uiState.value = uiState.value.copy(signStatusMessage = null)
-                            }
-
-                            // 重新加载用户数据（强制刷新）
-                            refreshUserData(context)
-                        }
-                    }.onFailure { _ ->
+                response.onSuccess { result ->
+                    // 处理服务器返回的401错误
+                    if (result.code == 401) {
                         uiState.value = uiState.value.copy(
-                            signStatusMessage = "签到失败: 网络请求错误",
+                            signStatusMessage = "登录已过期，请长按头像刷新",
+                            showLoginPrompt = true,
                             isLoading = false
                         )
+                        // 重置加载状态，因为登录已过期
+                        resetLoadState()
+                    } else {
+                        // 正常处理成功响应
+                        uiState.value = uiState.value.copy(
+                            signStatusMessage = result.msg,
+                            isLoading = false
+                        )
+
+                        // 2秒后清除状态消息
+                        launch {
+                            delay(2000)
+                            uiState.value = uiState.value.copy(signStatusMessage = null)
+                        }
+
+                        // 重新加载用户数据（强制刷新）
+                        refreshUserData(context)
                     }
-                } catch (e: Exception) {
+                }.onFailure { _ ->
                     uiState.value = uiState.value.copy(
-                        signStatusMessage = "网络错误: ${e.message}",
+                        signStatusMessage = "签到失败: 网络请求错误",
                         isLoading = false
                     )
                 }
+            } catch (e: Exception) {
+                uiState.value = uiState.value.copy(
+                    signStatusMessage = "网络错误: ${e.message}",
+                    isLoading = false
+                )
             }
         }
     }
