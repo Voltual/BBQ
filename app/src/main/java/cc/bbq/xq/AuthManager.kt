@@ -12,32 +12,41 @@ package cc.bbq.xq
 import android.content.Context
 import android.util.Base64
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.core.DataStoreFactory
+import androidx.datastore.dataStoreFile
+import androidx.security.crypto.EncryptedFile
+import androidx.security.crypto.MasterKey
+import cc.bbq.xq.data.proto.UserCredentialsSerializer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.io.File
 
-private val Context.authDataStore: DataStore<Preferences> by preferencesDataStore(name = "auth_preferences")
+private const val DATA_STORE_FILE_NAME = "auth_preferences.pb"
 
 object AuthManager {
-    // --- 键 ---
-    private val USER_TOKEN = stringPreferencesKey("usertoken")
-    private val USER_USERNAME = stringPreferencesKey("username")
-    private val USER_PASSWORD = stringPreferencesKey("password")
-    private val USER_ID = longPreferencesKey("userid")
-    private val DEVICE_ID = stringPreferencesKey("device_id")
 
-    // --- 数据类 ---
-    data class UserCredentials(
-        val username: String,
-        val password: String,
-        val token: String,
-        val userId: Long,
-        val deviceId: String
-    )
+    private lateinit var encryptedAuthDataStore: DataStore<UserCredentials>
+
+    // --- 初始化加密 DataStore ---
+    fun initialize(context: Context) {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+
+        val encryptedFile = EncryptedFile.Builder(
+            File(context.dataStoreFile(DATA_STORE_FILE_NAME), "auth_preferences"),
+            context,
+            masterKey,
+            EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB
+        ).build()
+
+        encryptedAuthDataStore = DataStoreFactory.create(
+            produceFile = {
+                File(encryptedFile.name)
+            },
+            serializer = UserCredentialsSerializer(context = context) //需要实现
+        )
+    }
 
     // --- 保存凭证 ---
     suspend fun saveCredentials(
@@ -47,58 +56,42 @@ object AuthManager {
         token: String,
         userId: Long
     ) {
-        context.authDataStore.edit { preferences ->
-            preferences[USER_USERNAME] = Base64.encodeToString(username.toByteArray(), Base64.DEFAULT)
-            preferences[USER_PASSWORD] = Base64.encodeToString(password.toByteArray(), Base64.DEFAULT)
-            preferences[USER_TOKEN] = token
-            preferences[USER_ID] = userId
-            preferences[DEVICE_ID] = generateDeviceId()
+        encryptedAuthDataStore.updateData {
+            UserCredentials.newBuilder()
+                .setUsername(username)
+                .setPassword(password)
+                .setToken(token)
+                .setUserId(userId)
+                .setDeviceId(generateDeviceId())
+                .build()
         }
     }
 
     // --- 获取凭证 ---
     fun getCredentials(context: Context): Flow<UserCredentials?> {
-        return context.authDataStore.data
-            .map { preferences ->
-                val encodedUser = preferences[USER_USERNAME]
-                val encodedPass = preferences[USER_PASSWORD]
-                val token = preferences[USER_TOKEN]
-                val userId = preferences[USER_ID] ?: -1
-                val deviceId = preferences[DEVICE_ID] ?: generateDeviceId()
-
-                if (encodedUser != null && encodedPass != null && token != null && userId != -1L) {
-                    val username = String(Base64.decode(encodedUser, Base64.DEFAULT))
-                    val password = String(Base64.decode(encodedPass, Base64.DEFAULT))
-                    UserCredentials(username, password, token, userId, deviceId)
-                } else {
-                    null
-                }
-            }
+        return encryptedAuthDataStore.data
     }
 
     // 新增方法：单独获取userid
-    fun getUserId(context: Context): Flow<Long?> {
-        return context.authDataStore.data
-            .map { preferences ->
-                preferences[USER_ID]
+    fun getUserId(context: Context): Flow<Long> {
+        return encryptedAuthDataStore.data
+            .map { userCredentials ->
+                userCredentials?.userId ?: -1L
             }
     }
 
     // --- 清除凭证 ---
     suspend fun clearCredentials(context: Context) {
-        context.authDataStore.edit { preferences ->
-            preferences.remove(USER_USERNAME)
-            preferences.remove(USER_PASSWORD)
-            preferences.remove(USER_TOKEN)
-            preferences.remove(USER_ID)
+        encryptedAuthDataStore.updateData {
+            UserCredentials.newBuilder().build() // 设置为空
         }
     }
 
     // --- 获取设备ID ---
     fun getDeviceId(context: Context): Flow<String> {
-        return context.authDataStore.data
-            .map { preferences ->
-                preferences[DEVICE_ID] ?: generateDeviceId()
+        return encryptedAuthDataStore.data
+            .map { userCredentials ->
+                userCredentials?.deviceId ?: generateDeviceId()
             }
     }
 
@@ -118,12 +111,17 @@ object AuthManager {
         val deviceId = sharedPrefs.getString("device_id", null) ?: generateDeviceId()
 
         if (encodedUser != null && encodedPass != null && token != null && userId != -1L) {
-            context.authDataStore.edit { preferences ->
-                preferences[USER_USERNAME] = encodedUser
-                preferences[USER_PASSWORD] = encodedPass
-                preferences[USER_TOKEN] = token
-                preferences[USER_ID] = userId
-                preferences[DEVICE_ID] = deviceId
+            val username = String(Base64.decode(encodedUser, Base64.DEFAULT))
+            val password = String(Base64.decode(encodedPass, Base64.DEFAULT))
+
+            encryptedAuthDataStore.updateData {
+                UserCredentials.newBuilder()
+                    .setUsername(username)
+                    .setPassword(password)
+                    .setToken(token)
+                    .setUserId(userId)
+                    .setDeviceId(deviceId)
+                    .build()
             }
 
             // 清除 SharedPreferences 中的数据

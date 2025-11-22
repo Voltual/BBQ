@@ -28,23 +28,26 @@ class BBQApplication : Application() {
     // DataStore 单例
     lateinit var processedPostsDataStore: ProcessedPostsDataStore
         private set
-        
+
     lateinit var searchHistoryDataStore: SearchHistoryDataStore // 新增
         private set
 
     // 新增：数据库单例
     lateinit var database: AppDatabase
         private set
-        
+
     lateinit var storageSettingsDataStore: StorageSettingsDataStore // 新增
         private set
-    
+
     lateinit var updateSettingsDataStore: UpdateSettingsDataStore // 新增
         private set
 
     override fun onCreate() {
         super.onCreate()
         instance = this
+
+        // 初始化 AuthManager
+        AuthManager.initialize(this) // 添加这一行
 
         // 初始化所有单例
         processedPostsDataStore = ProcessedPostsDataStore(this)
@@ -63,13 +66,14 @@ class BBQApplication : Application() {
 
         // 加载并应用保存的自定义颜色
         ThemeManager.customColorSet = ThemeColorStore.loadColors(this)
-        
+
         // 初始化 Koin
         startKoin {
             androidContext(this@BBQApplication)
-            modules(appModule) 
+            modules(appModule)
         }
     }
+
     companion object {
         lateinit var instance: BBQApplication
             private set
