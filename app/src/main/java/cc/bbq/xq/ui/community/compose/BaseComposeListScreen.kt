@@ -184,7 +184,9 @@ fun BaseComposeListScreen(
                                     scope.launch {
                                         // 使用 first() 获取 Flow 的当前值
                                         val currentUserId = AuthManager.getUserId(context).first()
-                                        if (currentUserId != null) {
+                                        //  fixed: remove unnecessary non-null check. The type of `currentUserId` is Long, so it can't be null.
+                                        //  Also, it's better to check if the user id is valid (e.g., greater than 0)
+                                        if (currentUserId > 0) {
                                             onNavigate("my_posts/$currentUserId")
                                         } else {
                                              scope.launch {
