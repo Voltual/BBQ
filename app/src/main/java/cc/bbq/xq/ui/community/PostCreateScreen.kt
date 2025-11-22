@@ -372,7 +372,7 @@ fun PostCreateScreen(
                 if (uiState.title.isBlank()) {
                     //android.widget.Toast.makeText(context, "请填写标题", android.widget.Toast.LENGTH_SHORT).show()
                 } else if (uiState.content.isBlank()) {
-                    val message = if (isRefundMode) "请详细描述问题" else "请填写内容"
+            //        val message = if (isRefundMode) "请详细描述问题" else "请填写内容"
                    // android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
                 } else if (isRefundMode && uiState.content.length < 12) {
                     //android.widget.Toast.makeText(context, "问题描述不能少于12个字", android.widget.Toast.LENGTH_SHORT).show()
