@@ -10,6 +10,7 @@ package cc.bbq.xq.ui.home
 import android.content.Context
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import cc.bbq.xq.data.proto.UserCredentials
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
 //import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
@@ -19,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.material3.SnackbarHostState

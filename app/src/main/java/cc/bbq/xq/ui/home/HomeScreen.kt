@@ -603,7 +603,7 @@ private fun Divider(
 }
 
 data class HomeState(
-    val showLoginPrompt: Boolean = true,
+    val showLoginPrompt: Boolean = userCredentials!!.userId = 0L,
     val isLoading: Boolean = false,
     val avatarUrl: String? = null,
     val nickname: String = "BBQ用户",
