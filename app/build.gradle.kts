@@ -123,6 +123,7 @@ dependencies {
     // ===== protobuf 依赖 =====
     implementation("com.google.protobuf:protobuf-kotlin-lite:3.25.3")
     implementation("com.google.protobuf:protoc:3.25.3")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }
 
 protobuf {

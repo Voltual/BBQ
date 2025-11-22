@@ -34,18 +34,20 @@ object AuthManager {
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
 
+        val authDataStoreFile = context.dataStoreFile(DATA_STORE_FILE_NAME)
+
         val encryptedFile = EncryptedFile.Builder(
-            File(context.dataStoreFile(DATA_STORE_FILE_NAME), "auth_preferences"),
+            authDataStoreFile,
             context,
             masterKey,
             EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB
         ).build()
 
         encryptedAuthDataStore = DataStoreFactory.create(
+            serializer = UserCredentialsSerializer(context = context),
             produceFile = {
-                File(encryptedFile.name)
-            },
-            serializer = UserCredentialsSerializer(context = context) //需要实现
+                authDataStoreFile
+            }
         )
     }
 
