@@ -4,7 +4,7 @@
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.home
 
 import androidx.compose.runtime.Composable
@@ -23,6 +23,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeDestination(
@@ -34,11 +35,13 @@ fun HomeDestination(
     val uiState by viewModel.uiState
 
     // 使用 LaunchedEffect 配合登录状态，只在登录状态变化时触发
-     LaunchedEffect(Unit) {
-         val userCredentialsFlow = AuthManager.getCredentials(context)
-         val userCredentials = userCredentialsFlow.first()
-         val isLoggedIn = userCredentials != null
+    val isLoggedIn = AuthManager.getCredentials(context) != null
 
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(isLoggedIn) {
+        val userCredentialsFlow = AuthManager.getCredentials(context)
+        val userCredentials = userCredentialsFlow.first()
         viewModel.updateLoginState(isLoggedIn)
         if (isLoggedIn && uiState.dataLoadState == DataLoadState.NotLoaded) {
             viewModel.loadUserData(context)
@@ -102,7 +105,7 @@ fun HomeDestination(
             onFollowersClick = { navController.navigate(FollowList.route) },
             onFansClick = { navController.navigate(FanList.route) },
             onPostsClick = {
-                scope.launch{
+                coroutineScope.launch{
                     val userId = userIdFlow.first()
                     if (userId != null) {
                         navController.navigate(MyPosts(userId).createRoute())
@@ -113,7 +116,7 @@ fun HomeDestination(
                 }
             },
             onMyResourcesClick = {
-                scope.launch{
+                coroutineScope.launch{
                      val userId = userIdFlow.first()
                     if (userId != null) {
                         navController.navigate(ResourcePlaza(isMyResource = true, userId = userId).createRoute())

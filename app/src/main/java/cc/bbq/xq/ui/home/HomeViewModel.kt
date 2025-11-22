@@ -71,14 +71,14 @@ class HomeViewModel : ViewModel() {
     }
 
     fun loadUserData(context: Context, forceRefresh: Boolean = false) {
-         viewModelScope {
+         viewModelScope.launch {
             val userCredentialsFlow = AuthManager.getCredentials(context)
-             val userCredentials = userCredentialsFlow.first()
-             if (userCredentials == null) return@viewModelScope
+              val userCredentials = userCredentialsFlow.first()
+            if (userCredentials == null) return@launch
 
             // 如果数据已经加载且不是强制刷新，则跳过
             if (!forceRefresh && uiState.value.dataLoadState == DataLoadState.Loaded) {
-                return@viewModelScope
+                return@launch
             }
 
             viewModelScope.launch {
@@ -163,6 +163,7 @@ class HomeViewModel : ViewModel() {
                     uiState.value = uiState.value.copy(isLoading = true)
 
                     // 使用 KtorClient 发起网络请求
+                          // 使用 KtorClient 发起网络请求
                     val response = withContext(Dispatchers.IO) {
                         //RetrofitClient.instance.userSignIn(token = token)
                         KtorClient.ApiServiceImpl.userSignIn(token = token)
