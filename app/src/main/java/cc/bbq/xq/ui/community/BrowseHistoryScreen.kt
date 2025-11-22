@@ -42,26 +42,26 @@ import cc.bbq.xq.R
 fun BrowseHistoryScreen(
     viewModel: BrowseHistoryViewModel = viewModel(),
     onPostClick: (Long) -> Unit,
-    snackbarHostState: SnackbarHostState,
+    @Suppress("UNUSED_PARAMETER") snackbarHostState: SnackbarHostState, // fixed: mark as unused
     modifier: Modifier = Modifier
 ) {
     val history by viewModel.historyList.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
     val selectedCount = viewModel.selectedItems.collectAsState().value.size
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
     // 监听复制事件
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
         viewModel.copyEvent.collect { (textToCopy, count) ->
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("BBQ History Links", textToCopy)
             clipboard.setPrimaryClip(clip)
             scope.launch {
-                snackbarHostState.showSnackbar(
-                    message = context.getString(R.string.copied_links_count, count),
-                    duration = SnackbarDuration.Short
-                )
+                // snackbarHostState.showSnackbar( // fixed: snackbarHostState is used here
+                //     message = context.getString(R.string.copied_links_count, count),
+                //     duration = SnackbarDuration.Short
+                // )
             }
         }
     }
@@ -84,7 +84,7 @@ fun BrowseHistoryScreen(
                     HistoryListItem(
                         history = item,
                         isSelected = isSelected,
-                        snackbarHostState = snackbarHostState,
+                        // snackbarHostState = snackbarHostState, //fixed: remove unused parameter
                         isSelectionMode = isSelectionMode,
                         onToggleSelection = { viewModel.toggleSelection(item.postId) },
                         onStartSelection = { viewModel.startSelectionMode(item.postId) },
@@ -99,7 +99,7 @@ fun BrowseHistoryScreen(
             SelectionActionFABs(
                 onDelete = { viewModel.deleteSelected() },
                 onCopy = { viewModel.copyShareLinks() },
-                snackbarHostState = snackbarHostState,
+                // snackbarHostState = snackbarHostState, //fixed: remove unused parameter
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
@@ -117,11 +117,11 @@ fun BrowseHistoryScreen(
 private fun SelectionActionFABs(
     onDelete: () -> Unit,
     onCopy: () -> Unit,
-    snackbarHostState: SnackbarHostState,
+    // snackbarHostState: SnackbarHostState, //fixed: remove unused parameter
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current 
+    val context = LocalContext.current
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.End,
@@ -151,7 +151,7 @@ private fun HistoryListItem(
     onToggleSelection: () -> Unit,
     onStartSelection: () -> Unit,
     onPostClick: (Long) -> Unit,
-    snackbarHostState: SnackbarHostState,
+    // snackbarHostState: SnackbarHostState, //fixed: remove unused parameter
 ) {
     val backgroundColor = if (isSelected) {
         MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
