@@ -11,7 +11,7 @@ package cc.bbq.xq.ui.compose
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -64,7 +64,7 @@ fun LinkifyText(
     val linkColor = MaterialTheme.colorScheme.primary
 
     val textStyle = if (style.color == Color.Unspecified) {
-        style.copy(color = MaterialTheme.colorScheme.onSurface)
+                style.copy(color = MaterialTheme.colorScheme.onSurface)
     } else {
         style
     }
@@ -75,7 +75,6 @@ fun LinkifyText(
 
             val matches = mutableListOf<LinkMatch>()
 
-            // 收集所有匹配项
             val postMatcher = INTERNAL_POST_LINK_PATTERN.matcher(text)
             while (postMatcher.find()) {
                 postMatcher.group(1)?.let { postId ->
@@ -118,8 +117,7 @@ fun LinkifyText(
                     )
                 }
             }
-
-            // 为每个匹配项添加样式和注解
+            
             matches.forEach { match ->
                 addStyle(
                     style = SpanStyle(
@@ -130,12 +128,8 @@ fun LinkifyText(
                     end = match.end
                 )
                 addStringAnnotation(
-                    tag = "URL", // 使用统一的URL标签
-                    annotation = when (match.type) {
-                        LinkType.POST -> "post://${match.text}"
-                        LinkType.BILIVIDEO -> "bilibili://${match.text}"
-                        LinkType.URL -> match.text
-                    },
+                    tag = match.type.name,
+                    annotation = match.text,
                     start = match.start,
                     end = match.end
                 )
@@ -144,40 +138,39 @@ fun LinkifyText(
     }
 
     SelectionContainer(modifier = modifier) {
-        BasicText(
+        ClickableText(
             text = annotatedString,
             style = textStyle,
-            onTextLayout = { } // 空实现，保持参数完整性
-        ) { offset ->
-            // 处理点击事件
-            annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
-                .firstOrNull()?.let { annotation ->
-                    val link = annotation.item
-                    when {
-                        link.startsWith("post://") -> {
-                            val postId = link.removePrefix("post://").toLongOrNull()
-                            postId?.let {
-                                navController.navigate(PostDetail(it).createRoute())
-                            }
+            onClick = { offset ->
+                annotatedString.getStringAnnotations(tag = LinkType.POST.name, start = offset, end = offset)
+                    .firstOrNull()?.let { annotation ->
+                        annotation.item.toLongOrNull()?.let { postId ->
+                            navController.navigate(PostDetail(postId).createRoute())
                         }
-                        link.startsWith("bilibili://") -> {
-                            val bvid = link.removePrefix("bilibili://")
-                            navController.navigate(Player(bvid).createRoute())
+                        return@ClickableText
+                    }
+
+                annotatedString.getStringAnnotations(tag = LinkType.BILIVIDEO.name, start = offset, end = offset)
+                    .firstOrNull()?.let { annotation ->
+                        val bvid = annotation.item
+                        navController.navigate(Player(bvid).createRoute())
+                        return@ClickableText
+                    }
+
+                annotatedString.getStringAnnotations(tag = LinkType.URL.name, start = offset, end = offset)
+                    .firstOrNull()?.let { annotation ->
+                        var urlToOpen = annotation.item
+                        if (!urlToOpen.startsWith("http://") && !urlToOpen.startsWith("https://")) {
+                            urlToOpen = "http://$urlToOpen"
                         }
-                        else -> {
-                            var urlToOpen = link
-                            if (!urlToOpen.startsWith("http://") && !urlToOpen.startsWith("https://")) {
-                                urlToOpen = "http://$urlToOpen"
-                            }
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(urlToOpen))
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Log.e("LinkifyText", "无法打开URL: $urlToOpen", e)
-                            }
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(urlToOpen))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Log.e("LinkifyText", "无法打开URL: $urlToOpen", e)
                         }
                     }
-                }
-        }
+            }
+        )
     }
 }
