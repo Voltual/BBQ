@@ -47,17 +47,17 @@ import cc.bbq.xq.R
 @Composable
 fun ImagePreviewScreen(
     imageUrl: String,
-    snackbarHostState: SnackbarHostState, // 添加类型注解
+    @Suppress("UNUSED_PARAMETER") snackbarHostState: SnackbarHostState, // 添加类型注解并标记为未使用
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val snackbarHostState = remember { SnackbarHostState() }
+    val internalSnackbarHostState = remember { SnackbarHostState() } // fixed: rename to internalSnackbarHostState
     val scope = rememberCoroutineScope()
 
     Scaffold(
         containerColor = Color.Black,
-        snackbarHost = { BBQSnackbarHost(snackbarHostState) }
+        snackbarHost = { BBQSnackbarHost(internalSnackbarHostState) }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -89,7 +89,7 @@ fun ImagePreviewScreen(
                                     ClipData.newPlainText("image_url", imageUrl)
                                 )
                                 scope.launch {
-                                    snackbarHostState.showSnackbar(
+                                    internalSnackbarHostState.showSnackbar(
                                         message = context.getString(R.string.image_link_copied)
                                     )
                                 }
