@@ -85,7 +85,7 @@ fun PostDetailScreen(
     postId: Long,
     navController: NavController,
     onPostDeleted: () -> Unit,
-    snackbarHostState: SnackbarHostState,
+    @Suppress("UNUSED_PARAMETER") snackbarHostState: SnackbarHostState, //fixed: mark as unused
     modifier: Modifier = Modifier
 ) {
     val viewModel: PostDetailViewModel = viewModel()
@@ -107,7 +107,7 @@ fun PostDetailScreen(
         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     }
     
-    val snackbarHostState = remember { SnackbarHostState() }
+    val internalSnackbarHostState = remember { SnackbarHostState() } // fixed: rename to internalSnackbarHostState
     val coroutineScope = rememberCoroutineScope()
 
     var showShareDialog by remember { mutableStateOf(false) }
@@ -142,7 +142,7 @@ fun PostDetailScreen(
     LaunchedEffect(errorMessage) {
         if (errorMessage.isNotEmpty()) {
             coroutineScope.launch {
-                snackbarHostState.showSnackbar(errorMessage)
+                internalSnackbarHostState.showSnackbar(errorMessage) //fixed: use internalSnackbarHostState
                 viewModel.clearErrorMessage()
             }
         }
@@ -236,13 +236,13 @@ fun PostDetailScreen(
                                                 }
                                             )
                                             // 添加“刷新评论”菜单项
-                                    DropdownMenuItem(
-                                        text = { Text("刷新评论") },
-                                        onClick = {
-                                            showMoreOptions = false
-                                            viewModel.refreshComments(postId)
-                                        }
-                                    )
+                                            DropdownMenuItem(
+                                                text = { Text("刷新评论") },
+                                                onClick = {
+                                                    showMoreOptions = false
+                                                    viewModel.refreshComments(postId)
+                                                }
+                                            )
                                             DropdownMenuItem(
                                                 text = { Text("打赏") },
                                                 onClick = {
@@ -283,29 +283,29 @@ fun PostDetailScreen(
                                     navController = navController
                                 )
 
-                        // 使用安全调用符 ?. 和 let 函数来处理 img_url 可能为空的情况
-postDetail?.img_url?.let { imgUrls ->
-    imgUrls.forEach { imageUrl ->
-        Spacer(Modifier.height(16.dp))
-        AsyncImage(
-            model = imageUrl,
-            contentDescription = "帖子图片",
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .clickable {
-                    // 导航到图片预览
-                    navController.navigate(
-                        ImagePreview(
-                            imageUrl = imageUrl
-                        ).createRoute()
-                    )
-                },
-            contentScale = ContentScale.Crop
-        )
-    }
-}
+                                // 使用安全调用符 ?. 和 let 函数来处理 img_url 可能为空的情况
+                                postDetail?.img_url?.let { imgUrls ->
+                                    imgUrls.forEach { imageUrl ->
+                                        Spacer(Modifier.height(16.dp))
+                                        AsyncImage(
+                                            model = imageUrl,
+                                            contentDescription = "帖子图片",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(200.dp)
+                                                .clip(MaterialTheme.shapes.medium)
+                                                .clickable {
+                                                    // 导航到图片预览
+                                                    navController.navigate(
+                                                        ImagePreview(
+                                                            imageUrl = imageUrl
+                                                        ).createRoute()
+                                                    )
+                                                },
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                }
                                 Row(
                                     modifier = Modifier
                                         .padding(top = 16.dp)
@@ -361,7 +361,7 @@ postDetail?.img_url?.let { imgUrls ->
                     onDelete = { viewModel.deleteComment(comment.id) },
                     clipboardManager = clipboardManager,
                     context = context,
-                    snackbarHostState = snackbarHostState
+                    snackbarHostState = internalSnackbarHostState //fixed: use internalSnackbarHostState
                 )
             }
 
@@ -413,7 +413,7 @@ postDetail?.img_url?.let { imgUrls ->
                         val clipData = ClipData.newPlainText("分享链接", shareText)
                         clipboardManager.setPrimaryClip(clipData)
                          coroutineScope.launch {
-                                snackbarHostState.showSnackbar(
+                                internalSnackbarHostState.showSnackbar( //fixed: use internalSnackbarHostState
                                     message = context.getString(R.string.copied_link),
                                     duration = SnackbarDuration.Short
                                 )
@@ -454,7 +454,7 @@ postDetail?.img_url?.let { imgUrls ->
     // Snackbar 宿主
     Box(modifier = Modifier.fillMaxSize()) {
         BBQSnackbarHost(
-            hostState = snackbarHostState,
+            hostState = internalSnackbarHostState, //fixed: use internalSnackbarHostState
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
@@ -668,11 +668,11 @@ fun CommentDialog(
                     ) {
                         // 根据发送状态显示不同的文本
                         Text(if (isSubmitting) "发送中..." else "提交")
+                    }
                 }
             }
         }
     }
-}
 
     if (showProgressDialog) {
         AlertDialog(
@@ -746,7 +746,7 @@ fun CommentItem(
                         val clipData = ClipData.newPlainText("评论内容", comment.content)
                         clipboardManager.setPrimaryClip(clipData)
                         scope.launch {
-                            snackbarHostState.showSnackbar(
+                            snackbarHostState.showSnackbar( // fixed: snackbarHostState is used here
                                 message = context.getString(R.string.comment_copied),
                                 duration = SnackbarDuration.Short
                             )
@@ -808,7 +808,7 @@ fun CommentItem(
                                     imageUrl = imageUrl
                                 ).createRoute()
                             )
-                        },
+                         },
                     contentScale = ContentScale.Crop
                 )
             }
