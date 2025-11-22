@@ -104,7 +104,6 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
                 avatarUri = avatarUri,
                 avatarUrl = avatarUrl,
                 onAvatarSelected = { uri ->
-                    avatarUri = uri
                     coroutineScope.launch {
                         // 直接调用非Composable函数
                         uploadAvatar(
@@ -304,7 +303,7 @@ suspend fun saveChanges(
     context: Context,
     nickname: String,
     qqNumber: String,
-    coroutineScope: CoroutineScope,
+    @Suppress("UNUSED_PARAMETER") coroutineScope: CoroutineScope, //fixed: mark as unused
     snackbarHostState: SnackbarHostState,
     onDeviceNameSaved: () -> Unit
 ) {

@@ -143,7 +143,10 @@ private fun SafeLazyColumn(
             items = users,
             key = { index, user -> user.id ?: index } // 确保有唯一的 key
         ) { index, user ->
-            StableUserListItem(user = user, onClick = { onUserClick(user.id) })
+            // fixed: remove unnecessary elvis operator
+            user.id?.let { userId ->
+                StableUserListItem(user = user, onClick = { onUserClick(userId) })
+            }
             if (index < users.size - 1) {
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             }

@@ -42,7 +42,7 @@ fun MyPostsScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val totalPages by viewModel.totalPages.collectAsState()
 
-    val context = navController.context
+    //val context = navController.context
     
     // 使用单个 LaunchedEffect，避免重复触发
     LaunchedEffect(userId) {
