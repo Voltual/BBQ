@@ -1,9 +1,10 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    id("com.google.devtools.ksp") version "1.9.23-1.0.20"
-    kotlin("plugin.serialization") version "1.9.23" //Kotlin 序列化插件
+    id("com.google.devtools.ksp") version "2.2.21-2.0.4"
+    kotlin("plugin.serialization") version "2.2.21" //Kotlin 序列化插件
     id("com.google.protobuf") version "0.9.4" // 添加 protobuf 插件
+    id("org.jetbrains.kotlin.plugin.compose") version "2.2.21" //Compose编译器
 }
 
 android {
@@ -54,14 +55,10 @@ android {
     buildFeatures {
         compose = true
         android.buildFeatures.buildConfig=true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.11"
-    }
+    }    
 
     packaging {
-        resources {
+        resources {'
             excludes.add("/META-INF/{AL2.0,LGPL2.1}")
         }
     }
