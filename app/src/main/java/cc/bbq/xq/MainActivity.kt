@@ -356,7 +356,7 @@ fun getTitleForDestination(backStackEntry: NavBackStackEntry?): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainComposeApp(snackbarHostState: SnackbarHostState) { // 添加 SnackbarHostState 参数
+fun MainComposeApp(snackbarHostState: SnackbarHostState) { 
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -409,8 +409,12 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) { // 添加 SnackbarHos
         val context = context
         val userCredentialsFlow = AuthManager.getCredentials(context)
         val userCredentials = userCredentialsFlow.first()
+        // 检查 userCredentials 是否存在，且 username 和 password 都不为空
+        isLoggedIn.value = userCredentials != null &&
+                userCredentials.username.isNotBlank() &&
+                userCredentials.password.isNotBlank()
+
         // 只有在用户已登录的情况下才尝试自动登录
-        isLoggedIn.value = userCredentials != null
         if (isLoggedIn.value) {
             tryAutoLogin(userCredentials!!.username, userCredentials.password, context, navController, snackbarHostState) // 传递 snackbarHostState
         }
