@@ -239,8 +239,8 @@ fun AvatarUploadSection(
 suspend fun uploadAvatar(
     context: Context,
     uri: Uri,
-    coroutineScope: CoroutineScope,
-    snackbarHostState: SnackbarHostState,
+//    coroutineScope: CoroutineScope,
+//    snackbarHostState: SnackbarHostState,
     onProgress: (String) -> Unit = {},
     onComplete: () -> Unit = {},
     onError: (String) -> Unit = {}

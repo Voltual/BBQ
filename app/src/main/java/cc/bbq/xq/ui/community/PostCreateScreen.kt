@@ -226,7 +226,8 @@ fun PostCreateScreen(
             OutlinedTextField(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(),
+                    //fixed: remove menuAnchor
+                   ,
                 readOnly = true,
                 value = selectedTopicName,
                 onValueChange = {},
