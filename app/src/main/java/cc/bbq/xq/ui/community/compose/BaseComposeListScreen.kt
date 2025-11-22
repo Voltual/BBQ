@@ -40,6 +40,7 @@ import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.flow.first // 添加 first 导入
 
 // 在 BaseComposeListScreen.kt 中修复导航逻辑
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
@@ -179,17 +180,21 @@ fun BaseComposeListScreen(
                                 text = { Text("我的帖子") },
                                 onClick = {
                                     expanded = false
-                                    val currentUserId = AuthManager.getUserId(context)
-                                    if (currentUserId != null) {
-                                        onNavigate("my_posts/$currentUserId")
-                                    } else {
-                                         scope.launch {
-                                            snackbarHostState.showSnackbar(
-                                                message = context.getString(R.string.login_first),
-                                                duration = SnackbarDuration.Short
-                                            )
+                                    // 在协程中获取 currentUserId
+                                    scope.launch {
+                                        // 使用 first() 获取 Flow 的当前值
+                                        val currentUserId = AuthManager.getUserId(context).first()
+                                        if (currentUserId != null) {
+                                            onNavigate("my_posts/$currentUserId")
+                                        } else {
+                                             scope.launch {
+                                                snackbarHostState.showSnackbar(
+                                                    message = context.getString(R.string.login_first),
+                                                    duration = SnackbarDuration.Short
+                                                )
+                                            }
+                                            //android.widget.Toast.makeText(context, "请先登录", android.widget.Toast.LENGTH_SHORT).show()
                                         }
-                                        //android.widget.Toast.makeText(context, "请先登录", android.widget.Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             )
