@@ -53,7 +53,7 @@ fun BrowseHistoryScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
-        viewModel.copyEvent.collect { (textToCopy, count) ->
+        viewModel.copyEvent.collect { (textToCopy) ->
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("BBQ History Links", textToCopy)
             clipboard.setPrimaryClip(clip)
@@ -120,8 +120,6 @@ private fun SelectionActionFABs(
     // snackbarHostState: SnackbarHostState, //fixed: remove unused parameter
     modifier: Modifier = Modifier
 ) {
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.End,
