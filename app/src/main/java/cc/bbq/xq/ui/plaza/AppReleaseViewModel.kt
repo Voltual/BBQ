@@ -4,7 +4,7 @@
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
@@ -173,6 +173,8 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             val uploadJobs = urisToUpload.map { uri ->
                 launch {
                     val tempFileName = generateUniqueFileName("intro", "jpg")
+                    // 显式指定类型
+                    val context : Application = getApplication()
                     val tempFile = uriToTempFile(context, uri, tempFileName)
                     tempFile?.let {
                         uploadToKeyun(it, "image/*", "介绍图") { url ->
@@ -227,10 +229,11 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     fun releaseApp(onSuccess: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-             val context = getApplication()
-                val userCredentialsFlow = AuthManager.getCredentials(context)
-                val userCredentials = userCredentialsFlow.first()
-              val token = userCredentials?.token
+            // 显式指定类型
+            val context: Application = getApplication()
+            val userCredentialsFlow = AuthManager.getCredentials(context)
+            val userCredentials = userCredentialsFlow.first()
+            val token = userCredentials?.token
             if (token == null) {
                 _processFeedback.value = Result.failure(Throwable("错误: 未登录")); return@launch
             }
@@ -256,7 +259,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                         usertoken = token,
                         apps_id = appId,
                         appname = appName.value,
-                                                icon = iconUrl.value,
+                        icon = iconUrl.value,
                         app_size = appSize.value,
                         app_introduce = appIntroduce.value,
                         app_introduction_image = introImagesString,
@@ -303,10 +306,11 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     fun deleteApp(onSuccess: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            val context = getApplication()
-                val userCredentialsFlow = AuthManager.getCredentials(context)
-                val userCredentials = userCredentialsFlow.first()
-                val token = userCredentials?.token
+            // 显式指定类型
+             val context: Application = getApplication()
+            val userCredentialsFlow = AuthManager.getCredentials(context)
+            val userCredentials = userCredentialsFlow.first()
+            val token = userCredentials?.token
             if (token == null) {
                 _processFeedback.value = Result.failure(Throwable("错误: 未登录")); return@launch
             }
@@ -346,7 +350,7 @@ private suspend fun uploadToKeyun(file: File, mediaType: String = "application/o
             formData = formData {
                 append("file", createStreamInputProvider(file), Headers.build {
                     append(HttpHeaders.ContentType, mediaType)
-                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
                 })
             }
         )
@@ -371,7 +375,7 @@ private suspend fun uploadToKeyun(file: File, mediaType: String = "application/o
         }
     } catch (e: Exception) {
         withContext(Dispatchers.Main){
-            _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${e.message}"))
+                            _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${e.message}"))
         }
     } finally {
         file.delete()
