@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.Flow // 添加这个导入
 
 class LoginViewModel(
     application: Application
@@ -73,7 +74,8 @@ class LoginViewModel(
             _errorMessage.value = null
             try {
                 val context = getApplication()
-                val deviceIdFlow = AuthManager.getDeviceId(context)
+                // 显式指定 Flow 的类型为 String
+                val deviceIdFlow: Flow<String> = AuthManager.getDeviceId(context)
                 val deviceId = deviceIdFlow.first()
                 val loginResult = KtorClient.ApiServiceImpl.login(
                     username = _username.value,
@@ -115,7 +117,8 @@ class LoginViewModel(
             _errorMessage.value = null
             try {
                 val context = getApplication()
-                val deviceIdFlow = AuthManager.getDeviceId(context)
+                // 显式指定 Flow 的类型为 String
+                val deviceIdFlow: Flow<String> = AuthManager.getDeviceId(context)
                 val deviceId = deviceIdFlow.first()
 
                 val registerResult = KtorClient.ApiServiceImpl.register(
@@ -152,7 +155,8 @@ class LoginViewModel(
     private suspend fun loginAfterRegister() {
         try {
             val context = getApplication()
-             val deviceIdFlow = AuthManager.getDeviceId(context)
+            // 显式指定 Flow 的类型为 String
+             val deviceIdFlow: Flow<String> = AuthManager.getDeviceId(context)
                 val deviceId = deviceIdFlow.first()
             val loginResult = KtorClient.ApiServiceImpl.login(
                 username = _username.value,
