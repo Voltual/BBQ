@@ -69,40 +69,40 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
 
     private fun loadData() {
         viewModelScope.launch {
-                val context = getApplication<Application>()
-                val userCredentialsFlow = AuthManager.getCredentials(context)
-                val userCredentials = userCredentialsFlow.first()
-                   val token = userCredentials?.token ?: ""
-                if (_isLoading.value == true) return
+            val context = getApplication<Application>()
+            val userCredentialsFlow = AuthManager.getCredentials(context)
+            val userCredentials = userCredentialsFlow.first()
+            val token = userCredentials?.token ?: ""
 
-                _isLoading.postValue(true)
+            if (_isLoading.value == true) return
 
-                try {
-                    val result = apiService.getUserInformation(
-                        userId = _currentUserId,
-                        token = token
-                    )
+            _isLoading.postValue(true)
 
-                    when (val response = result.getOrNull()) {
-                        is KtorClient.UserInformationResponse -> {
-                            if (response.code == 1) {
-                                // 修复：移除总是为 true 的条件检查，因为 response.data 是非空的
-                                _userData.postValue(response.data)
-                                _errorMessage.postValue("")
-                            } else {
-                                // 修复：移除不必要的 Elvis 操作符，因为 response.msg 是非空字符串
-                                _errorMessage.postValue("加载失败: ${response.msg}")
-                            }
-                        }
-                        else -> {
-                            _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message ?: "网络错误"}")
+            try {
+                val result = apiService.getUserInformation(
+                    userId = _currentUserId,
+                    token = token
+                )
+
+                when (val response = result.getOrNull()) {
+                    is KtorClient.UserInformationResponse -> {
+                        if (response.code == 1) {
+                            // 修复：移除总是为 true 的条件检查，因为 response.data 是非空的
+                            _userData.postValue(response.data)
+                            _errorMessage.postValue("")
+                        } else {
+                            // 修复：移除不必要的 Elvis 操作符，因为 response.msg 是非空字符串
+                            _errorMessage.postValue("加载失败: ${response.msg}")
                         }
                     }
-                } catch (e: Exception) {
-                    _errorMessage.postValue("网络错误: ${e.message}")
-                } finally {
-                    _isLoading.postValue(false)
+                    else -> {
+                        _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message ?: "网络错误"}")
+                    }
                 }
+            } catch (e: Exception) {
+                _errorMessage.postValue("网络错误: ${e.message}")
+            } finally {
+                _isLoading.postValue(false)
             }
         }
     }
