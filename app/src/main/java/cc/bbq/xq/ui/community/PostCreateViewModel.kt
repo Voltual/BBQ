@@ -170,7 +170,9 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
             _uiState.update { it.copy(showProgressDialog = true, progressMessage = "上传图片中...") }
 
             val realPath = withContext(Dispatchers.IO) {
-                FileUtil.getRealPathFromURI(getApplication(), uri)
+                // 显式转换为 Application 类型
+                val context: Application = getApplication()
+                FileUtil.getRealPathFromURI(context, uri)
             }
 
             if (realPath == null) {
@@ -265,7 +267,8 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
             _postStatus.value = PostStatus.Loading
 
             try {
-                val context = getApplication()
+                // 显式转换为 Application 类型
+                val context: Application = getApplication()
                 // 显式指定类型
                 val userCredentialsFlow: Flow<AuthManager.UserCredentials?> = AuthManager.getCredentials(context)
                 val userCredentials = userCredentialsFlow.first()
