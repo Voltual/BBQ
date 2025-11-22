@@ -350,7 +350,7 @@ private suspend fun uploadToKeyun(file: File, mediaType: String = "application/o
             formData = formData {
                 append("file", createStreamInputProvider(file), Headers.build {
                     append(HttpHeaders.ContentType, mediaType)
-                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
                 })
             }
         )

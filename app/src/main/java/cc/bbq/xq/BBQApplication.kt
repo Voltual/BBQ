@@ -51,7 +51,7 @@ class BBQApplication : Application() {
         database = AppDatabase.getDatabase(this) // 初始化数据库
         searchHistoryDataStore = SearchHistoryDataStore(this) // 新增
         storageSettingsDataStore = StorageSettingsDataStore(this) // 新增
-        updateSettingsDataStore = UpdateSettingsDataStore(this) // 新增
+        updateSettingsDataStore = UpdateSettingsDataStore
 
         // 初始化 AuthManager 并执行迁移
         CoroutineScope(Dispatchers.IO).launch {
