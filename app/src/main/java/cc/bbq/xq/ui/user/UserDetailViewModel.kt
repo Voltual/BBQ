@@ -107,3 +107,4 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
+}    
