@@ -36,7 +36,7 @@ object AuthManager {
         val authDataStoreFile = context.dataStoreFile(DATA_STORE_FILE_NAME)
 
         // 修复 EncryptedFile.Builder 调用
-        val encryptedFile = EncryptedFile.Builder(
+        EncryptedFile.Builder( // fixed: remove unused variable
             context,
             authDataStoreFile,
             masterKey,
@@ -51,13 +51,13 @@ object AuthManager {
 
     // --- 保存凭证 ---
     suspend fun saveCredentials(
-        context: Context,
+        @Suppress("UNUSED_PARAMETER") context: Context, // fixed: mark as unused explicitly
         username: String,
         password: String,
         token: String,
         userId: Long
     ) {
-        encryptedAuthDataStore.updateData { currentCredentials ->
+        encryptedAuthDataStore.updateData { _ -> // fixed: mark as unused explicitly
             UserCredentials.newBuilder()
                 .setUsername(username)
                 .setPassword(password)
@@ -69,12 +69,12 @@ object AuthManager {
     }
 
     // --- 获取凭证 ---
-    fun getCredentials(context: Context): Flow<UserCredentials?> {
+    fun getCredentials(@Suppress("UNUSED_PARAMETER") context: Context): Flow<UserCredentials?> { // fixed: mark as unused explicitly
         return encryptedAuthDataStore.data
     }
 
     // 新增方法：单独获取userid
-    fun getUserId(context: Context): Flow<Long> {
+    fun getUserId(@Suppress("UNUSED_PARAMETER") context: Context): Flow<Long> { // fixed: mark as unused explicitly
         return encryptedAuthDataStore.data
             .map { userCredentials: UserCredentials? ->
                 userCredentials?.userId ?: -1L
@@ -82,14 +82,14 @@ object AuthManager {
     }
 
     // --- 清除凭证 ---
-    suspend fun clearCredentials(context: Context) {
-        encryptedAuthDataStore.updateData { currentCredentials ->
+    suspend fun clearCredentials(@Suppress("UNUSED_PARAMETER") context: Context) { // fixed: mark as unused explicitly
+        encryptedAuthDataStore.updateData { _ -> // fixed: mark as unused explicitly
             UserCredentials.getDefaultInstance()
         }
     }
 
     // --- 获取设备ID ---
-    fun getDeviceId(context: Context): Flow<String> {
+    fun getDeviceId(@Suppress("UNUSED_PARAMETER") context: Context): Flow<String> { // fixed: mark as unused explicitly
         return encryptedAuthDataStore.data
             .map { userCredentials: UserCredentials? ->
                 userCredentials?.deviceId ?: generateDeviceId()
@@ -115,7 +115,7 @@ object AuthManager {
             val username = String(Base64.decode(encodedUser, Base64.DEFAULT))
             val password = String(Base64.decode(encodedPass, Base64.DEFAULT))
 
-            encryptedAuthDataStore.updateData { currentCredentials ->
+            encryptedAuthDataStore.updateData { _ -> // fixed: mark as unused explicitly
                 UserCredentials.newBuilder()
                     .setUsername(username)
                     .setPassword(password)
