@@ -271,7 +271,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 // 显式转换为 Application 类型
                 val context: Application = getApplication()
                 // 显式指定类型
-                val userCredentialsFlow: Flow<AuthManager.UserCredentials?> = AuthManager.getCredentials(context)
+                val userCredentialsFlow = AuthManager.getCredentials(context)
                 val userCredentials = userCredentialsFlow.first()
                 if (userCredentials == null) {
                     _postStatus.value = PostStatus.Error("请先登录")

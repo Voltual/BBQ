@@ -77,7 +77,7 @@ class HomeViewModel : ViewModel() {
         // 将实际的加载逻辑移到一个协程中
         viewModelScope.launch {
             // 显式指定类型
-            val userCredentialsFlow: Flow<AuthManager.UserCredentials?> = AuthManager.getCredentials(context)
+            val userCredentialsFlow = AuthManager.getCredentials(context)
             val userCredentials = userCredentialsFlow.first()
             if (userCredentials == null) return@launch // 如果没有凭证，则不加载数据
 
@@ -160,7 +160,7 @@ class HomeViewModel : ViewModel() {
         // 将实际的签到逻辑移到一个协程中
         viewModelScope.launch {
              // 显式指定类型
-            val userCredentialsFlow: Flow<AuthManager.UserCredentials?> = AuthManager.getCredentials(context)
+            val userCredentialsFlow = AuthManager.getCredentials(context)
             val userCredentials = userCredentialsFlow.first()
             val token = userCredentials?.token ?: ""
 
