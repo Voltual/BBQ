@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope // 添加导入
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -35,13 +36,12 @@ fun HomeDestination(
     val uiState by viewModel.uiState
 
     // 使用 LaunchedEffect 配合登录状态，只在登录状态变化时触发
-    val isLoggedIn = AuthManager.getCredentials(context) != null
-
-    val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(isLoggedIn) {
+    val coroutineScope = rememberCoroutineScope() // 移动到外部，这样 onClick lambda 可以访问它
+    LaunchedEffect(Unit) {
         val userCredentialsFlow = AuthManager.getCredentials(context)
         val userCredentials = userCredentialsFlow.first()
+        val isLoggedIn = userCredentials != null
+
         viewModel.updateLoginState(isLoggedIn)
         if (isLoggedIn && uiState.dataLoadState == DataLoadState.NotLoaded) {
             viewModel.loadUserData(context)
@@ -105,7 +105,8 @@ fun HomeDestination(
             onFollowersClick = { navController.navigate(FollowList.route) },
             onFansClick = { navController.navigate(FanList.route) },
             onPostsClick = {
-                coroutineScope.launch{
+                // 在协程中调用 first()
+                coroutineScope.launch {
                     val userId = userIdFlow.first()
                     if (userId != null) {
                         navController.navigate(MyPosts(userId).createRoute())
@@ -116,6 +117,7 @@ fun HomeDestination(
                 }
             },
             onMyResourcesClick = {
+                 // 在协程中调用 first()
                 coroutineScope.launch{
                      val userId = userIdFlow.first()
                     if (userId != null) {
