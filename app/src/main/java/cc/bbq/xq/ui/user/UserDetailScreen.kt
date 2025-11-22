@@ -282,16 +282,18 @@ private fun ActionButtonsRow(
             onClick = {
                 coroutineScope.launch {
                     val userCredentialsFlow = AuthManager.getCredentials(context)
-                    val userCredentials  = userCredentialsFlow.first()
+                    val userCredentials = userCredentialsFlow.first()
                     val token = userCredentials?.token
+
+                    // 检查 token 是否为 null 或空
                     if (token.isNullOrBlank()) {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = context.getString(R.string.login_first),
-                                duration = SnackbarDuration.Short
-                            )
-                        }
-                        return@BBQButton
+                        snackbarHostState.showSnackbar(
+                            message = context.getString(R.string.login_first),
+                            duration = SnackbarDuration.Short
+                        )
+                        // 注意：这里不能使用 return，因为我们在 lambda 中。
+                        // 我们可以使用 return@launch 来从协程中返回。
+                        return@launch
                     }
 
                     try {
@@ -299,39 +301,32 @@ private fun ActionButtonsRow(
                         when (val response = result.getOrNull()) {
                             is KtorClient.BaseResponse -> {
                                 if (response.code == 1) {
+                                    // 更新 UI 状态
                                     isFollowing.value = !isFollowing.value
                                     val message = if (isFollowing.value) "关注成功" else "取消关注成功"
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            message = message,
-                                            duration = SnackbarDuration.Short
-                                        )
-                                    }
-                                } else {
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            message = response.msg,
-                                            duration = SnackbarDuration.Short
-                                        )
-                                    }
-                                }
-                            }
-                            else -> {
-                                coroutineScope.launch {
                                     snackbarHostState.showSnackbar(
-                                        message = result.exceptionOrNull()?.message ?: "操作失败",
+                                        message = message,
+                                        duration = SnackbarDuration.Short
+                                    )
+                                } else {
+                                    snackbarHostState.showSnackbar(
+                                        message = response.msg,
                                         duration = SnackbarDuration.Short
                                     )
                                 }
                             }
+                            else -> {
+                                snackbarHostState.showSnackbar(
+                                    message = result.exceptionOrNull()?.message ?: "操作失败",
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
                         }
                     } catch (e: Exception) {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "网络错误: ${e.message}",
-                                duration = SnackbarDuration.Short
-                            )
-                        }
+                        snackbarHostState.showSnackbar(
+                            message = "网络错误: ${e.message}",
+                            duration = SnackbarDuration.Short
+                        )
                     }
                 }
             },

@@ -74,7 +74,8 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
             val userCredentials = userCredentialsFlow.first()
             val token = userCredentials?.token ?: ""
 
-            if (_isLoading.value == true) return
+            // 检查是否已经在加载
+            if (_isLoading.value == true) return@launch // 使用 return@launch 从协程返回
 
             _isLoading.postValue(true)
 
@@ -106,4 +107,3 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
-}
