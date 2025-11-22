@@ -10,8 +10,6 @@ package cc.bbq.xq.ui.home
 import android.content.Context
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import cc.bbq.xq.data.proto.UserCredentialsKt
-import cc.bbq.xq.data.proto.UserCredentialsSerializer
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
 //import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
@@ -77,8 +75,7 @@ class HomeViewModel : ViewModel() {
     fun loadUserData(context: Context, forceRefresh: Boolean = false) {
         // 将实际的加载逻辑移到一个协程中
         viewModelScope.launch {
-            // 显式指定类型
-            val userCredentialsFlow: Flow<AuthManager.UserCredentials?> = AuthManager.getCredentials(context)
+            val userCredentialsFlow = AuthManager.getCredentials(context)
             val userCredentials = userCredentialsFlow.first()
             if (userCredentials == null) return@launch // 如果没有凭证，则不加载数据
 

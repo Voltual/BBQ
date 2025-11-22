@@ -13,8 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.res.painterResource
-import cc.bbq.xq.data.proto.UserCredentialsKt
-import cc.bbq.xq.data.proto.UserCredentialsSerializer
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +58,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import cc.bbq.xq.AuthManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cc.bbq.xq.R
@@ -605,7 +604,7 @@ private fun Divider(
 }
 
 data class HomeState(
-    val showLoginPrompt: Boolean = userCredentials!!.userId = 0L,
+    val showLoginPrompt: Boolean = AuthManager.getCredentials(context)!!.userId == 0L
     val isLoading: Boolean = false,
     val avatarUrl: String? = null,
     val nickname: String = "BBQ用户",
