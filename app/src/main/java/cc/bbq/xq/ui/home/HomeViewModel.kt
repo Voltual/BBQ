@@ -252,7 +252,7 @@ class HomeViewModel : ViewModel() {
     }
 
     // 新增：显示 Snackbar 的方法
-    fun showSnackbar(context:Context ,message: String) {
+    fun showSnackbar(message: String) {
         viewModelScope.launch {
             snackbarHostState.value?.showSnackbar(message)
         }

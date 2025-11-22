@@ -93,7 +93,7 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     snackbarHostState: SnackbarHostState//新增ViewModel和snackbar参数
 ) {
-    val context = LocalContext.current
+  
 
     LaunchedEffect(Unit) {
         viewModel.setSnackbarHostState(snackbarHostState)
