@@ -710,6 +710,11 @@ fun CommentItem(
     val scope = rememberCoroutineScope()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    // 获取当前用户 ID 的 Flow
+    val currentUserIdFlow = AuthManager.getUserId(context)
+    // 使用 collectAsState() 观察当前用户 ID
+    val currentUserId by currentUserIdFlow.collectAsState(initial = null)
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -834,8 +839,7 @@ fun CommentItem(
 
                 Spacer(Modifier.width(8.dp))
 
-                val credentials = AuthManager.getCredentials(context)
-                val currentUserId = credentials?.fourth
+                // 使用 currentUserId，而不是从 AuthManager 获取凭证
                 if (comment.userid == currentUserId) {
                     TextButton(
                         onClick = { showDeleteDialog = true },
