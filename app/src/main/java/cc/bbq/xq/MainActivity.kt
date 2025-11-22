@@ -407,7 +407,6 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) {
     val isLoggedIn = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        val context = context
         val userCredentialsFlow = AuthManager.getCredentials(context)
         val userCredentials = userCredentialsFlow.first()
         // 检查 userCredentials 是否存在，且 username 和 password 都不为空

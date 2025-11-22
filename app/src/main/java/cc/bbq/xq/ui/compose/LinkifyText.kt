@@ -23,7 +23,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withLink
 import androidx.navigation.NavController
 import cc.bbq.xq.ui.Player
 import cc.bbq.xq.ui.PostDetail
@@ -72,6 +71,8 @@ fun LinkifyText(
 
     val annotatedString = remember(text, linkColor) {
         buildAnnotatedString {
+            append(text)
+
             val matches = mutableListOf<LinkMatch>()
 
             // 收集所有匹配项
@@ -118,40 +119,26 @@ fun LinkifyText(
                 }
             }
 
-            // 按起始位置排序，以便按顺序处理
-            matches.sortBy { it.start }
-
-            var lastIndex = 0
+            // 为每个匹配项添加样式和注解
             matches.forEach { match ->
-                // 添加非链接文本
-                if (match.start > lastIndex) {
-                    append(text.substring(lastIndex, match.start))
-                }
-
-                // 添加链接文本
-                withLink(
-                    url = when (match.type) {
+                addStyle(
+                    style = SpanStyle(
+                        color = linkColor,
+                        textDecoration = TextDecoration.Underline
+                    ),
+                    start = match.start,
+                    end = match.end
+                )
+                addStringAnnotation(
+                    tag = "URL", // 使用统一的URL标签
+                    annotation = when (match.type) {
                         LinkType.POST -> "post://${match.text}"
                         LinkType.BILIVIDEO -> "bilibili://${match.text}"
                         LinkType.URL -> match.text
-                    }
-                ) {
-                    withStyle(
-                        style = SpanStyle(
-                            color = linkColor,
-                            textDecoration = TextDecoration.Underline
-                        )
-                    ) {
-                        append(text.substring(match.start, match.end))
-                    }
-                }
-
-                lastIndex = match.end
-            }
-
-            // 添加剩余的文本
-            if (lastIndex < text.length) {
-                append(text.substring(lastIndex))
+                    },
+                    start = match.start,
+                    end = match.end
+                )
             }
         }
     }
@@ -160,36 +147,37 @@ fun LinkifyText(
         BasicText(
             text = annotatedString,
             style = textStyle,
-            onLinkClick = { link ->
-                when {
-                    link.startsWith("post://") -> {
-                        val postId = link.removePrefix("post://").toLongOrNull()
-                        postId?.let {
-                            navController.navigate(PostDetail(it).createRoute())
+            onTextLayout = { } // 空实现，保持参数完整性
+        ) { offset ->
+            // 处理点击事件
+            annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                .firstOrNull()?.let { annotation ->
+                    val link = annotation.item
+                    when {
+                        link.startsWith("post://") -> {
+                            val postId = link.removePrefix("post://").toLongOrNull()
+                            postId?.let {
+                                navController.navigate(PostDetail(it).createRoute())
+                            }
                         }
-                        true
-                    }
-                    link.startsWith("bilibili://") -> {
-                        val bvid = link.removePrefix("bilibili://")
-                        navController.navigate(Player(bvid).createRoute())
-                        true
-                    }
-                    else -> {
-                        var urlToOpen = link
-                        if (!urlToOpen.startsWith("http://") && !urlToOpen.startsWith("https://")) {
-                            urlToOpen = "http://$urlToOpen"
+                        link.startsWith("bilibili://") -> {
+                            val bvid = link.removePrefix("bilibili://")
+                            navController.navigate(Player(bvid).createRoute())
                         }
-                        try {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(urlToOpen))
-                            context.startActivity(intent)
-                            true
-                        } catch (e: Exception) {
-                            Log.e("LinkifyText", "无法打开URL: $urlToOpen", e)
-                            false
+                        else -> {
+                            var urlToOpen = link
+                            if (!urlToOpen.startsWith("http://") && !urlToOpen.startsWith("https://")) {
+                                urlToOpen = "http://$urlToOpen"
+                            }
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(urlToOpen))
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Log.e("LinkifyText", "无法打开URL: $urlToOpen", e)
+                            }
                         }
                     }
                 }
-            }
-        )
+        }
     }
 }
