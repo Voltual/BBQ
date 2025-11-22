@@ -14,7 +14,7 @@ android {
         applicationId = "cc.bbq.xq" // 修正包名以匹配项目
         minSdk = 21
         targetSdk = 34
-        versionCode = 352
+        versionCode = 353
         versionName = "13.3" // 更新版本名以作区分
         multiDexEnabled = true
         buildConfigField("String", "LICENSE", "\"GPLv3\"")

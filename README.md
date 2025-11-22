@@ -95,3 +95,7 @@
 特别鸣谢：
 感谢同属GPLv3项目的哔哩终端，因为播放器部分借鉴的哔哩终端的Java代码
 感谢同是开发第三方前端的如能的“三方小趣”的经验榜实现，我通过抓包借鉴了其api请求参数
+部分图标使用了图标包Whicons中的图标。
+虽然Whicons图标包许可证是CC BY-SA 4.0
+但知识共享组织官方表示，CC BY-SA 4.0 是一个“兼容 GPLv3 的协议”
+见https://creativecommons.org/2015/10/08/cc-by-sa-4-0-now-one-way-compatible-with-gplv3/
