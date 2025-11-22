@@ -50,7 +50,7 @@ fun MyPostsScreen(
     }
     
     // 简化的标题逻辑 - 不再需要复杂的标题设置
-    val title = "我的帖子"
+    val title = "用户帖子"
     
     BaseComposeListScreen(
         title = title,
