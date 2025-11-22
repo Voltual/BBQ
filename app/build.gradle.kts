@@ -3,20 +3,20 @@ plugins {
     id("kotlin-android")
     id("com.google.devtools.ksp") version "2.2.21-2.0.4"
     kotlin("plugin.serialization") version "2.2.21" //Kotlin 序列化插件
-    id("com.google.protobuf") version "0.9.4") // 添加 protobuf 插件
-    id("org.jetbrains.kotlin.plugin.compose") version "2.2.21") //Compose编译器
+    id("com.google.protobuf") version "0.9.4" // 修复：移除多余括号
+    id("org.jetbrains.kotlin.plugin.compose") version "2.2.21" // 修复：移除多余括号
 }
 
 android {
-    namespace = "cc.bbq.xq" // 修正包名以匹配项目
+    namespace = "cc.bbq.xq"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "cc.bbq.xq" // 修正包名以匹配项目
+        applicationId = "cc.bbq.xq"
         minSdk = 21
         targetSdk = 34
         versionCode = 356
-        versionName = "13.5" // 更新版本名以作区分
+        versionName = "13.5"
         multiDexEnabled = true
         buildConfigField("String", "LICENSE", "\"GPLv3\"")
         // 修复：使用新的 localeFilters 替代过时的 resourceConfigurations
@@ -58,14 +58,13 @@ android {
         buildConfig = true
     }
 
-    // 修复：移除第61行多余的引号
     packaging {
         resources {
             excludes.add("/META-INF/{AL2.0,LGPL2.1}")
         }
     }
 
-    // 修复：使用新的 compilerOptions DSL 替代过时的 kotlinOptions
+    // 修复：使用新的 compilerOptions DSL
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -111,20 +110,20 @@ dependencies {
     // ===== ROOM 数据库依赖 =====
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
-    implementation("androidx.room:room-ktx:$room_version") // Kotlin Coroutines 支持
+    implementation("androidx.room:room-ktx:$room_version")
     implementation("io.insert-koin:koin-androidx-compose:4.0.4")
-    ksp("androidx.room:room-compiler:$room_version") // 使用 KSP 注解处理器
+    ksp("androidx.room:room-compiler:$room_version")
 
     // ===== Ktor 客户端依赖 =====
     val ktor_version = "2.3.13"
     implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("io.ktor:ktor-client-okhttp:$ktor_version") // 使用 OkHttp 引擎
+    implementation("io.ktor:ktor-client-okhttp:$ktor_version")
     implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
     implementation("io.ktor:ktor-utils:$ktor_version")
     implementation("io.ktor:ktor-io:$ktor_version")
     implementation("io.ktor:ktor-client-logging:$ktor_version")
-    implementation("io.ktor:ktor-client-auth:$ktor_version") // 认证支持
+    implementation("io.ktor:ktor-client-auth:$ktor_version")
 
     // ===== kotlinx.serialization =====
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
@@ -136,13 +135,13 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:4.27.0" // Or the latest version
+        artifact = "com.google.protobuf:protoc:4.27.0"
     }
     generateProtoTasks {
         all().forEach { task ->
             task.builtins {
-                create("kotlin") // This enables Kotlin code generation
-                create("java") // This enables Kotlin code generation
+                create("kotlin")
+                create("java")
             }
         }
     }
