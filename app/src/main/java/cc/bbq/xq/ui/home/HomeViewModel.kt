@@ -73,78 +73,78 @@ class HomeViewModel : ViewModel() {
     }
 
     fun loadUserData(context: Context, forceRefresh: Boolean = false) {
-    viewModelScope.launch {
-        val userCredentialsFlow = AuthManager.getCredentials(context)
-        val userCredentials = userCredentialsFlow.first()
-        
-        // 检查用户是否已登录
-        if (userCredentials == null || userCredentials.userId == 0L) {
-            uiState.value = uiState.value.copy(
-                showLoginPrompt = true,
-                isLoading = false,
-                dataLoadState = DataLoadState.NotLoaded
-            )
-            return@launch // 未登录，直接返回
-        }
+        viewModelScope.launch {
+            val userCredentialsFlow = AuthManager.getCredentials(context)
+            val userCredentials = userCredentialsFlow.first()
 
-        // 如果数据已经加载且不是强制刷新，则跳过
-        if (!forceRefresh && uiState.value.dataLoadState == DataLoadState.Loaded) {
-            return@launch
-        }
-
-        try {
-            uiState.value = uiState.value.copy(
-                isLoading = true,
-                dataLoadState = DataLoadState.Loading
-            )
-
-            // 使用 KtorClient 发起网络请求
-            val response = withContext(Dispatchers.IO) {
-                KtorClient.ApiServiceImpl.getUserInfo(token = userCredentials.token)
+            // 检查用户是否已登录
+            if (userCredentials == null || userCredentials.userId == 0L) {
+                uiState.value = uiState.value.copy(
+                    showLoginPrompt = true,
+                    isLoading = false,
+                    dataLoadState = DataLoadState.NotLoaded
+                )
+                return@launch // 未登录，直接返回
             }
 
-            response.onSuccess { result ->
-                result.data.let { userData ->
-                    // 计算时间差（创建时间到上次签到时间）
-                    val daysDiff = calculateDaysDiff(
-                        userData.create_time,
-                        userData.signlasttime
-                    )
+            // 如果数据已经加载且不是强制刷新，则跳过
+            if (!forceRefresh && uiState.value.dataLoadState == DataLoadState.Loaded) {
+                return@launch
+            }
 
+            try {
+                uiState.value = uiState.value.copy(
+                    isLoading = true,
+                    dataLoadState = DataLoadState.Loading
+                )
+
+                // 使用 KtorClient 发起网络请求
+                val response = withContext(Dispatchers.IO) {
+                    KtorClient.ApiServiceImpl.getUserInfo(token = userCredentials.token)
+                }
+
+                response.onSuccess { result ->
+                    result.data.let { userData ->
+                        // 计算时间差（创建时间到上次签到时间）
+                        val daysDiff = calculateDaysDiff(
+                            userData.create_time,
+                            userData.signlasttime
+                        )
+
+                        uiState.value = uiState.value.copy(
+                            showLoginPrompt = false,
+                            avatarUrl = userData.usertx,
+                            nickname = userData.nickname,
+                            level = userData.hierarchy,
+                            coins = userData.money.toString(),
+                            userId = userData.username,
+                            followersCount = userData.followerscount.toString(),
+                            fansCount = userData.fanscount.toString(),
+                            postsCount = userData.postcount.toString(),
+                            likesCount = userData.likecount.toString(),
+                            seriesDays = userData.series_days,
+                            createTime = userData.create_time,
+                            lastSignTime = userData.signlasttime,
+                            displayDaysDiff = daysDiff,
+                            isLoading = false,
+                            exp = userData.exp,
+                            dataLoadState = DataLoadState.Loaded
+                        )
+                    }
+                }.onFailure { _ ->
                     uiState.value = uiState.value.copy(
-                        showLoginPrompt = false,
-                        avatarUrl = userData.usertx,
-                        nickname = userData.nickname,
-                        level = userData.hierarchy,
-                        coins = userData.money.toString(),
-                        userId = userData.username,
-                        followersCount = userData.followerscount.toString(),
-                        fansCount = userData.fanscount.toString(),
-                        postsCount = userData.postcount.toString(),
-                        likesCount = userData.likecount.toString(),
-                        seriesDays = userData.series_days,
-                        createTime = userData.create_time,
-                        lastSignTime = userData.signlasttime,
-                        displayDaysDiff = daysDiff,
                         isLoading = false,
-                        exp = userData.exp,
-                        dataLoadState = DataLoadState.Loaded
+                        dataLoadState = DataLoadState.Error
                     )
                 }
-            }.onFailure { _ ->
+            } catch (e: Exception) {
                 uiState.value = uiState.value.copy(
                     isLoading = false,
                     dataLoadState = DataLoadState.Error
                 )
             }
-        } catch (e: Exception) {
-            uiState.value = uiState.value.copy(
-                isLoading = false,
-                dataLoadState = DataLoadState.Error
-            )
         }
     }
-}
 
     // 强制刷新用户数据
     fun refreshUserData(context: Context) {
@@ -252,7 +252,7 @@ class HomeViewModel : ViewModel() {
     }
 
     // 新增：显示 Snackbar 的方法
-    fun showSnackbar(message: String) {
+    fun showSnackbar( @Suppress("UNUSED_PARAMETER")context: Context,message: String) {
         viewModelScope.launch {
             snackbarHostState.value?.showSnackbar(message)
         }
