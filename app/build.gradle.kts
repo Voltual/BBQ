@@ -1,10 +1,9 @@
-// app/build.gradle.kts
-
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("com.google.devtools.ksp") version "1.9.23-1.0.20"
     kotlin("plugin.serialization") version "1.9.23" //Kotlin 序列化插件
+    id("com.google.protobuf") version "0.9.4" // 添加 protobuf 插件
 }
 
 android {
@@ -15,8 +14,8 @@ android {
         applicationId = "cc.bbq.xq" // 修正包名以匹配项目
         minSdk = 21
         targetSdk = 34
-        versionCode = 351
-        versionName = "13.2" // 更新版本名以作区分
+        versionCode = 350
+        versionName = "13.1" // 更新版本名以作区分
         multiDexEnabled = true
         buildConfigField("String", "LICENSE", "\"GPLv3\"")
         resourceConfigurations.add("zh-rCN")
@@ -68,28 +67,13 @@ android {
     }
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions {
-        jvmTarget = "17"
-        freeCompilerArgs += "-XXLanguage:+UnitConversionsOnArbitraryExpressions"
-    }
-}
-
-
 dependencies {
     // ===== 基础依赖 =====
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
-//移除Retrofit    implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.google.android.material:material:1.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.github.chrisbanes:PhotoView:2.3.0")
-
-    // ===== 移除Moshi 依赖 =====
-//    implementation("com.squareup.moshi:moshi:1.15.1")
-//    implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
-//    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
-//    ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.1")
 
     // ===== Compose 全家桶 =====
     implementation(platform("androidx.compose:compose-bom:2025.01.01"))
@@ -111,23 +95,24 @@ dependencies {
     // ===== 播放器依赖 =====
     implementation("com.sdtv.haikan:ijkplayer:0.0.2")
     implementation(project(":DanmakuFlameMaster"))
-    
-     // 用于颜色提取
+
+    // 用于颜色提取
     implementation("androidx.palette:palette-ktx:1.0.0")
-    
+
     // ===== ROOM 数据库依赖 =====
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version") // Kotlin Coroutines 支持
     implementation("io.insert-koin:koin-androidx-compose:4.0.4")
     ksp("androidx.room:room-compiler:$room_version") // 使用 KSP 注解处理器
-        // ===== Ktor 客户端依赖 =====
+
+    // ===== Ktor 客户端依赖 =====
     val ktor_version = "2.3.13"
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("io.ktor:ktor-client-okhttp:$ktor_version") // 使用 OkHttp 引擎
     implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
-    implementation("io.ktor:ktor-utils:$ktor_version") 
+    implementation("io.ktor:ktor-utils:$ktor_version")
     implementation("io.ktor:ktor-io:$ktor_version")
     implementation("io.ktor:ktor-client-logging:$ktor_version")
     implementation("io.ktor:ktor-client-auth:$ktor_version") // 认证支持
@@ -135,5 +120,29 @@ dependencies {
     // ===== kotlinx.serialization =====
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
+    // ===== protobuf 依赖 =====
+    implementation("com.google.protobuf:protobuf-kotlin-lite:3.25.3")
+    implementation("com.google.protobuf:protoc:3.25.3")
 }
 
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.3"
+    }
+    generateProtoTasks {
+        all().forEach {
+            it.plugins {
+                create("kotlin") {
+                    option("lite")
+                }
+            }
+        }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+        freeCompilerArgs += "-XXLanguage:+UnitConversionsOnArbitraryExpressions"
+    }
+}
