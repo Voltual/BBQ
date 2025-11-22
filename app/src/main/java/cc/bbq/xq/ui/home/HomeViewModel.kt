@@ -73,72 +73,78 @@ class HomeViewModel : ViewModel() {
     }
 
     fun loadUserData(context: Context, forceRefresh: Boolean = false) {
-        // 将实际的加载逻辑移到一个协程中
-        viewModelScope.launch {
-            val userCredentialsFlow = AuthManager.getCredentials(context)
-            val userCredentials = userCredentialsFlow.first()
-            if (userCredentials == null) return@launch // 如果没有凭证，则不加载数据
+    viewModelScope.launch {
+        val userCredentialsFlow = AuthManager.getCredentials(context)
+        val userCredentials = userCredentialsFlow.first()
+        
+        // 检查用户是否已登录
+        if (userCredentials == null || userCredentials.userId == 0L) {
+            uiState.value = uiState.value.copy(
+                showLoginPrompt = true,
+                isLoading = false,
+                dataLoadState = DataLoadState.NotLoaded
+            )
+            return@launch // 未登录，直接返回
+        }
 
-            // 如果数据已经加载且不是强制刷新，则跳过
-            if (!forceRefresh && uiState.value.dataLoadState == DataLoadState.Loaded) {
-                return@launch
+        // 如果数据已经加载且不是强制刷新，则跳过
+        if (!forceRefresh && uiState.value.dataLoadState == DataLoadState.Loaded) {
+            return@launch
+        }
+
+        try {
+            uiState.value = uiState.value.copy(
+                isLoading = true,
+                dataLoadState = DataLoadState.Loading
+            )
+
+            // 使用 KtorClient 发起网络请求
+            val response = withContext(Dispatchers.IO) {
+                KtorClient.ApiServiceImpl.getUserInfo(token = userCredentials.token)
             }
 
-            
-            try {
-                uiState.value = uiState.value.copy(
-                    isLoading = true,
-                    dataLoadState = DataLoadState.Loading
-                )
+            response.onSuccess { result ->
+                result.data.let { userData ->
+                    // 计算时间差（创建时间到上次签到时间）
+                    val daysDiff = calculateDaysDiff(
+                        userData.create_time,
+                        userData.signlasttime
+                    )
 
-                // 使用 KtorClient 发起网络请求
-                val response = withContext(Dispatchers.IO) {
-                    //KtorClient.instance.getUserInfo(token = credentials.third)
-                    KtorClient.ApiServiceImpl.getUserInfo(token = userCredentials.token)
-                }
-
-                response.onSuccess { result ->
-                    result.data.let { userData ->
-                        // 计算时间差（创建时间到上次签到时间）
-                        val daysDiff = calculateDaysDiff(
-                            userData.create_time,
-                            userData.signlasttime
-                        )
-
-                        uiState.value = uiState.value.copy(
-                            showLoginPrompt = false,
-                            avatarUrl = userData.usertx,
-                            nickname = userData.nickname,
-                            level = userData.hierarchy,
-                            coins = userData.money.toString(),
-                            userId = userData.username,
-                            followersCount = userData.followerscount.toString(),
-                            fansCount = userData.fanscount.toString(),
-                            postsCount = userData.postcount.toString(),
-                            likesCount = userData.likecount.toString(),
-                            seriesDays = userData.series_days,
-                            createTime = userData.create_time,
-                            lastSignTime = userData.signlasttime,
-                            displayDaysDiff = daysDiff,
-                            isLoading = false,
-                            exp = userData.exp, // 更新经验值
-                            dataLoadState = DataLoadState.Loaded
-                        )
-                    }
-                }.onFailure { _ ->
                     uiState.value = uiState.value.copy(
+                        showLoginPrompt = false,
+                        avatarUrl = userData.usertx,
+                        nickname = userData.nickname,
+                        level = userData.hierarchy,
+                        coins = userData.money.toString(),
+                        userId = userData.username,
+                        followersCount = userData.followerscount.toString(),
+                        fansCount = userData.fanscount.toString(),
+                        postsCount = userData.postcount.toString(),
+                        likesCount = userData.likecount.toString(),
+                        seriesDays = userData.series_days,
+                        createTime = userData.create_time,
+                        lastSignTime = userData.signlasttime,
+                        displayDaysDiff = daysDiff,
                         isLoading = false,
-                        dataLoadState = DataLoadState.Error
+                        exp = userData.exp,
+                        dataLoadState = DataLoadState.Loaded
                     )
                 }
-            } catch (e: Exception) {
+            }.onFailure { _ ->
                 uiState.value = uiState.value.copy(
                     isLoading = false,
                     dataLoadState = DataLoadState.Error
                 )
             }
+        } catch (e: Exception) {
+            uiState.value = uiState.value.copy(
+                isLoading = false,
+                dataLoadState = DataLoadState.Error
+            )
         }
     }
+}
 
     // 强制刷新用户数据
     fun refreshUserData(context: Context) {

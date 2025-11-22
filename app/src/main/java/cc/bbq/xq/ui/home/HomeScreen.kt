@@ -605,7 +605,7 @@ private fun Divider(
 }
 
 data class HomeState(
-    val showLoginPrompt: Boolean = false,
+    val showLoginPrompt: Boolean = true,
     val isLoading: Boolean = false,
     val avatarUrl: String? = null,
     val nickname: String = "BBQ用户",
