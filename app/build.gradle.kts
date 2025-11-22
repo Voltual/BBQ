@@ -133,6 +133,7 @@ protobuf {
             all().forEach { task ->
                 task.builtins {
                     create("kotlin") // This enables Kotlin code generation
+                    create("java") // This enables Kotlin code generation
                 }
             }
         }
