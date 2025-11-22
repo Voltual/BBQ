@@ -109,8 +109,8 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
                         uploadAvatar(
                             context = context,
                             uri = uri,
-                            coroutineScope = coroutineScope,
-                            snackbarHostState = snackbarHostState,
+//                            coroutineScope = coroutineScope,
+//                            snackbarHostState = snackbarHostState,
                             onProgress = { message ->
                                 showProgressDialog = true
                                 progressMessage = message
