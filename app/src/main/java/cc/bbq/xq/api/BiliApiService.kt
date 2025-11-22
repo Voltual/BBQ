@@ -139,7 +139,7 @@ object BiliApiManager {
         /**
          * 安全地执行 Ktor 请求，并处理异常和重试
          */
-        private suspend inline fun <reified T> safeApiCall(block: suspend () -> T): Result<T> {
+        private inline fun <reified T> safeApiCall(block: suspend () -> T): Result<T> {
             var attempts = 0
             while (attempts < MAX_RETRIES) {
                 try {
