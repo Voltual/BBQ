@@ -137,7 +137,6 @@ fun BBQCard(
     }
 }
 
-// 新增：支持全局背景的卡片
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BBQBackgroundCard(
@@ -145,13 +144,26 @@ fun BBQBackgroundCard(
     onClick: (() -> Unit)? = null,
     border: BorderStroke? = null,
     shape: Shape = AppShapes.medium,
-//    backgroundAlpha: Float = 0.1f,
+    backgroundAlpha: Float = 0.9f, // 可以调整内容区域的不透明度
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
     val globalBackgroundUriState = ThemeColorStore.getGlobalBackgroundUriFlow(context).collectAsState(initial = null)
     val globalBackgroundUri by globalBackgroundUriState
 
+    // 如果没有全局背景图片，使用普通卡片
+    if (globalBackgroundUri == null) {
+        BBQCard(
+            modifier = modifier,
+            onClick = onClick,
+            border = border,
+            shape = shape,
+            content = content
+        )
+        return
+    }
+
+    // 有背景图片时使用特殊卡片
     Card(
         modifier = modifier,
         onClick = onClick ?: {},
@@ -165,22 +177,20 @@ fun BBQBackgroundCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // 全局背景图片
-            if (globalBackgroundUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(model = globalBackgroundUri),
-                    contentDescription = "Global Background",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .matchParentSize()
-                )
-            }
+            Image(
+                painter = rememberAsyncImagePainter(model = globalBackgroundUri),
+                contentDescription = "Global Background",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .matchParentSize()
+            )
 
-            // 内容区域（不透明，确保文字可读）
+            // 内容区域（半透明，确保文字可读）
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = backgroundAlpha))
             ) {
                 content()
             }
