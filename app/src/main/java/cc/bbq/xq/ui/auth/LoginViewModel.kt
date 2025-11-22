@@ -73,9 +73,11 @@ class LoginViewModel(
             _isLoading.value = true
             _errorMessage.value = null
             try {
-                val context = getApplication()
-                // 更明确地处理 Flow<String>
-                val deviceId: String = AuthManager.getDeviceId(context).first()
+                // 显式转换为 Application 类型
+                val context: Application = getApplication()
+                // 显式指定 Flow 的类型为 String
+                val deviceIdFlow: Flow<String> = AuthManager.getDeviceId(context)
+                val deviceId = deviceIdFlow.first()
                 val loginResult = KtorClient.ApiServiceImpl.login(
                     username = _username.value,
                     password = _password.value,
@@ -115,9 +117,11 @@ class LoginViewModel(
             _isLoading.value = true
             _errorMessage.value = null
             try {
-                val context = getApplication()
-                // 更明确地处理 Flow<String>
-                val deviceId: String = AuthManager.getDeviceId(context).first()
+                // 显式转换为 Application 类型
+                val context: Application = getApplication()
+                // 显式指定 Flow 的类型为 String
+                val deviceIdFlow: Flow<String> = AuthManager.getDeviceId(context)
+                val deviceId = deviceIdFlow.first()
 
                 val registerResult = KtorClient.ApiServiceImpl.register(
                     username = _username.value,
@@ -152,9 +156,11 @@ class LoginViewModel(
 
     private suspend fun loginAfterRegister() {
         try {
-            val context = getApplication()
-            // 更明确地处理 Flow<String>
-            val deviceId: String = AuthManager.getDeviceId(context).first()
+            // 显式转换为 Application 类型
+            val context: Application = getApplication()
+            // 显式指定 Flow 的类型为 String
+             val deviceIdFlow: Flow<String> = AuthManager.getDeviceId(context)
+                val deviceId = deviceIdFlow.first()
             val loginResult = KtorClient.ApiServiceImpl.login(
                 username = _username.value,
                 password = _password.value,
@@ -187,8 +193,10 @@ class LoginViewModel(
     }
 
     private suspend fun saveCredentialsAndNotifySuccess(usertoken: String, userId: Long) {
+        // 显式转换为 Application 类型
+        val context: Application = getApplication()
         AuthManager.saveCredentials(
-            getApplication(), _username.value, _password.value, usertoken, userId
+            context, _username.value, _password.value, usertoken, userId
         )
         _loginSuccess.value = true
     }
