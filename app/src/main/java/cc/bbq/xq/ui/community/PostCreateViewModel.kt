@@ -391,3 +391,4 @@ sealed class PostStatus {
     object Loading : PostStatus()
     object Success : PostStatus()
     data class Error(val message: String) : PostStatus()
+}
