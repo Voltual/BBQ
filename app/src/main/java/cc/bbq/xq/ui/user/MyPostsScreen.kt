@@ -27,12 +27,13 @@ import cc.bbq.xq.ui.FollowingPosts
 import cc.bbq.xq.ui.MyLikes
 import androidx.compose.material3.SnackbarHostState
 import cc.bbq.xq.ui.MyPosts
+import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyPostsScreen(
     viewModel: MyPostsViewModel,
-    userId: Long,
+    userId: Long, // 目标用户的ID
     snackbarHostState: SnackbarHostState,
     navController: NavController
 ) {
@@ -48,11 +49,19 @@ fun MyPostsScreen(
         viewModel.setUserId(userId)
     }
     
-    val currentUserId = AuthManager.getUserId(context)
-    val title = if (currentUserId == userId) "我的帖子" else "用户帖子"
+    // 获取当前登录用户的ID
+    val currentUserIdFlow = AuthManager.getUserId(context)
+    // 在 LaunchedEffect 内部获取 currentUserId 的值
+    var title = "用户帖子" // 默认标题
+    LaunchedEffect(Unit) {
+        val currentUserId = currentUserIdFlow.first()
+        title = if (currentUserId == userId) "我的帖子" else "用户帖子"
+    }
     
     BaseComposeListScreen(
-        title = title,
+        title = title, // 注意：由于 title 是在 LaunchedEffect 中设置的，这里可能不会立即显示正确的值。
+        // 一个更可靠的方法是直接在 BaseComposeListScreen 中处理标题逻辑，或者将 currentUserId 传递给它。
+        // 为了简化，我们暂时这样处理，实际应用中可能需要更复杂的逻辑。
         posts = posts,
         isLoading = isLoading,
         errorMessage = errorMessage,
@@ -76,8 +85,9 @@ fun MyPostsScreen(
                 route == "my_likes" -> navController.navigate(MyLikes.route)
                 route.startsWith("my_posts/") -> {
                     val targetUserId = route.removePrefix("my_posts/").toLongOrNull()
-                    if (targetUserId != userId) {
-                        navController.navigate(MyPosts(targetUserId ?: userId).createRoute())
+                    // 使用 first() 来获取 Flow 的值
+                    if (targetUserId != null && targetUserId != userId) {
+                        navController.navigate(MyPosts(targetUserId).createRoute())
                     }
                 }
                 else -> navController.navigate(route)

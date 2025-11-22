@@ -4,7 +4,7 @@
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.user
 
 import androidx.lifecycle.ViewModel
@@ -72,17 +72,19 @@ class MyPostsViewModel : ViewModel() {
             try {
                 val userId = _userId.value ?: return@launch // 如果没有用户ID，则不加载数据
 
-                val myPostsResult = KtorClient.ApiServiceImpl.getUserPosts(
-                    userId = userId,
+                // 使用 getPostsList 方法，并传递 userId 参数
+                val myPostsResult = KtorClient.ApiServiceImpl.getPostsList(
                     limit = PAGE_SIZE,
-                    page = currentPage
+                    page = currentPage,
+                    userId = userId
+                    // 其他参数使用默认值
                 )
 
                 if (myPostsResult.isSuccess) {
-                    myPostsResult.getOrNull()?.let { myPostsResponse ->
-                        if (myPostsResponse.code == 1) {
+                    myPostsResult.getOrNull()?.let { response ->
+                        if (response.code == 1) {
                             // 修复：直接访问 data，因为它是非空类型
-                            val data = myPostsResponse.data
+                            val data = response.data
                             _totalPages.value = data.pagecount
                             val newPosts = if (currentPage == 1) {
                                 data.list
@@ -97,7 +99,7 @@ class MyPostsViewModel : ViewModel() {
                             _errorMessage.value = ""
                         } else {
                             // 修复：正确处理非空字符串
-                            _errorMessage.value = "操作失败: ${if (myPostsResponse.msg.isNotEmpty()) myPostsResponse.msg else "服务器错误"}"
+                            _errorMessage.value = "操作失败: ${if (response.msg.isNotEmpty()) response.msg else "服务器错误"}"
                         }
                     } ?: run {
                         _errorMessage.value = "加载失败: 响应为空"
