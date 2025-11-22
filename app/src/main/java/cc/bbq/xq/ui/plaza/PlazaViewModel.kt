@@ -2,10 +2,9 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
@@ -232,7 +231,12 @@ class PlazaViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) AuthManager.getUserId(getApplication()) else null
+                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) {
+                    val context = getApplication<Application>().applicationContext
+                    val userCredentialsFlow = AuthManager.getCredentials(context)
+                     val userCredentials = userCredentialsFlow.first()
+                     userCredentials?.userId
+                } else null
                 val result = repository.getAppsList(
                     limit = if (currentMode) 12 else 9,
                     page = popularAppsPage,
@@ -275,7 +279,12 @@ class PlazaViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) AuthManager.getUserId(getApplication()) else null
+                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) {
+                     val context = getApplication<Application>().applicationContext
+                    val userCredentialsFlow = AuthManager.getCredentials(context)
+                     val userCredentials = userCredentialsFlow.first()
+                     userCredentials?.userId
+                } else null
                 val result = repository.getAppsList(
                     limit = if (currentMode) 12 else 9,
                     page = popularAppsPage,
@@ -316,7 +325,12 @@ class PlazaViewModel(
                 // 修复：在"我的资源"或"TA的资源"模式下，需要传递 userId
                 val finalUserId = when {
                     // 如果是"我的资源"模式，使用当前登录用户的ID
-                    isMyResource && currentUserId == null -> AuthManager.getUserId(getApplication())
+                    isMyResource && currentUserId == null ->{
+                       val context = getApplication<Application>().applicationContext
+                        val userCredentialsFlow = AuthManager.getCredentials(context)
+                     val userCredentials = userCredentialsFlow.first()
+                      userCredentials?.userId
+                    }
                     // 如果是"TA的资源"模式，使用指定的 userId
                     currentUserId != null -> currentUserId
                     // 普通资源广场模式，不传递 userId
@@ -359,7 +373,12 @@ class PlazaViewModel(
             try {
                 // 修复：在分页搜索时也传递正确的 userId
                 val finalUserId = when {
-                    currentMode && currentUserId == null -> AuthManager.getUserId(getApplication())
+                    currentMode && currentUserId == null -> {
+                          val context = getApplication<Application>().applicationContext
+                        val userCredentialsFlow = AuthManager.getCredentials(context)
+                         val userCredentials = userCredentialsFlow.first()
+                         userCredentials?.userId
+                    }
                     currentUserId != null -> currentUserId
                     else -> null
                 }
@@ -394,7 +413,7 @@ class PlazaViewModel(
 
     fun searchPrevPage() {
         if (_isLoading.value == true || searchPage <= 1) return
-        _isLoading.value = true
+        _isLoading.postValue(true)
         searchPage--
         currentPage.postValue(searchPage)
 
@@ -402,7 +421,12 @@ class PlazaViewModel(
             try {
                 // 修复：在上一页搜索时也传递正确的 userId
                 val finalUserId = when {
-                    currentMode && currentUserId == null -> AuthManager.getUserId(getApplication())
+                    currentMode && currentUserId == null ->{
+                         val context = getApplication<Application>().applicationContext
+                        val userCredentialsFlow = AuthManager.getCredentials(context)
+                          val userCredentials = userCredentialsFlow.first()
+                          userCredentials?.userId
+                    }
                     currentUserId != null -> currentUserId
                     else -> null
                 }
@@ -453,7 +477,12 @@ class PlazaViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) AuthManager.getUserId(getApplication()) else null
+                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) {
+                    val context = getApplication<Application>().applicationContext
+                    val userCredentialsFlow = AuthManager.getCredentials(context)
+                     val userCredentials = userCredentialsFlow.first()
+                     userCredentials?.userId
+                } else null
                 val result = repository.getAppsList(
                     limit = if (currentMode) 12 else 9,
                     page = page,
@@ -493,7 +522,12 @@ class PlazaViewModel(
             try {
                 // 修复：在跳页搜索时也传递正确的 userId
                 val finalUserId = when {
-                    currentMode && currentUserId == null -> AuthManager.getUserId(getApplication())
+                    currentMode && currentUserId == null ->{
+                         val context = getApplication<Application>().applicationContext
+                        val userCredentialsFlow = AuthManager.getCredentials(context)
+                         val userCredentials = userCredentialsFlow.first()
+                         userCredentials?.userId
+                    }
                     currentUserId != null -> currentUserId
                     else -> null
                 }

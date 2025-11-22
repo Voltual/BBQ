@@ -201,7 +201,7 @@ fun AvatarUploadSection(
     ) {
         if (avatarUri != null) {
             Image(
-                painter = rememberAsyncImagePainter(model = avatarUri),
+                painter = rememberAsyncImagePainter(model = uri),
                 contentDescription = "用户头像",
                 modifier = Modifier
                     .size(120.dp)
@@ -243,54 +243,57 @@ fun uploadAvatar(
     onComplete: () -> Unit = {},
     onError: (String) -> Unit = {}
 ) {
-    val credentials = AuthManager.getCredentials(context)
-
-    coroutineScope.launch(Dispatchers.IO) {
-        try {
-            withContext(Dispatchers.Main) {
-                onProgress("上传头像中...")
-            }
-
-            val realPath = FileUtil.getRealPathFromURI(context, uri)
-            if (realPath == null) {
+    coroutineScope.launch {
+        val userCredentialsFlow = AuthManager.getCredentials(context)
+        val userCredentials = userCredentialsFlow.first()
+           val token = userCredentials?.token
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
                 withContext(Dispatchers.Main) {
-                    onError("无法获取图片路径")
+                    onProgress("上传头像中...")
                 }
-                return@launch
-            }
 
-            val file = File(realPath)
-            val bytes = file.readBytes()
-
-            val appid = 1
-            val token = credentials?.third ?: ""
-
-            val uploadResult = KtorClient.ApiServiceImpl.uploadAvatar(
-                appid = appid,
-                token = token,
-                file = bytes,
-                filename = file.name
-            )
-
-            if (uploadResult.isSuccess) {
-                val response = uploadResult.getOrNull()
-                if (response?.code == 1) {
+                val realPath = FileUtil.getRealPathFromURI(context, uri)
+                if (realPath == null) {
                     withContext(Dispatchers.Main) {
-                        onComplete()
+                        onError("无法获取图片路径")
+                    }
+                    return@launch
+                }
+
+                val file = File(realPath)
+                val bytes = file.readBytes()
+
+                val appid = 1
+                //val token = credentials?.third ?: ""
+
+                val uploadResult = KtorClient.ApiServiceImpl.uploadAvatar(
+                    appid = appid,
+                    token = token!!,
+                    file = bytes,
+                    filename = file.name
+                )
+
+                if (uploadResult.isSuccess) {
+                    val response = uploadResult.getOrNull()
+                    if (response?.code == 1) {
+                        withContext(Dispatchers.Main) {
+                            onComplete()
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            onError("头像上传失败: ${response?.msg ?: "未知错误"}")
+                        }
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        onError("头像上传失败: ${response?.msg ?: "未知错误"}")
+                        onError("头像上传失败: ${uploadResult.exceptionOrNull()?.message ?: "未知错误"}")
                     }
                 }
-            } else {
+            } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    onError("头像上传失败: ${uploadResult.exceptionOrNull()?.message ?: "未知错误"}")
+                    onError("上传错误: ${e.message}")
                 }
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                onError("上传错误: ${e.message}")
             }
         }
     }
@@ -305,33 +308,36 @@ fun saveChanges(
     snackbarHostState: SnackbarHostState,
     onDeviceNameSaved: () -> Unit
 ) {
-    val credentials = AuthManager.getCredentials(context)
-    val token = credentials?.third ?: ""
-
-    coroutineScope.launch(Dispatchers.IO) {
-        try {
-            if (nickname.isNotEmpty()) {
-                val nicknameResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
-                    appid = 1,
-                    token = token,
-                    nickname = nickname,
-                    qq = null
-                )
-                if (nicknameResponse.isSuccess) {
-                    withContext(Dispatchers.Main) {
-                        if (nicknameResponse.getOrNull()?.code == 1) {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = context.getString(R.string.nickname_changed),
-                                    duration = SnackbarDuration.Short
-                                )
-                            }
-                        } else {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar(
-                                    message = context.getString(
-                                        R.string.nickname_change_failed,
-                                        nicknameResponse.getOrNull()?.msg ?: ""
+    coroutineScope.launch {
+        val userCredentialsFlow = AuthManager.getCredentials(context)
+        val userCredentials = userCredentialsFlow.first()
+          val token = userCredentials?.token
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                if (nickname.isNotEmpty()) {
+                    val nicknameResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
+                        appid = 1,
+                        token = token!!,
+                        nickname = nickname,
+                        qq = null
+                    )
+                    if (nicknameResponse.isSuccess) {
+                        withContext(Dispatchers.Main) {
+                            if (nicknameResponse.getOrNull()?.code == 1) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = context.getString(R.string.nickname_changed),
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            } else {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = context.getString(
+                                            R.string.nickname_change_failed,
+                                            nicknameResponse.getOrNull()?.msg ?: ""
+                                        ),
+                                        duration = SnackbarDuration.Short
                                     ),
                                     duration = SnackbarDuration.Short
                                 )
@@ -344,7 +350,7 @@ fun saveChanges(
             if (qqNumber.isNotEmpty()) {
                 val qqResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
                     appid = 1,
-                    token = token,
+                    token = token!!,
                     nickname = null,
                     qq = qqNumber
                 )

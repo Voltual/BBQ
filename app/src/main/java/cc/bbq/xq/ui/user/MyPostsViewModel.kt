@@ -2,7 +2,6 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>。
@@ -18,7 +17,7 @@ import cc.bbq.xq.KtorClient
 import java.io.IOException
 
 class MyPostsViewModel : ViewModel() {
-    private val _posts = MutableStateFlow(emptyList<KtorClient.Post>())
+    private val _posts = MutableStateFlow<List<KtorClient.Post>>(emptyList())
     val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
@@ -30,105 +29,85 @@ class MyPostsViewModel : ViewModel() {
     private var currentPage = 1
     private val _totalPages = MutableStateFlow(1)
     val totalPages: StateFlow<Int> = _totalPages.asStateFlow()
-    // 添加下拉刷新状态
-    private val _isRefreshing = MutableStateFlow(false)
-    private var userId: Long = -1L
 
-    // 添加状态跟踪
-    private var _isInitialized = false
-    private var _currentUserId: Long = -1L
+    // 新增：用户ID状态
+    private val _userId = MutableStateFlow<Long?>(null)
 
+    // 暴露用户ID状态
+    val userId: StateFlow<Long?> = _userId.asStateFlow()
+
+    // 设置用户ID
     fun setUserId(userId: Long) {
-        // 只有当用户ID真正改变时才重置状态
-        if (this._currentUserId != userId) {
-            this.userId = userId
-            this._currentUserId = userId
-            this._isInitialized = false
-            resetState()
-            loadDataIfNeeded()
-        }
-    }
-
-    private fun resetState() {
-        _posts.value = emptyList()
-        currentPage = 1
-        _totalPages.value = 1
-        _errorMessage.value = ""
-    }
-
-    // 内部方法：只在需要时加载数据
-    private fun loadDataIfNeeded() {
-        if (!_isInitialized && userId != -1L && !_isLoading.value) {
-            _isInitialized = true
-            loadData()
-        }
+        _userId.value = userId
+        refresh() // 当用户ID改变时刷新数据
     }
 
     fun jumpToPage(page: Int) {
-        if (page in 1.._totalPages.value) {
+        if (page in 1..totalPages.value) {
             _posts.value = emptyList()
             currentPage = page
-            loadData()
+            loadMyPosts()
         }
-    }
-
-    fun loadInitialData() {
-        // 这个方法现在只是确保数据已加载
-        loadDataIfNeeded()
     }
 
     fun loadNextPage() {
         if (currentPage < totalPages.value && !_isLoading.value) {
             currentPage++
-            loadData()
+            loadMyPosts()
         }
     }
 
     fun refresh() {
-        // 刷新时重置页面但不重置初始化状态
         currentPage = 1
-        loadData()
+        loadMyPosts()
     }
 
-    private fun loadData() {
-        if (_isLoading.value || userId == -1L) return
+    private fun loadMyPosts() {
+        if (_isLoading.value) return
 
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = ""
 
             try {
-                val postsResult = KtorClient.ApiServiceImpl.getPostsList(
+                val userId = _userId.value ?: return@launch // 如果没有用户ID，则不加载数据
+
+                val myPostsResult = KtorClient.ApiServiceImpl.getUserPosts(
+                    userId = userId,
                     limit = PAGE_SIZE,
-                    page = currentPage,
-                    userId = userId
+                    page = currentPage
                 )
 
-                if (postsResult.isSuccess) {
-                    postsResult.getOrNull()?.let { postsResponse ->
-                        if (postsResponse.code == 1) {
-                            postsResponse.data.let { data ->
-                                _totalPages.value = data.pagecount
-                                val newPosts = if (currentPage == 1) {
-                                    data.list
-                                } else {
-                                    _posts.value + data.list
-                                }
-
-                                // 数据去重
-                                val distinctPosts = newPosts.distinctBy { it.postid }
-
-                                _posts.value = distinctPosts
+                if (myPostsResult.isSuccess) {
+                    myPostsResult.getOrNull()?.let { myPostsResponse ->
+                        if (myPostsResponse.code == 1) {
+                            // 修复：直接访问 data，因为它是非空类型
+                            val data = myPostsResponse.data
+                            _totalPages.value = data.pagecount
+                            val newPosts = if (currentPage == 1) {
+                                data.list
+                            } else {
+                                _posts.value + data.list
                             }
+
+                            // 数据去重
+                            val distinctPosts = newPosts.distinctBy { it.postid }
+
+                            _posts.value = distinctPosts
+                            _errorMessage.value = ""
                         } else {
-                            _errorMessage.value = "加载失败: ${postsResponse.msg}"
+                            // 修复：正确处理非空字符串
+                            _errorMessage.value = "操作失败: ${if (myPostsResponse.msg.isNotEmpty()) myPostsResponse.msg else "服务器错误"}"
                         }
+                    } ?: run {
+                        _errorMessage.value = "加载失败: 响应为空"
                     }
                 } else {
-                    _errorMessage.value = "加载失败: ${postsResult.exceptionOrNull()?.message ?: "未知错误"}"
+                    val exceptionMessage = myPostsResult.exceptionOrNull()?.message
+                    _errorMessage.value = "加载失败: ${exceptionMessage ?: "未知错误"}"
                 }
-            } catch (e: Exception) {
-                _errorMessage.value = "网络错误: ${e.message}"
+            } catch (e: IOException) {
+                _errorMessage.value = "网络异常: ${e.message ?: "未知错误"}"
             } finally {
                 _isLoading.value = false
             }
