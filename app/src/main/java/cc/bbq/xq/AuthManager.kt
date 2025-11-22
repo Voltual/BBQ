@@ -16,6 +16,7 @@ import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.dataStoreFile
 import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKey
+import cc.bbq.xq.data.proto.UserCredentials
 import cc.bbq.xq.data.proto.UserCredentialsSerializer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
