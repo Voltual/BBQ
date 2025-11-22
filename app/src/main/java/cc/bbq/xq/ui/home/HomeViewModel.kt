@@ -21,8 +21,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
-import cc.bbq.xq.data.proto.UserCredentialsKt
-import cc.bbq.xq.data.proto.UserCredentials
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
@@ -77,19 +75,9 @@ class HomeViewModel : ViewModel() {
         // 将实际的加载逻辑移到一个协程中
         viewModelScope.launch {
             // 显式指定类型
-            val userCredentialsFlow = AuthManager.getCredentials(context)
+            val userCredentialsFlow: Flow<AuthManager.UserCredentials?> = AuthManager.getCredentials(context)
             val userCredentials = userCredentialsFlow.first()
-            if (userCredentials != null && userCredentials.userId > 0) {
-    tryAutoLogin(
-        userCredentials.username, 
-        userCredentials.password, 
-        context, 
-        navController, 
-        snackbarHostState
-    )
-}
-}
-
+            if (userCredentials == null) return@launch // 如果没有凭证，则不加载数据
 
             // 如果数据已经加载且不是强制刷新，则跳过
             if (!forceRefresh && uiState.value.dataLoadState == DataLoadState.Loaded) {
@@ -169,7 +157,6 @@ class HomeViewModel : ViewModel() {
     fun signIn(context: Context) {
         // 将实际的签到逻辑移到一个协程中
         viewModelScope.launch {
-             // 显式指定类型
             val userCredentialsFlow = AuthManager.getCredentials(context)
             val userCredentials = userCredentialsFlow.first()
             val token = userCredentials?.token ?: ""

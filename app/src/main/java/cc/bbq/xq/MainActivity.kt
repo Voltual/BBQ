@@ -402,22 +402,21 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) {
 
     val drawerHeaderBackgroundUri = if (useDarkTheme) darkBgUri else lightBgUri
 
+    // 新增：检查用户是否已登录
+    val isLoggedIn = remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         val context = context
         val userCredentialsFlow = AuthManager.getCredentials(context)
         val userCredentials = userCredentialsFlow.first()
-if (userCredentials != null && userCredentials.userId > 0) {
-    tryAutoLogin(
-        userCredentials.username, 
-        userCredentials.password, 
-        context, 
-        navController, 
-        snackbarHostState
-    )
-}
-}
+        // 检查 userCredentials 是否存在，且 username 和 password 都不为空
+        isLoggedIn.value =  userCredentials.userId != 0L
 
-        
+        // 只有在用户已登录的情况下才尝试自动登录
+        if (isLoggedIn.value) {
+            tryAutoLogin(userCredentials!!.username, userCredentials.password, context, navController, snackbarHostState) // 传递 snackbarHostState
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
