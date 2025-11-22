@@ -84,7 +84,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Save Gradle cache
-        if: ${{ success() }}
         uses: actions/cache@v3
         with:
           path: |
