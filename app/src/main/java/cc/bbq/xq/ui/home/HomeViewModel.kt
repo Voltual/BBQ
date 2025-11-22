@@ -79,7 +79,16 @@ class HomeViewModel : ViewModel() {
             // 显式指定类型
             val userCredentialsFlow = AuthManager.getCredentials(context)
             val userCredentials = userCredentialsFlow.first()
-            if (userCredentials == null) return@launch // 如果没有凭证，则不加载数据
+            if (userCredentials != null && userCredentials.userId > 0) {
+    tryAutoLogin(
+        userCredentials.username, 
+        userCredentials.password, 
+        context, 
+        navController, 
+        snackbarHostState
+    )
+}
+}
 
             // 如果数据已经加载且不是强制刷新，则跳过
             if (!forceRefresh && uiState.value.dataLoadState == DataLoadState.Loaded) {
