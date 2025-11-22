@@ -417,6 +417,7 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) {
             tryAutoLogin(userCredentials!!.username, userCredentials.password, context, navController, snackbarHostState) // 传递 snackbarHostState
         }
     }
+    
 
     ModalNavigationDrawer(
         drawerState = drawerState,
