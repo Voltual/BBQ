@@ -14,6 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.res.painterResource
 import cc.bbq.xq.data.proto.UserCredentialsKt
+import cc.bbq.xq.data.proto.UserCredentials
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
