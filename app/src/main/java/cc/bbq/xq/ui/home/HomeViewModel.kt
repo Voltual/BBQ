@@ -10,7 +10,7 @@ package cc.bbq.xq.ui.home
 import android.content.Context
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import cc.bbq.xq.data.proto.UserCredentials
+import cc.bbq.xq.data.proto.UserCredentialsKt
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
 //import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
