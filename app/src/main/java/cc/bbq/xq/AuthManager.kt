@@ -6,7 +6,6 @@
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
-
 package cc.bbq.xq
 
 import android.content.Context
@@ -36,18 +35,17 @@ object AuthManager {
 
         val authDataStoreFile = context.dataStoreFile(DATA_STORE_FILE_NAME)
 
+        // 修复 EncryptedFile.Builder 调用
         val encryptedFile = EncryptedFile.Builder(
-            authDataStoreFile,
             context,
+            authDataStoreFile,
             masterKey,
             EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB
         ).build()
 
         encryptedAuthDataStore = DataStoreFactory.create(
             serializer = UserCredentialsSerializer(context = context),
-            produceFile = {
-                authDataStoreFile
-            }
+            produceFile = { authDataStoreFile }
         )
     }
 
@@ -59,7 +57,7 @@ object AuthManager {
         token: String,
         userId: Long
     ) {
-        encryptedAuthDataStore.updateData {
+        encryptedAuthDataStore.updateData { currentCredentials ->
             UserCredentials.newBuilder()
                 .setUsername(username)
                 .setPassword(password)
@@ -78,22 +76,22 @@ object AuthManager {
     // 新增方法：单独获取userid
     fun getUserId(context: Context): Flow<Long> {
         return encryptedAuthDataStore.data
-            .map { userCredentials ->
+            .map { userCredentials: UserCredentials? ->
                 userCredentials?.userId ?: -1L
             }
     }
 
     // --- 清除凭证 ---
     suspend fun clearCredentials(context: Context) {
-        encryptedAuthDataStore.updateData {
-            UserCredentials.newBuilder().build() // 设置为空
+        encryptedAuthDataStore.updateData { currentCredentials ->
+            UserCredentials.getDefaultInstance()
         }
     }
 
     // --- 获取设备ID ---
     fun getDeviceId(context: Context): Flow<String> {
         return encryptedAuthDataStore.data
-            .map { userCredentials ->
+            .map { userCredentials: UserCredentials? ->
                 userCredentials?.deviceId ?: generateDeviceId()
             }
     }
@@ -117,7 +115,7 @@ object AuthManager {
             val username = String(Base64.decode(encodedUser, Base64.DEFAULT))
             val password = String(Base64.decode(encodedPass, Base64.DEFAULT))
 
-            encryptedAuthDataStore.updateData {
+            encryptedAuthDataStore.updateData { currentCredentials ->
                 UserCredentials.newBuilder()
                     .setUsername(username)
                     .setPassword(password)

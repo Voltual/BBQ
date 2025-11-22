@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import cc.bbq.xq.data.proto.UserCredentials
 import io.ktor.client.plugins.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*

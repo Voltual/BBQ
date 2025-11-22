@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
+import cc.bbq.xq.data.proto.UserCredentials
 import java.util.UUID
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.core.edit
