@@ -783,7 +783,8 @@ fun HsvColorPickerDialog(
             TextButton(onClick = onDismiss) {
                 Text("取消")
             }
-        }
+        },
+        shape = AppShapes.medium // 应用 AppShapes.medium
     )
 }
 
