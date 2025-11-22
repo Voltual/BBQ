@@ -35,7 +35,7 @@ object SineShopClient {
     private const val SOCKET_TIMEOUT = 30000L
 
     // 用户代理信息 - 需要根据实际设备信息调整
-    private const val USER_AGENT = "SineMarket:2025102601;Device:vivo-k6891v1_64_k419;Hash:-2123531342;Token:c9a6fadfc15e8c37419fe495be733cd363"
+    private const val USER_AGENT = "Token:占位符"
 
     // Ktor HttpClient 实例
     val httpClient = HttpClient(OkHttp) {
@@ -91,7 +91,8 @@ object SineShopClient {
     /**
      * 安全地执行 Ktor 请求，并处理异常和重试
      */
-    internal  inline fun <reified T> safeApiCall(crossinline block: suspend () -> HttpResponse): Result<T> {
+     @Suppress("RedundantSuspendModifier")
+    internal  suspend fun <reified T> safeApiCall( block: suspend () -> HttpResponse): Result<T> {
         var attempts = 0
         while (attempts < MAX_RETRIES) {
             try {
