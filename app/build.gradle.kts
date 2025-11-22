@@ -121,26 +121,23 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     // ===== protobuf 依赖 =====
-    implementation("com.google.protobuf:protobuf-kotlin-lite:3.25.3")
-    implementation("com.google.protobuf:protoc:3.25.3")
+    implementation("com.google.protobuf:protobuf-kotlin:4.27.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }
 
 protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:3.25.3"
-    }
-    generateProtoTasks {
-        all().forEach {
-            it.plugins {
-                create("kotlin") {
-                    option("lite")
+        protoc {
+            artifact = "com.google.protobuf:protoc:4.27.0" // Or the latest version
+        }
+        generateProtoTasks {
+            all().forEach { task ->
+                task.builtins {
+                    create("kotlin") // This enables Kotlin code generation
                 }
             }
         }
     }
 }
-
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     kotlinOptions {
         jvmTarget = "17"
