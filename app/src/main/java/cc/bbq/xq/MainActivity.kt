@@ -238,7 +238,7 @@ private fun tryAutoLogin(
     CoroutineScope(Dispatchers.IO).launch {
         try {
             val deviceId = AuthManager.getDeviceId(context).first()
-            val loginResult = KtorClient.ApiServiceImpl.login(
+            val result = KtorClient.ApiServiceImpl.login(
                 username = username,
                 password = password,
                 device = deviceId
@@ -273,7 +273,7 @@ private fun tryAutoLogin(
                             navController.navigate(Login.route)
                         }
                     }
-                    result.isFailure -> {
+                    else -> {
                         AuthManager.clearCredentials(context)
                         val exception = result.exceptionOrNull()
                         val errorMsg = when (exception) {
