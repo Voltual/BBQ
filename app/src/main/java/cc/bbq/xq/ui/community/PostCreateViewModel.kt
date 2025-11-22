@@ -33,6 +33,7 @@ import io.ktor.http.content.*
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.HttpResponse
 import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.flow.Flow // 添加导入
 
 class PostCreateViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -86,17 +87,19 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     // 新增：恢复草稿方法
+    // 修改 restoreDraft 方法，因为 imageUriToUrlMap 不再是 DraftDto 的一部分
     private fun restoreDraft(draft: PostDraftRepository.DraftDto) {
         _uiState.update {
             it.copy(
                 title = draft.title,
                 content = draft.content,
                 imageUrls = draft.imageUrls,
-                imageUriToUrlMap = draft.imageUriToUrlMap,
+                // imageUriToUrlMap 不再从草稿中恢复，它是在上传图片时构建的
                 selectedSubsectionId = draft.subsectionId
             )
         }
     }
+
 
     // 新增：处理对话框操作
     fun onRestoreDialogConfirm() {
@@ -182,9 +185,10 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 val uploadResult = uploadImageKtor(bytes, file.name)
 
                 if (uploadResult.isSuccess) {
-                    uploadResult.getOrNull()?.let {
+                    uploadResult.getOrNull()?.let { imageUrl ->
                         _uiState.update { currentState ->
-                            val newUrlMap = currentState.imageUriToUrlMap + (uri to it) // 修改
+                            // 构建新的 imageUriToUrlMap
+                            val newUrlMap = currentState.imageUriToUrlMap + (uri to imageUrl)
                             val newUrls = newUrlMap.values.joinToString(",")
                             currentState.copy(
                                 imageUrls = newUrls,
@@ -262,7 +266,8 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
             try {
                 val context = getApplication()
-                val userCredentialsFlow = AuthManager.getCredentials(context)
+                // 显式指定类型
+                val userCredentialsFlow: Flow<AuthManager.UserCredentials?> = AuthManager.getCredentials(context)
                 val userCredentials = userCredentialsFlow.first()
                 if (userCredentials == null) {
                     _postStatus.value = PostStatus.Error("请先登录")
@@ -369,6 +374,7 @@ data class PostCreateUiState(
     val content: String = "",
     val selectedSubsectionId: Int = 11,
     val imageUrls: String = "",
+    // 将 imageUriToUrlMap 移到 UI 状态中
     val imageUriToUrlMap: Map<Uri, String> = emptyMap(),
     val showProgressDialog: Boolean = false,
     val progressMessage: String = ""
@@ -385,4 +391,3 @@ sealed class PostStatus {
     object Loading : PostStatus()
     object Success : PostStatus()
     data class Error(val message: String) : PostStatus()
-}

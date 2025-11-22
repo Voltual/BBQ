@@ -74,9 +74,8 @@ class LoginViewModel(
             _errorMessage.value = null
             try {
                 val context = getApplication()
-                // 显式指定 Flow 的类型为 String
-                val deviceIdFlow: Flow<String> = AuthManager.getDeviceId(context)
-                val deviceId = deviceIdFlow.first()
+                // 更明确地处理 Flow<String>
+                val deviceId: String = AuthManager.getDeviceId(context).first()
                 val loginResult = KtorClient.ApiServiceImpl.login(
                     username = _username.value,
                     password = _password.value,
@@ -117,9 +116,8 @@ class LoginViewModel(
             _errorMessage.value = null
             try {
                 val context = getApplication()
-                // 显式指定 Flow 的类型为 String
-                val deviceIdFlow: Flow<String> = AuthManager.getDeviceId(context)
-                val deviceId = deviceIdFlow.first()
+                // 更明确地处理 Flow<String>
+                val deviceId: String = AuthManager.getDeviceId(context).first()
 
                 val registerResult = KtorClient.ApiServiceImpl.register(
                     username = _username.value,
@@ -155,9 +153,8 @@ class LoginViewModel(
     private suspend fun loginAfterRegister() {
         try {
             val context = getApplication()
-            // 显式指定 Flow 的类型为 String
-             val deviceIdFlow: Flow<String> = AuthManager.getDeviceId(context)
-                val deviceId = deviceIdFlow.first()
+            // 更明确地处理 Flow<String>
+            val deviceId: String = AuthManager.getDeviceId(context).first()
             val loginResult = KtorClient.ApiServiceImpl.login(
                 username = _username.value,
                 password = _password.value,
