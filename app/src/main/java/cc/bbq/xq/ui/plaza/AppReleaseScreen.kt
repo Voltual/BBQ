@@ -155,7 +155,7 @@ SubcomposeAsyncImage(
         Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
     }
 )
-
+}
             item { FormTextField(label = "应用名称", state = viewModel.appName) }
             item {
                 FormTextField(
