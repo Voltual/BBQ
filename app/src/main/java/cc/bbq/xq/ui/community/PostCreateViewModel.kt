@@ -87,19 +87,19 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
         observeAndAutoSave()
     }
 
-    //草稿方法
+    // 新增：恢复草稿方法
+    // 修改 restoreDraft 方法，因为 imageUriToUrlMap 不再是 DraftDto 的一部分
     private fun restoreDraft(draft: PostDraftRepository.DraftDto) {
-    val previewUrls = draft.imageUrls.split(",").filter { it.isNotBlank() }
-    _uiState.update {
-        it.copy(
-            title = draft.title,
-            content = draft.content,
-            imageUrls = draft.imageUrls,
-            previewImageUrls = previewUrls,
-            selectedSubsectionId = draft.subsectionId
-        )
+        _uiState.update {
+            it.copy(
+                title = draft.title,
+                content = draft.content,
+                imageUrls = draft.imageUrls,
+                // imageUriToUrlMap 不再从草稿中恢复，它是在上传图片时构建的
+                selectedSubsectionId = draft.subsectionId
+            )
+        }
     }
-}
 
 
     // 新增：处理对话框操作
@@ -162,174 +162,173 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun uploadImage(uri: Uri) {
-    if (_preferencesState.value.noStoreDraft) {
-        showSnackbar("草稿存储已禁用")
-        return
-    }
-
-    viewModelScope.launch {
-        _uiState.update { it.copy(showProgressDialog = true, progressMessage = "上传图片中...") }
-
-        val realPath = withContext(Dispatchers.IO) {
-            val context: Application = getApplication()
-            FileUtil.getRealPathFromURI(context, uri)
+        if (_preferencesState.value.noStoreDraft) {
+            showSnackbar("草稿存储已禁用")
+            return
         }
 
-        if (realPath == null) {
-            _uiState.update { it.copy(showProgressDialog = false) }
-            showSnackbar("无法获取图片路径")
-            return@launch
-        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(showProgressDialog = true, progressMessage = "上传图片中...") }
 
-        try {
-            val file = File(realPath)
-            val bytes = file.readBytes()
-            val uploadResult = uploadImageKtor(bytes, file.name)
+            val realPath = withContext(Dispatchers.IO) {
+                // 显式转换为 Application 类型
+                val context: Application = getApplication()
+                FileUtil.getRealPathFromURI(context, uri)
+            }
 
-            if (uploadResult.isSuccess) {
-                uploadResult.getOrNull()?.let { imageUrl ->
-                    _uiState.update { currentState ->
-                        // 更新预览URL列表
-                        val newPreviewUrls = currentState.previewImageUrls + imageUrl
-                        val newUrls = (currentState.imageUrls.split(",").filter { it.isNotBlank() } + imageUrl).joinToString(",")
-                        currentState.copy(
-                            imageUrls = newUrls,
-                            previewImageUrls = newPreviewUrls,
-                            showProgressDialog = false
-                        )
-                    }
-                    showSnackbar("图片上传成功")
-                }
-            } else {
-                showSnackbar("上传失败: ${uploadResult.exceptionOrNull()?.message}")
+            if (realPath == null) {
                 _uiState.update { it.copy(showProgressDialog = false) }
-            }
-        } catch (e: Exception) {
-            showSnackbar("上传错误: ${e.message}")
-            _uiState.update { it.copy(showProgressDialog = false) }
-        } finally {
-            _uiState.update { it.copy(showProgressDialog = false) }
-        }
-    }
-}
-
-    private suspend fun uploadImageKtor(fileBytes: ByteArray, fileName: String): Result<String> {
-    return withContext(Dispatchers.IO) {
-        try {
-            val response: HttpResponse = KtorClient.uploadHttpClient.post("api.php") {
-                setBody(
-                    MultiPartFormDataContent(
-                        formData {
-                            append("file", fileBytes, Headers.build {
-                                append(HttpHeaders.ContentType, "image/jpeg")
-                                append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
-                            })
-                        }
-                    )
-                )
-            }
-
-            val responseBody = response.bodyAsText()
-            // 修复：使用 downurl 而不是 viewurl
-            val imageUrl = responseBody.substringAfter("\"downurl\":\"").substringBefore("\"").trim()            
-            
-            Result.success(imageUrl)
-        } catch (e: Exception) {
-            println("上传错误: ${e.message}")
-            Result.failure(e)
-        }
-    }
-}
-
-    fun removeImage(imageUrl: String) {
-    if (!_preferencesState.value.noStoreDraft) {
-        _uiState.update { currentState ->
-            val newPreviewUrls = currentState.previewImageUrls - imageUrl
-            val currentUrlsList = currentState.imageUrls.split(",").filter { it.isNotBlank() }
-            val newUrlsList = currentUrlsList - imageUrl
-            currentState.copy(
-                imageUrls = newUrlsList.joinToString(","),
-                previewImageUrls = newPreviewUrls
-            )
-        }
-    }
-}
-
-    fun createPost(
-    title: String,
-    imageUrls: String, // 这个参数已经是合并后的图片URL字符串
-    subsectionId: Int,
-    bvNumber: String,
-    tempDeviceName: String,
-    mode: String,
-    refundAppId: Long = 0L,
-    refundVersionId: Long = 0L,
-    refundPayMoney: Int = 0,
-    selectedRefundReason: String = ""
-) {
-    viewModelScope.launch {
-        _postStatus.value = PostStatus.Loading
-
-        try {
-            val context: Application = getApplication()
-            val userCredentialsFlow = AuthManager.getCredentials(context)
-            val userCredentials = userCredentialsFlow.first()
-            if (userCredentials == null) {
-                _postStatus.value = PostStatus.Error("请先登录")
-                showSnackbar("请先登录")
+                showSnackbar("无法获取图片路径")
                 return@launch
             }
 
-            val token = userCredentials.token
+            try {
+                val file = File(realPath)
+                val bytes = file.readBytes()
+                val uploadResult = uploadImageKtor(bytes, file.name)
 
-            // 直接使用传入的 imageUrls，因为已经在屏幕中合并了
-            val finalContent = if (mode == "refund") {
-                val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
-                """
-                ${_uiState.value.content}
-
-
-                问题类型:$selectedRefundReason
-                系统定制商：${android.os.Build.BRAND.uppercase()}
-                设备型号：${android.os.Build.MODEL}
-                退还金额:$refundPayMoney
-                资源id:$refundAppId
-                资源版本:$refundVersionId 機型：$tempDeviceName｜$videoPart
-                """.trimIndent()
-            } else {
-                val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
-                "${_uiState.value.content} 機型：$tempDeviceName｜$videoPart"
-            }
-
-            val finalSubsectionId = if (mode == "refund") 21 else subsectionId
-
-            val createPostResult = KtorClient.ApiServiceImpl.createPost(
-                appid = 1,
-                token = token,
-                title = title,
-                content = finalContent,
-                sectionId = finalSubsectionId,
-                imageUrls = if (imageUrls.isNotBlank()) imageUrls else null
-            )
-
-            if (createPostResult.isSuccess) {
-                _postStatus.value = PostStatus.Success
-                if (!_preferencesState.value.noStoreDraft) {
-                    draftRepository.clearDraft()
+                if (uploadResult.isSuccess) {
+                    uploadResult.getOrNull()?.let { imageUrl ->
+                        _uiState.update { currentState ->
+                            // 构建新的 imageUriToUrlMap
+                            val newUrlMap = currentState.imageUriToUrlMap + (uri to imageUrl)
+                            val newUrls = newUrlMap.values.joinToString(",")
+                            currentState.copy(
+                                imageUrls = newUrls,
+                                imageUriToUrlMap = newUrlMap,
+                                showProgressDialog = false
+                            )
+                        }
+                        showSnackbar("图片上传成功")
+                    }
+                } else {
+                    showSnackbar("上传失败: ${uploadResult.exceptionOrNull()?.message}")
+                    _uiState.update { it.copy(showProgressDialog = false) }
                 }
-                showSnackbar("发帖成功")
-            } else {
-                val errorMsg = createPostResult.exceptionOrNull()?.message ?: "发帖失败"
-                _postStatus.value = PostStatus.Error(errorMsg)
-                showSnackbar("发帖失败: $errorMsg")
+            } catch (e: Exception) {
+                showSnackbar("上传错误: ${e.message}")
+                _uiState.update { it.copy(showProgressDialog = false) }
+            } finally {
+                _uiState.update { it.copy(showProgressDialog = false) }
             }
-        } catch (e: Exception) {
-            val errorMsg = "网络错误: ${e.message}"
-            _postStatus.value = PostStatus.Error(errorMsg)
-            showSnackbar(errorMsg)
         }
     }
-}
+
+    private suspend fun uploadImageKtor(fileBytes: ByteArray, fileName: String): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response: HttpResponse = KtorClient.uploadHttpClient.post("api.php") {
+                    setBody(
+                        MultiPartFormDataContent(
+                            formData {
+                                append("file", fileBytes, Headers.build {
+                                    append(HttpHeaders.ContentType, "image/jpeg")
+                                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                                })
+                            }
+                        )
+                    )
+                }
+
+                val responseBody = response.bodyAsText()
+                val imageUrl = responseBody.substringAfter("\"viewurl\":\"").substringBefore("\"").trim()
+                Result.success(imageUrl)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    fun removeImage(uri: Uri) {
+        if (!_preferencesState.value.noStoreDraft) {
+            _uiState.update { currentState ->
+                val newUrlMap = currentState.imageUriToUrlMap - uri
+                val newUrls = newUrlMap.values.joinToString(",")
+                currentState.copy(
+                    imageUrls = newUrls,
+                    imageUriToUrlMap = newUrlMap
+                )
+            }
+        }
+    }
+
+    fun createPost(
+        title: String,
+        imageUrls: String,
+        subsectionId: Int,
+        bvNumber: String,
+        tempDeviceName: String,
+        mode: String,
+        refundAppId: Long = 0L,
+        refundVersionId: Long = 0L,
+        refundPayMoney: Int = 0,
+        selectedRefundReason: String = ""
+    ) {
+        viewModelScope.launch {
+            _postStatus.value = PostStatus.Loading
+
+            try {
+                // 显式转换为 Application 类型
+                val context: Application = getApplication()
+                // 显式指定类型
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()
+                if (userCredentials == null) {
+                    _postStatus.value = PostStatus.Error("请先登录")
+                    showSnackbar("请先登录")
+                    return@launch
+                }
+
+                val token = userCredentials.token
+
+                val finalContent = if (mode == "refund") {
+                    val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
+                    """
+                    ${_uiState.value.content}
+
+
+                    问题类型:$selectedRefundReason
+                    系统定制商：${android.os.Build.BRAND.uppercase()}
+                    设备型号：${android.os.Build.MODEL}
+                    退还金额:$refundPayMoney
+                    资源id:$refundAppId
+                    资源版本:$refundVersionId 機型：$tempDeviceName｜$videoPart
+                    """.trimIndent()
+                } else {
+                    val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
+                    "${_uiState.value.content} 機型：$tempDeviceName｜$videoPart"
+                }
+
+                val finalSubsectionId = if (mode == "refund") 21 else subsectionId
+
+                val createPostResult = KtorClient.ApiServiceImpl.createPost(
+                    appid = 1,
+                    token = token,
+                    title = title,
+                    content = finalContent,
+                    sectionId = finalSubsectionId,
+                    imageUrls = if (imageUrls.isNotBlank()) imageUrls else null
+                )
+
+                if (createPostResult.isSuccess) {
+                    _postStatus.value = PostStatus.Success
+                    // 发帖成功后清除草稿
+                    if (!_preferencesState.value.noStoreDraft) {
+                        draftRepository.clearDraft()
+                    }
+                    showSnackbar("发帖成功")
+                } else {
+                    val errorMsg = createPostResult.exceptionOrNull()?.message ?: "发帖失败"
+                    _postStatus.value = PostStatus.Error(errorMsg)
+                    showSnackbar("发帖失败: $errorMsg")
+                }
+            } catch (e: Exception) {
+                val errorMsg = "网络错误: ${e.message}"
+                _postStatus.value = PostStatus.Error(errorMsg)
+                showSnackbar(errorMsg)
+            }
+        }
+    }
 
     fun clearDraft() {
         viewModelScope.launch {
@@ -379,8 +378,8 @@ data class PostCreateUiState(
     val content: String = "",
     val selectedSubsectionId: Int = 11,
     val imageUrls: String = "",
-    // 新增：专门用于预览的图片URL列表
-    val previewImageUrls: List<String> = emptyList(),
+    // 将 imageUriToUrlMap 移到 UI 状态中
+    val imageUriToUrlMap: Map<Uri, String> = emptyMap(),
     val showProgressDialog: Boolean = false,
     val progressMessage: String = ""
 )
