@@ -254,7 +254,6 @@ fun ImagePreviewItem(
         SubcomposeAsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(imageUrl)
-//                .crossfade(true)
                 .build(),
             contentDescription = "预览图片",
             contentScale = ContentScale.Crop,
@@ -263,22 +262,27 @@ fun ImagePreviewItem(
                 .clickable(onClick = onImageClick)
         ) {
             val state = painter.state
-            if (state is AsyncImagePainter.State.Loading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(strokeWidth = 2.dp)
+            // 修复：使用正确的状态检查方式
+            when {
+                state is AsyncImagePainter.State.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(strokeWidth = 2.dp)
+                    }
                 }
-            } else if (state is AsyncImagePainter.State.Error) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
+                state is AsyncImagePainter.State.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
+                    }
                 }
-            } else {
-                SubcomposeAsyncImageContent()
+                else -> {
+                    SubcomposeAsyncImageContent()
+                }
             }
         }
 
@@ -288,12 +292,12 @@ fun ImagePreviewItem(
                 .align(Alignment.TopEnd)
                 .padding(4.dp)
                 .size(20.dp)
-                .background(MaterialTheme.colorScheme.primaryContainer, CircleShape) // 使用 Material You 颜色
+                .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
         ) {
             Icon(
                 imageVector = Icons.Filled.Close,
                 contentDescription = "移除图片",
-                tint = MaterialTheme.colorScheme.onPrimaryContainer, // 使用 Material You 颜色
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(14.dp)
             )
         }

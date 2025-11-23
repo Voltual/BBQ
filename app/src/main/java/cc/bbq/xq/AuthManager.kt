@@ -6,6 +6,7 @@
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+@file:Suppress("DEPRECATION")
 package cc.bbq.xq
 
 import android.content.Context
@@ -28,7 +29,6 @@ object AuthManager {
     private lateinit var encryptedAuthDataStore: DataStore<UserCredentials>
 
     // --- 初始化加密 DataStore ---
-    @Suppress("DEPRECATION")
     fun initialize(context: Context) {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
