@@ -254,7 +254,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
     fun createPost(
     title: String,
-    imageUrls: String,
+    imageUrls: String, // 这个参数已经是合并后的图片URL字符串
     subsectionId: Int,
     bvNumber: String,
     tempDeviceName: String,
@@ -279,25 +279,21 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 
             val token = userCredentials.token
 
-            // 合并预览图片和手动输入的图片
-            val previewUrls = uiState.previewImageUrls
-            val manualUrlsList = manualImageUrls.split(",").filter { it.isNotBlank() }
-            val allImageUrls = (previewUrls + manualUrlsList).distinct().joinToString(",")
-
+            // 直接使用传入的 imageUrls，因为已经在屏幕中合并了
             val finalContent = if (mode == "refund") {
-                    val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
-                    """
-                    ${_uiState.value.content}
+                val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
+                """
+                ${_uiState.value.content}
 
 
-                    问题类型:$selectedRefundReason
-                    系统定制商：${android.os.Build.BRAND.uppercase()}
-                    设备型号：${android.os.Build.MODEL}
-                    退还金额:$refundPayMoney
-                    资源id:$refundAppId
-                    资源版本:$refundVersionId 機型：$tempDeviceName｜$videoPart
-                    """.trimIndent()
-                } else {
+                问题类型:$selectedRefundReason
+                系统定制商：${android.os.Build.BRAND.uppercase()}
+                设备型号：${android.os.Build.MODEL}
+                退还金额:$refundPayMoney
+                资源id:$refundAppId
+                资源版本:$refundVersionId 機型：$tempDeviceName｜$videoPart
+                """.trimIndent()
+            } else {
                 val videoPart = if (bvNumber.isNotBlank()) "【视频：$bvNumber】" else ""
                 "${_uiState.value.content} 機型：$tempDeviceName｜$videoPart"
             }
@@ -310,7 +306,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 title = title,
                 content = finalContent,
                 sectionId = finalSubsectionId,
-                imageUrls = if (allImageUrls.isNotBlank()) allImageUrls else null
+                imageUrls = if (imageUrls.isNotBlank()) imageUrls else null
             )
 
             if (createPostResult.isSuccess) {

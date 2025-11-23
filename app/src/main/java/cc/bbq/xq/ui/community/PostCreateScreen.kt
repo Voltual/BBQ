@@ -155,26 +155,27 @@ fun PostCreateScreen(
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) { // 修正
-            result.data?.data?.let { uri -> // 修正
-                if (uiState.imageUriToUrlMap.size < 2) {
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                // 修复：使用 previewImageUrls 而不是 imageUriToUrlMap
+                if (uiState.previewImageUrls.size < 2) {
                     viewModel.uploadImage(uri)
                 } else {
-                   // android.widget.Toast.makeText(context, "最多只能上传两张图片", android.widget.Toast.LENGTH_SHORT).show()
+                    // android.widget.Toast.makeText(context, "最多只能上传两张图片", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
     val startImagePicker: () -> Unit = {
-    activity?.let {
-        ImagePicker.with(it)
-            .crop()
-            .compress(1024)
-            .maxResultSize(1080, 1080)
-            .createIntent { intent -> imagePickerLauncher.launch(intent) }
+        activity?.let {
+            ImagePicker.with(it)
+                .crop()
+                .compress(1024)
+                .maxResultSize(1080, 1080)
+                .createIntent { intent -> imagePickerLauncher.launch(intent) }
+        }
     }
-}
 
     if (uiState.showProgressDialog) {
         AlertDialog(
@@ -220,49 +221,49 @@ fun PostCreateScreen(
         }
 
         ExposedDropdownMenuBox(
-    expanded = expanded,
-    onExpandedChange = { expanded = it }
-) {
-    OutlinedTextField(
-        modifier = Modifier
-            .fillMaxWidth()
-            .menuAnchor(
-                type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, // 修正这里
-                enabled = true
-            ),
-        readOnly = true,
-        value = selectedTopicName,
-        onValueChange = {},
-        label = { Text(if (isRefundMode) "问题类型" else "选择话题") },
-        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
-    )
-    ExposedDropdownMenu(
-        expanded = expanded,
-        onDismissRequest = { expanded = false }
-    ) {
-        if (isRefundMode) {
-            REFUND_REASONS.forEach { reason ->
-                DropdownMenuItem(
-                    text = { Text(reason.name) },
-                    onClick = {
-                        selectedRefundReason = reason.name
-                        expanded = false
+            expanded = expanded,
+            onExpandedChange = { expanded = it }
+        ) {
+            OutlinedTextField(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(
+                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                        enabled = true
+                    ),
+                readOnly = true,
+                value = selectedTopicName,
+                onValueChange = {},
+                label = { Text(if (isRefundMode) "问题类型" else "选择话题") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                if (isRefundMode) {
+                    REFUND_REASONS.forEach { reason ->
+                        DropdownMenuItem(
+                            text = { Text(reason.name) },
+                            onClick = {
+                                selectedRefundReason = reason.name
+                                expanded = false
+                            }
+                        )
                     }
-                )
-            }
-        } else {
-            SUBSECTIONS.forEach { subsection ->
-                DropdownMenuItem(
-                    text = { Text(subsection.name) },
-                    onClick = {
-                        viewModel.onSubsectionChange(subsection.id)
-                        expanded = false
+                } else {
+                    SUBSECTIONS.forEach { subsection ->
+                        DropdownMenuItem(
+                            text = { Text(subsection.name) },
+                            onClick = {
+                                viewModel.onSubsectionChange(subsection.id)
+                                expanded = false
+                            }
+                        )
                     }
-                )
+                }
             }
         }
-    }
-}
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -307,31 +308,32 @@ fun PostCreateScreen(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-    // 使用 previewImageUrls 而不是 imageUriToUrlMap
-    items(uiState.previewImageUrls) { imageUrl ->
-        ImagePreviewItem(
-            imageUrl = imageUrl,
-            onRemoveClick = {
-                // 直接传递URL进行删除
-                viewModel.removeImage(imageUrl)
-            },
-            onImageClick = {
-                navController.navigate(
-                    ImagePreview(
-                        imageUrl = imageUrl
-                    ).createRoute()
-                )
+                // 使用 previewImageUrls 而不是 imageUriToUrlMap
+                items(uiState.previewImageUrls) { imageUrl ->
+                    ImagePreviewItem(
+                        imageUrl = imageUrl,
+                        onRemoveClick = {
+                            // 直接传递URL进行删除
+                            viewModel.removeImage(imageUrl)
+                        },
+                        onImageClick = {
+                            navController.navigate(
+                                ImagePreview(
+                                    imageUrl = imageUrl
+                                ).createRoute()
+                            )
+                        }
+                    )
+                }
+                if (uiState.previewImageUrls.size < 2) {
+                    item {
+                        OutlinedButton(onClick = startImagePicker, modifier = Modifier.size(80.dp)) {
+                            Icon(Icons.Default.Add, "添加图片")
+                        }
+                    }
+                }
             }
-        )
-    }
-    if (uiState.previewImageUrls.size < 2) {
-        item {
-            OutlinedButton(onClick = startImagePicker, modifier = Modifier.size(80.dp)) {
-                Icon(Icons.Default.Add, "添加图片")
-            }
-        }
-    }
-}
+        } // 修复：这里缺少了闭合括号
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -371,15 +373,15 @@ fun PostCreateScreen(
                 if (uiState.title.isBlank()) {
                     //android.widget.Toast.makeText(context, "请填写标题", android.widget.Toast.LENGTH_SHORT).show()
                 } else if (uiState.content.isBlank()) {
-            //        val message = if (isRefundMode) "请详细描述问题" else "请填写内容"
-                   // android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+                    // val message = if (isRefundMode) "请详细描述问题" else "请填写内容"
+                    // android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
                 } else if (isRefundMode && uiState.content.length < 12) {
                     //android.widget.Toast.makeText(context, "问题描述不能少于12个字", android.widget.Toast.LENGTH_SHORT).show()
                 } else {
-                    // 合并图片URL
-                    val uploadedUrlsList = uiState.imageUrls.split(",").filter { it.isNotBlank() }
+                    // 合并预览图片和手动输入的图片
+                    val previewUrls = uiState.previewImageUrls
                     val manualUrlsList = manualImageUrls.split(",").filter { it.isNotBlank() }
-                    val allImageUrls = (uploadedUrlsList + manualUrlsList).distinct().joinToString(",")
+                    val allImageUrls = (previewUrls + manualUrlsList).distinct().joinToString(",")
 
                     viewModel.createPost(
                         title = uiState.title,
@@ -403,9 +405,9 @@ fun PostCreateScreen(
     }
 }
 
-// 新增：草稿偏好设置组件
+// 新增：草稿偏好设置组件 - 移除 private 修饰符
 @Composable
-private fun DraftPreferencesSection(
+fun DraftPreferencesSection(
     autoRestoreDraft: Boolean,
     noStoreDraft: Boolean,
     onAutoRestoreChange: (Boolean) -> Unit,
