@@ -240,7 +240,6 @@ fun SwitchWithText(
     }
 }
 
-
 @Composable
 fun ImagePreviewItem(
     imageUrl: String,
@@ -260,32 +259,24 @@ fun ImagePreviewItem(
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
-                .clickable(onClick = onImageClick)
-        ) {
-            val state = painter.state
-            // 修复：使用正确的状态检查方式
-            when {
-                state is AsyncImagePainter.State.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(strokeWidth = 2.dp)
-                    }
+                .clickable(onClick = onImageClick),
+            loading = {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(strokeWidth = 2.dp)
                 }
-                state is AsyncImagePainter.State.Error -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
-                    }
-                }
-                else -> {
-                    SubcomposeAsyncImageContent()
+            },
+            error = {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
                 }
             }
-        }
+        )
 
         IconButton(
             onClick = onRemoveClick,
