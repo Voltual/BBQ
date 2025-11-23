@@ -221,12 +221,15 @@ fun PostCreateScreen(
 
         ExposedDropdownMenuBox(
             expanded = expanded,
-            enabled: Boolean = true,
             onExpandedChange = { expanded = it }
         ) {
             OutlinedTextField(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .menuAnchor(
+    type = ExposedDropdownMenuAnchorType.TextField,
+    enabled = true
+)
                     //fixed: remove menuAnchor
                    ,
                 readOnly = true,

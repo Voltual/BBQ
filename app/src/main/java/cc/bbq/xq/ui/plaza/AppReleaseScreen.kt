@@ -407,7 +407,6 @@ private fun CategoryDropdown(viewModel: AppReleaseViewModel) {
         Spacer(modifier = Modifier.height(8.dp))
         ExposedDropdownMenuBox(
             expanded = expanded,
-            enabled: Boolean = true,
             onExpandedChange = { expanded = !expanded }
         ) {
             OutlinedTextField(

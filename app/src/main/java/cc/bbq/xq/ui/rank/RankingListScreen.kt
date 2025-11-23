@@ -63,7 +63,6 @@ fun RankingListScreen(
 
                 ExposedDropdownMenu(
                     expanded = expanded,
-                    enabled: Boolean = true,
                     onDismissRequest = { expanded = false }
                 ) {
                     SortType.values().forEach { sortType ->
