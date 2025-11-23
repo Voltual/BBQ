@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment // 添加这行导入
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
