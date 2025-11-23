@@ -45,9 +45,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build  with Gradle
-        run: |
-                             ./gradlew assembleDebug
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug
 
       - name: Get version info
         id: version
@@ -83,12 +82,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-- name: Save Gradle cache
-  if: always()  # 无论构建成功与否都尝试保存缓存
-  uses: actions/cache@v3
-  with:
-    path: |
-      ~/.gradle/caches
-      ~/.gradle/wrapper
-      ${{ github.workspace }}/.gradle
-    key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle.kts', '**/settings.gradle.kts') }}
+      - name: Save Gradle cache
+        if: always()  # 无论构建成功与否都尝试保存缓存
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ${{ github.workspace }}/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle.kts', '**/settings.gradle.kts') }}
