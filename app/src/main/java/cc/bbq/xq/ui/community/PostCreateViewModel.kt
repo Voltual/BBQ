@@ -6,6 +6,7 @@
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 
+
 package cc.bbq.xq.ui.community
 
 import android.app.Application
