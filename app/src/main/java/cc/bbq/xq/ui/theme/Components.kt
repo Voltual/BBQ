@@ -252,9 +252,7 @@ fun ImagePreviewItem(
             .clip(MaterialTheme.shapes.medium)
     ) {
         SubcomposeAsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(imageUrl)
-                .build(),
+            model = imageUrl, // Coil 3 可以直接使用字符串 URL
             contentDescription = "预览图片",
             contentScale = ContentScale.Crop,
             modifier = Modifier
