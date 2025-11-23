@@ -152,10 +152,13 @@ fun AppReleaseScreen(
                 },
                 error = {
                     Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
-                },
-                content = { // 添加 content lambda
-                    SubcomposeAsyncImageContent()
                 }
+                // 移除 content 参数，因为 loading 和 error 已经包含了状态处理
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                if (iconUrl != null) "当前图标" else "已解析图标",
+                style = MaterialTheme.typography.titleMedium
             )
         }
     }

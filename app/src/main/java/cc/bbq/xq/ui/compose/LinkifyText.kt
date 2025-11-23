@@ -11,7 +11,7 @@ package cc.bbq.xq.ui.compose
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -23,7 +23,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withLink
 import androidx.navigation.NavController
 import cc.bbq.xq.ui.Player
 import cc.bbq.xq.ui.PostDetail
@@ -65,16 +64,17 @@ fun LinkifyText(
     val linkColor = MaterialTheme.colorScheme.primary
 
     val textStyle = if (style.color == Color.Unspecified) {
-        style.copy(color = MaterialTheme.colorScheme.onSurface)
+                style.copy(color = MaterialTheme.colorScheme.onSurface)
     } else {
         style
     }
 
     val annotatedString = remember(text, linkColor) {
         buildAnnotatedString {
+            append(text)
+
             val matches = mutableListOf<LinkMatch>()
 
-            // 首先收集所有匹配的链接
             val postMatcher = INTERNAL_POST_LINK_PATTERN.matcher(text)
             while (postMatcher.find()) {
                 postMatcher.group(1)?.let { postId ->
@@ -117,59 +117,49 @@ fun LinkifyText(
                     )
                 }
             }
-
-            // 按起始位置排序，确保按顺序处理
-            val sortedMatches = matches.sortedBy { it.start }
             
-            var lastIndex = 0
-            sortedMatches.forEach { match ->
-                // 添加匹配前的普通文本
-                if (match.start > lastIndex) {
-                    append(text.substring(lastIndex, match.start))
-                }
-                
-                // 添加带链接的文本
-                withLink(
-                    url = match.type.name to match.text,
+            matches.forEach { match ->
+                addStyle(
                     style = SpanStyle(
                         color = linkColor,
                         textDecoration = TextDecoration.Underline
-                    )
-                ) {
-                    append(text.substring(match.start, match.end))
-                }
-                
-                lastIndex = match.end
-            }
-            
-            // 添加剩余的普通文本
-            if (lastIndex < text.length) {
-                append(text.substring(lastIndex))
+                    ),
+                    start = match.start,
+                    end = match.end
+                )
+                addStringAnnotation(
+                    tag = match.type.name,
+                    annotation = match.text,
+                    start = match.start,
+                    end = match.end
+                )
             }
         }
     }
 
     SelectionContainer(modifier = modifier) {
-        BasicText(
+        ClickableText(
             text = annotatedString,
             style = textStyle,
-            onTextLayout = { layoutResult ->
-                // 可以在这里处理文本布局结果，如果需要的话
-            }
-        ) { offset, linkAnnotation ->
-            // 处理链接点击
-            linkAnnotation?.let { (type, data) ->
-                when (LinkType.valueOf(type)) {
-                    LinkType.POST -> {
-                        data.toLongOrNull()?.let { postId ->
+            onClick = { offset ->
+                annotatedString.getStringAnnotations(tag = LinkType.POST.name, start = offset, end = offset)
+                    .firstOrNull()?.let { annotation ->
+                        annotation.item.toLongOrNull()?.let { postId ->
                             navController.navigate(PostDetail(postId).createRoute())
                         }
+                        return@ClickableText
                     }
-                    LinkType.BILIVIDEO -> {
-                        navController.navigate(Player(data).createRoute())
+
+                annotatedString.getStringAnnotations(tag = LinkType.BILIVIDEO.name, start = offset, end = offset)
+                    .firstOrNull()?.let { annotation ->
+                        val bvid = annotation.item
+                        navController.navigate(Player(bvid).createRoute())
+                        return@ClickableText
                     }
-                    LinkType.URL -> {
-                        var urlToOpen = data
+
+                annotatedString.getStringAnnotations(tag = LinkType.URL.name, start = offset, end = offset)
+                    .firstOrNull()?.let { annotation ->
+                        var urlToOpen = annotation.item
                         if (!urlToOpen.startsWith("http://") && !urlToOpen.startsWith("https://")) {
                             urlToOpen = "http://$urlToOpen"
                         }
@@ -180,8 +170,7 @@ fun LinkifyText(
                             Log.e("LinkifyText", "无法打开URL: $urlToOpen", e)
                         }
                     }
-                }
             }
-        }
+        )
     }
 }
