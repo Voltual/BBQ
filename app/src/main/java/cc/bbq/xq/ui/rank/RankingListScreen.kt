@@ -40,43 +40,45 @@ fun RankingListScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         // 排序选择器
-        Box(
+Box(
+    modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .padding(horizontal = 16.dp, vertical = 8.dp)
+) {
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        TextField(
+            value = state.sortType.displayName,
+            onValueChange = {},
+            readOnly = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                TextField(
-                    value = state.sortType.displayName,
-                    onValueChange = {},
-                    readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // fixed: remove menuAnchor
-                        
+                .menuAnchor( // 添加这行
+                    type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, // 使用正确的类型
+                    enabled = true
                 )
+        )
 
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    SortType.values().forEach { sortType ->
-                        DropdownMenuItem(
-                            text = { Text(sortType.displayName) },
-                            onClick = {
-                                viewModel.changeSortType(sortType)
-                                expanded = false
-                            }
-                        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            SortType.values().forEach { sortType ->
+                DropdownMenuItem(
+                    text = { Text(sortType.displayName) },
+                    onClick = {
+                        viewModel.changeSortType(sortType)
+                        expanded = false
                     }
-                }
+                )
             }
         }
+    }
+}
 
         Box(
             modifier = Modifier

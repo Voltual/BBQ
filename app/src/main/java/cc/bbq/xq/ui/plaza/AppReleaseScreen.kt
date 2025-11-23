@@ -353,8 +353,11 @@ private fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
                 label = { Text("选择上传服务") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
-                    //fixed: remove menuAnchor
                     .fillMaxWidth()
+                    .menuAnchor( // 添加这行
+                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, // 使用正确的类型
+                        enabled = true
+                    )
             )
             ExposedDropdownMenu(
                 expanded = expanded,
@@ -416,8 +419,11 @@ private fun CategoryDropdown(viewModel: AppReleaseViewModel) {
                 label = { Text("选择一个分类") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
-                   //fixed: remove menuAnchor
                     .fillMaxWidth()
+                    .menuAnchor( // 添加这行
+                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, // 使用正确的类型
+                        enabled = true
+                    )
             )
             ExposedDropdownMenu(
                 expanded = expanded,
