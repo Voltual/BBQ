@@ -307,35 +307,31 @@ fun PostCreateScreen(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(uiState.imageUriToUrlMap.values.toList()) { imageUrl -> // 修正
-                    ImagePreviewItem(
-                        imageUrl = imageUrl,
-                        onRemoveClick = {
-                            // 找到与imageUrl对应的uri并移除
-                            val uriToRemove = uiState.imageUriToUrlMap.entries.firstOrNull { it.value == imageUrl }?.key
-                            if (uriToRemove != null) {
-                                viewModel.removeImage(uriToRemove)
-                            }
-                        },
-                        onImageClick = {
-    // 导航到图片预览，并传递 snackbarHostState
-    navController.navigate(
-        ImagePreview(
-            imageUrl = imageUrl
-        ).createRoute()
-    )
-}
-                    )
-                }
-                if (uiState.imageUriToUrlMap.size < 2) {
-                    item {
-                        OutlinedButton(onClick = startImagePicker, modifier = Modifier.size(80.dp)) {
-                            Icon(Icons.Default.Add, "添加图片")
-                        }
-                    }
-                }
+    // 使用 previewImageUrls 而不是 imageUriToUrlMap
+    items(uiState.previewImageUrls) { imageUrl ->
+        ImagePreviewItem(
+            imageUrl = imageUrl,
+            onRemoveClick = {
+                // 直接传递URL进行删除
+                viewModel.removeImage(imageUrl)
+            },
+            onImageClick = {
+                navController.navigate(
+                    ImagePreview(
+                        imageUrl = imageUrl
+                    ).createRoute()
+                )
+            }
+        )
+    }
+    if (uiState.previewImageUrls.size < 2) {
+        item {
+            OutlinedButton(onClick = startImagePicker, modifier = Modifier.size(80.dp)) {
+                Icon(Icons.Default.Add, "添加图片")
             }
         }
+    }
+}
 
         Spacer(modifier = Modifier.height(8.dp))
 
