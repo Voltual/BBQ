@@ -280,7 +280,13 @@ fun ThemeCustomizeScreen(
                 item { HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp)) }
 
                 item {
-                    TabRow(selectedTabIndex = selectedTab, modifier = Modifier.padding(horizontal = 16.dp)) {
+                    // 修复：使用 PrimaryTabRow 替代弃用的 TabRow
+                    PrimaryTabRow(
+                        selectedTabIndex = selectedTab,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ) {
                         Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("日间模式") })
                         Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("夜间模式") })
                     }

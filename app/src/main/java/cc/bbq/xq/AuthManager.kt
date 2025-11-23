@@ -28,6 +28,7 @@ object AuthManager {
     private lateinit var encryptedAuthDataStore: DataStore<UserCredentials>
 
     // --- 初始化加密 DataStore ---
+    @Suppress("DEPRECATION")
     fun initialize(context: Context) {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)

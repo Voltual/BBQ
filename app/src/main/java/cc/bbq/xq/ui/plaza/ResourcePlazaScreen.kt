@@ -171,7 +171,12 @@ fun ResourcePlazaContent(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         } else {
-            ScrollableTabRow(selectedTabIndex = selectedCategoryIndex) {
+            // 修复：使用 PrimaryScrollableTabRow 替代弃用的 ScrollableTabRow
+            PrimaryScrollableTabRow(
+                selectedTabIndex = selectedCategoryIndex,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
                 categories.forEachIndexed { index, category ->
                     Tab(
                         selected = selectedCategoryIndex == index,
