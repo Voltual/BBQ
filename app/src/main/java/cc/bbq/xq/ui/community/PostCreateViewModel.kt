@@ -214,29 +214,32 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
 }
 
     private suspend fun uploadImageKtor(fileBytes: ByteArray, fileName: String): Result<String> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response: HttpResponse = KtorClient.uploadHttpClient.post("api.php") {
-                    setBody(
-                        MultiPartFormDataContent(
-                            formData {
-                                append("file", fileBytes, Headers.build {
-                                    append(HttpHeaders.ContentType, "image/jpeg")
-                                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
-                                })
-                            }
-                        )
+    return withContext(Dispatchers.IO) {
+        try {
+            val response: HttpResponse = KtorClient.uploadHttpClient.post("api.php") {
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("file", fileBytes, Headers.build {
+                                append(HttpHeaders.ContentType, "image/jpeg")
+                                append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                            })
+                        }
                     )
-                }
-
-                val responseBody = response.bodyAsText()
-                val imageUrl = responseBody.substringAfter("\"viewurl\":\"").substringBefore("\"").trim()
-                Result.success(imageUrl)
-            } catch (e: Exception) {
-                Result.failure(e)
+                )
             }
+
+            val responseBody = response.bodyAsText()
+            // 修复：使用 downurl 而不是 viewurl
+            val imageUrl = responseBody.substringAfter("\"downurl\":\"").substringBefore("\"").trim()            
+            
+            Result.success(imageUrl)
+        } catch (e: Exception) {
+            println("上传错误: ${e.message}")
+            Result.failure(e)
         }
     }
+}
 
     fun removeImage(imageUrl: String) {
     if (!_preferencesState.value.noStoreDraft) {
