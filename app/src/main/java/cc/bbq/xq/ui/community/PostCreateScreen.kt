@@ -166,15 +166,15 @@ fun PostCreateScreen(
         }
     }
 
-    val startImagePicker = {
-        activity?.let {
-            ImagePicker.with(it)
-                .crop()
-                .compress(1024)
-                .maxResultSize(1080, 1080)
-                .createIntent { intent -> imagePickerLauncher.launch(intent) } // 这行是正确的
-        }
+    val startImagePicker: () -> Unit = {
+    activity?.let {
+        ImagePicker.with(it)
+            .crop()
+            .compress(1024)
+            .maxResultSize(1080, 1080)
+            .createIntent { intent -> imagePickerLauncher.launch(intent) }
     }
+}
 
     if (uiState.showProgressDialog) {
         AlertDialog(
