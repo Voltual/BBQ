@@ -143,18 +143,22 @@ fun AppReleaseScreen(
     Row(verticalAlignment = Alignment.CenterVertically) {
         val model: Any? = iconUrl ?: localIconUri
         if (model != null) {
-            // 在 AppReleaseScreen.kt 中替换应用图标显示部分
-SubcomposeAsyncImage(
-    model = model,
-    contentDescription = "应用图标",
-    modifier = Modifier.size(64.dp),
-    loading = {
-        CircularProgressIndicator()
-    },
-    error = {
-        Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
+            SubcomposeAsyncImage(
+                model = model,
+                contentDescription = "应用图标",
+                modifier = Modifier.size(64.dp),
+                loading = {
+                    CircularProgressIndicator()
+                },
+                error = {
+                    Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
+                },
+                content = { // 添加 content lambda
+                    SubcomposeAsyncImageContent()
+                }
+            )
+        }
     }
-)
 }
             item { FormTextField(label = "应用名称", state = viewModel.appName) }
             item {
