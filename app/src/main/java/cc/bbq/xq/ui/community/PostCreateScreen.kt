@@ -8,6 +8,7 @@
 package cc.bbq.xq.ui.community
 
 
+
 import android.app.Activity
 import android.net.Uri
 import android.os.Build
