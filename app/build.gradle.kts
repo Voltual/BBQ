@@ -123,7 +123,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
     // ===== protobuf 依赖 =====
-    implementation("com.google.protobuf:protobuf-kotlin-lite:4.32.1")
+    implementation("com.google.protobuf:protobuf-kotlin:4.32.1")
     implementation("androidx.security:security-crypto:1.1.0") // 修复：添加缺失的引号
 }
 
@@ -134,11 +134,8 @@ protobuf {
     generateProtoTasks {
         all().forEach { task ->
             task.builtins {
-                create("java") {
-                    option("lite")
-                }
-                create("kotlin") {
-                    option("lite")
+                create("java") 
+                create("kotlin"))
                 }
             }
         }
