@@ -229,16 +229,13 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
                 )
             }
 
-            // 使用 Ktor 的 JSON 解析而不是字符串截取
-            val uploadResponse: KtorClient.UploadResponse = response.body()
+            val responseBody = response.bodyAsText()
+            // 修复：使用 downurl 而不是 viewurl
+            val imageUrl = responseBody.substringAfter("\"downurl\":\"").substringBefore("\"").trim()            
             
-            // 检查上传是否成功
-            if (uploadResponse.code == 0 && !uploadResponse.viewurl.isNullOrBlank()) {
-                Result.success(uploadResponse.viewurl)
-            } else {
-                Result.failure(Throwable("上传失败: ${uploadResponse.msg}"))
-            }
+            Result.success(imageUrl)
         } catch (e: Exception) {
+            println("上传错误: ${e.message}")
             Result.failure(e)
         }
     }
