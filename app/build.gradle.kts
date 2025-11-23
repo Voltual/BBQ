@@ -137,7 +137,9 @@ protobuf {
                 create("java") {
                     option("lite")
                 }
-                create("kotlin")
+                create("kotlin") {
+                    option("lite")
+                }
             }
         }
     }
