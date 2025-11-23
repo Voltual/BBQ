@@ -45,9 +45,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build  with Gradle
+      - name: Build with Gradle
         run: |
-                                       ./gradlew assembleRelease
+          ./gradlew assembleRelease
 
       - name: Get version info
         id: version
@@ -58,8 +58,8 @@ jobs:
           echo "BUILD_VERSION=${BUILD_NAME}" >> $GITHUB_OUTPUT
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
 
-      # 创建草稿 Release，这样后续可以继续上传文件
-      - name: Create Draft Release and Upload APK
+      # 创建草稿 Release，上传 APK 和 mapping 文件
+      - name: Create Draft Release and Upload Build Artifacts
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v1
         with:
@@ -73,13 +73,24 @@ jobs:
             - 触发于: ${{ github.event.head_commit.message }}
             - 构建时间: ${{ steps.version.outputs.TIMESTAMP }}
             
-            此版本为自动构建的草稿版本，包含未签名的 APK 文件。
-            下载后请手动签名。
-          draft: true  # 关键修改：创建草稿而不是正式发布
+            包含文件:
+            - 未签名的 APK 文件
+            - ProGuard mapping 文件 (用于崩溃分析)
+            
+            **重要**: 下载后请手动签名 APK。
+            
+            ## 崩溃分析
+            如果遇到崩溃，可以使用 mapping.txt 文件还原堆栈跟踪:
+            ```bash
+            # 使用 retrace 工具
+            java -jar retrace.jar mapping.txt crash.txt
+            ```
+          draft: true
           prerelease: false
           files: |
             app/build/outputs/apk/release/*.apk
             app/build/outputs/apk/debug/*.apk
+            app/build/outputs/mapping/release/mapping.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
