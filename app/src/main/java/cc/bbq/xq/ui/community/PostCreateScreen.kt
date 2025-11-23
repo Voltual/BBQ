@@ -221,6 +221,7 @@ fun PostCreateScreen(
 
         ExposedDropdownMenuBox(
             expanded = expanded,
+            enabled: Boolean = true,
             onExpandedChange = { expanded = it }
         ) {
             OutlinedTextField(

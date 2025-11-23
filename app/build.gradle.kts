@@ -123,8 +123,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
     // ===== protobuf 依赖 =====
-    implementation("com.google.protobuf:protobuf-kotlin:4.32.1")
-    implementation("androidx.security:security-crypto:1.1.0") // 修复：添加缺失的引号
+    implementation("com.google.protobuf:protobuf-kotlin:4.32.1")//永远不要用lite!
+    implementation("androidx.security:security-crypto:1.1.0") // 加密库
 }
 
 protobuf {
@@ -135,7 +135,7 @@ protobuf {
         all().forEach { task ->
             task.builtins {
                 create("java") {
-                    // 移除 option("lite")
+                    //去TM的lite，lite版本使用反射会被R8混淆
                 }
                 create("kotlin") {
                     // 移除 option("lite")
