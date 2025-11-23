@@ -220,51 +220,49 @@ fun PostCreateScreen(
         }
 
         ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it }
-        ) {
-            OutlinedTextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(
-    type = ExposedDropdownMenuAnchorType.TextField,
-    enabled = true
-)
-                    //fixed: remove menuAnchor
-                   ,
-                readOnly = true,
-                value = selectedTopicName,
-                onValueChange = {},
-                label = { Text(if (isRefundMode) "问题类型" else "选择话题") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
-            )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                if (isRefundMode) {
-                    REFUND_REASONS.forEach { reason ->
-                        DropdownMenuItem(
-                            text = { Text(reason.name) },
-                            onClick = {
-                                selectedRefundReason = reason.name
-                                expanded = false
-                            }
-                        )
+    expanded = expanded,
+    onExpandedChange = { expanded = it }
+) {
+    OutlinedTextField(
+        modifier = Modifier
+            .fillMaxWidth()
+            .menuAnchor(
+                type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, // 修正这里
+                enabled = true
+            ),
+        readOnly = true,
+        value = selectedTopicName,
+        onValueChange = {},
+        label = { Text(if (isRefundMode) "问题类型" else "选择话题") },
+        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
+    )
+    ExposedDropdownMenu(
+        expanded = expanded,
+        onDismissRequest = { expanded = false }
+    ) {
+        if (isRefundMode) {
+            REFUND_REASONS.forEach { reason ->
+                DropdownMenuItem(
+                    text = { Text(reason.name) },
+                    onClick = {
+                        selectedRefundReason = reason.name
+                        expanded = false
                     }
-                } else {
-                    SUBSECTIONS.forEach { subsection ->
-                        DropdownMenuItem(
-                            text = { Text(subsection.name) },
-                            onClick = {
-                                viewModel.onSubsectionChange(subsection.id)
-                                expanded = false
-                            }
-                        )
+                )
+            }
+        } else {
+            SUBSECTIONS.forEach { subsection ->
+                DropdownMenuItem(
+                    text = { Text(subsection.name) },
+                    onClick = {
+                        viewModel.onSubsectionChange(subsection.id)
+                        expanded = false
                     }
-                }
+                )
             }
         }
+    }
+}
 
         Spacer(modifier = Modifier.height(16.dp))
 
