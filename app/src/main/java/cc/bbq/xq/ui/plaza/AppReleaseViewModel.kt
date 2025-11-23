@@ -23,7 +23,6 @@ import kotlinx.coroutines.Dispatchers
 import io.ktor.utils.io.core.Input
 import io.ktor.utils.io.core.readBytes
 import java.io.FileInputStream
-import io.ktor.util.InternalAPI
 import io.ktor.utils.io.streams.asInput
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,7 +47,6 @@ enum class ApkUploadService(val displayName: String) {
     WANYUEYUN("挽悦云")
 }
 
-@OptIn(InternalAPI::class)
 private fun createStreamInputProvider(file: File): InputProvider {
     return InputProvider { file.inputStream().asInput() }
 }
