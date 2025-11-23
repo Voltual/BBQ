@@ -2,9 +2,9 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("com.google.devtools.ksp") version "2.2.21-2.0.4"
-    kotlin("plugin.serialization") version "2.2.21" //Kotlin 序列化插件
-    id("com.google.protobuf") version "0.9.5" // 修复：移除多余括号
-    id("org.jetbrains.kotlin.plugin.compose") version "2.2.21" // 修复：移除多余括号
+    kotlin("plugin.serialization") version "2.2.21"
+    id("com.google.protobuf") version "0.9.5"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.2.21"
 }
 
 android {
@@ -19,7 +19,6 @@ android {
         versionName = "13.5"
         multiDexEnabled = true
         buildConfigField("String", "LICENSE", "\"GPLv3\"")
-        // 修复：使用新的 localeFilters 替代过时的 resourceConfigurations
         resourceConfigurations += listOf("zh")
         vectorDrawables {
             useSupportLibrary = true
@@ -62,12 +61,6 @@ android {
         resources {
             excludes.add("/META-INF/{AL2.0,LGPL2.1}")
         }
-    }
-
-    // 修复：使用新的 compilerOptions DSL
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
     
     kotlin {
@@ -131,26 +124,25 @@ dependencies {
 
     // ===== protobuf 依赖 =====
     implementation("com.google.protobuf:protobuf-kotlin-lite:4.32.1")
-    implementation("androidx.security:security-crypto:1.1.0)
+    implementation("androidx.security:security-crypto:1.1.0") // 修复：添加缺失的引号
 }
 
 protobuf {
-        protoc {
-            artifact = "com.google.protobuf:protoc:4.32.1"
-        }
-        generateProtoTasks {
-            all().forEach { task ->
-                task.builtins {
-                    create("java") {
-                        option("lite")
-                    }
-                    create("kotlin")
+    protoc {
+        artifact = "com.google.protobuf:protoc:4.32.1"
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("java") {
+                    option("lite")
                 }
+                create("kotlin")
             }
         }
     }
-}    
-// 修复：使用新的 compilerOptions DSL
+}
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
