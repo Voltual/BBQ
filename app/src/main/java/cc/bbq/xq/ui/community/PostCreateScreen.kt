@@ -38,7 +38,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.AuthManager
-import coil3.compose.rememberAsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.flow.first
 import cc.bbq.xq.ui.theme.ImagePreviewItem // 导入 ImagePreviewItem
@@ -155,25 +155,24 @@ fun PostCreateScreen(
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { uri ->
-                // 修复：使用 previewImageUrls 而不是 imageUriToUrlMap
-                if (uiState.previewImageUrls.size < 2) {
+        if (result.resultCode == Activity.RESULT_OK) { // 修正
+            result.data?.data?.let { uri -> // 修正
+                if (uiState.imageUriToUrlMap.size < 2) {
                     viewModel.uploadImage(uri)
                 } else {
-                    // android.widget.Toast.makeText(context, "最多只能上传两张图片", android.widget.Toast.LENGTH_SHORT).show()
+                   // android.widget.Toast.makeText(context, "最多只能上传两张图片", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
-    val startImagePicker: () -> Unit = {
+    val startImagePicker = {
         activity?.let {
             ImagePicker.with(it)
                 .crop()
                 .compress(1024)
                 .maxResultSize(1080, 1080)
-                .createIntent { intent -> imagePickerLauncher.launch(intent) }
+                .createIntent { intent -> imagePickerLauncher.launch(intent) } // 这行是正确的
         }
     }
 
@@ -227,10 +226,8 @@ fun PostCreateScreen(
             OutlinedTextField(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(
-                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                        enabled = true
-                    ),
+                    //fixed: remove menuAnchor
+                   ,
                 readOnly = true,
                 value = selectedTopicName,
                 onValueChange = {},
@@ -308,24 +305,27 @@ fun PostCreateScreen(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // 使用 previewImageUrls 而不是 imageUriToUrlMap
-                items(uiState.previewImageUrls) { imageUrl ->
+                items(uiState.imageUriToUrlMap.values.toList()) { imageUrl -> // 修正
                     ImagePreviewItem(
                         imageUrl = imageUrl,
                         onRemoveClick = {
-                            // 直接传递URL进行删除
-                            viewModel.removeImage(imageUrl)
+                            // 找到与imageUrl对应的uri并移除
+                            val uriToRemove = uiState.imageUriToUrlMap.entries.firstOrNull { it.value == imageUrl }?.key
+                            if (uriToRemove != null) {
+                                viewModel.removeImage(uriToRemove)
+                            }
                         },
                         onImageClick = {
-                            navController.navigate(
-                                ImagePreview(
-                                    imageUrl = imageUrl
-                                ).createRoute()
-                            )
-                        }
+    // 导航到图片预览，并传递 snackbarHostState
+    navController.navigate(
+        ImagePreview(
+            imageUrl = imageUrl
+        ).createRoute()
+    )
+}
                     )
                 }
-                if (uiState.previewImageUrls.size < 2) {
+                if (uiState.imageUriToUrlMap.size < 2) {
                     item {
                         OutlinedButton(onClick = startImagePicker, modifier = Modifier.size(80.dp)) {
                             Icon(Icons.Default.Add, "添加图片")
@@ -333,7 +333,7 @@ fun PostCreateScreen(
                     }
                 }
             }
-        } // 修复：这里缺少了闭合括号
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -373,15 +373,15 @@ fun PostCreateScreen(
                 if (uiState.title.isBlank()) {
                     //android.widget.Toast.makeText(context, "请填写标题", android.widget.Toast.LENGTH_SHORT).show()
                 } else if (uiState.content.isBlank()) {
-                    // val message = if (isRefundMode) "请详细描述问题" else "请填写内容"
-                    // android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+            //        val message = if (isRefundMode) "请详细描述问题" else "请填写内容"
+                   // android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
                 } else if (isRefundMode && uiState.content.length < 12) {
                     //android.widget.Toast.makeText(context, "问题描述不能少于12个字", android.widget.Toast.LENGTH_SHORT).show()
                 } else {
-                    // 合并预览图片和手动输入的图片
-                    val previewUrls = uiState.previewImageUrls
+                    // 合并图片URL
+                    val uploadedUrlsList = uiState.imageUrls.split(",").filter { it.isNotBlank() }
                     val manualUrlsList = manualImageUrls.split(",").filter { it.isNotBlank() }
-                    val allImageUrls = (previewUrls + manualUrlsList).distinct().joinToString(",")
+                    val allImageUrls = (uploadedUrlsList + manualUrlsList).distinct().joinToString(",")
 
                     viewModel.createPost(
                         title = uiState.title,
@@ -405,9 +405,9 @@ fun PostCreateScreen(
     }
 }
 
-// 新增：草稿偏好设置组件 - 移除 private 修饰符
+// 新增：草稿偏好设置组件
 @Composable
-fun DraftPreferencesSection(
+private fun DraftPreferencesSection(
     autoRestoreDraft: Boolean,
     noStoreDraft: Boolean,
     onAutoRestoreChange: (Boolean) -> Unit,
