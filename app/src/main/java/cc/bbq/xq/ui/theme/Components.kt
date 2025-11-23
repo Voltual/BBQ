@@ -40,7 +40,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
 import androidx.compose.foundation.layout.width // 添加正确的导入路径
 // --- 新增导入 ---
 import androidx.compose.ui.draw.clip
@@ -52,11 +52,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape // 确保导入 CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.Arrangement
-import coil.compose.SubcomposeAsyncImage // 确保导入 SubcomposeAsyncImage
-import coil.compose.rememberAsyncImagePainter
-import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImageContent
-import coil.request.ImageRequest // 确保导入 ImageRequest
+import coil3.compose.SubcomposeAsyncImage // 确保导入 SubcomposeAsyncImage
+import coil3.compose.rememberAsyncImagePainter
+import coil3.compose.AsyncImagePainter
+import coil3.compose.SubcomposeAsyncImageContent
+import coil3.request.ImageRequest // 确保导入 ImageRequest
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarData
 import androidx.compose.material3.SnackbarHost

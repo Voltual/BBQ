@@ -32,8 +32,8 @@ import androidx.compose.ui.unit.dp
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.R
 import cc.bbq.xq.ui.user.UserListViewModel
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterialApi::class)

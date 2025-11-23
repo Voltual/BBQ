@@ -36,7 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import coil.load
+import coil3.load
 import com.github.chrisbanes.photoview.PhotoView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -102,9 +102,9 @@ fun ImagePreviewScreen(
                 update = { frameLayout ->
                     val photoView = frameLayout.getChildAt(0) as PhotoView
                     photoView.load(imageUrl) {
-                        size(coil.size.Size.ORIGINAL)
-                        diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                        memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                        size(coil3.size.Size.ORIGINAL)
+                        diskCachePolicy(coil3.request.CachePolicy.ENABLED)
+                        memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
                     }
                 },
                 modifier = Modifier.fillMaxSize()

@@ -13,7 +13,7 @@ import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import androidx.navigation.NavController
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.clickable

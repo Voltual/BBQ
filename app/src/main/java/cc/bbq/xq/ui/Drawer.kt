@@ -29,7 +29,7 @@ import androidx.navigation.NavDestination
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.R
 import cc.bbq.xq.data.DrawerMenuDataStore
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch

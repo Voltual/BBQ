@@ -36,7 +36,7 @@ import cc.bbq.xq.ui.theme.billing_expense
 import cc.bbq.xq.ui.theme.billing_expense_dark
 import cc.bbq.xq.ui.theme.billing_income
 import cc.bbq.xq.ui.theme.billing_income_dark
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
 import androidx.compose.ui.graphics.vector.ImageVector
 
 @Composable

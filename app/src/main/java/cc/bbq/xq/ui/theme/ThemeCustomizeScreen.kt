@@ -11,7 +11,7 @@ package cc.bbq.xq.ui.theme
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
 import android.content.res.Configuration
 import android.net.Uri
 import android.util.DisplayMetrics

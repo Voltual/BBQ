@@ -61,8 +61,8 @@ import cc.bbq.xq.AuthManager
 import cc.bbq.xq.ui.*
 import cc.bbq.xq.ui.community.PostDetailViewModel
 import cc.bbq.xq.ui.compose.LinkifyText
-import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.AsyncImage
+import coil3.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*

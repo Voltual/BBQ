@@ -34,7 +34,7 @@ import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.DeviceNameDataStore
 import cc.bbq.xq.util.FileUtil
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

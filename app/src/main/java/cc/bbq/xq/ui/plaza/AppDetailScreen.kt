@@ -44,7 +44,7 @@ import androidx.navigation.NavController
 import cc.bbq.xq.ui.*
 import cc.bbq.xq.ui.community.compose.CommentDialog
 import cc.bbq.xq.ui.community.compose.CommentItem
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterialApi::class)

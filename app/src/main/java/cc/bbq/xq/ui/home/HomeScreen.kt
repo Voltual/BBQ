@@ -65,7 +65,7 @@ import androidx.compose.ui.unit.sp
 import cc.bbq.xq.R
 import cc.bbq.xq.ui.theme.AppShapes
 import cc.bbq.xq.ui.theme.BBQBackgroundCard
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import cc.bbq.xq.MainActivity
 import cc.bbq.xq.ui.*
 

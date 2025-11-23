@@ -39,7 +39,7 @@ import androidx.navigation.NavController
 import cc.bbq.xq.ui.*
 import cc.bbq.xq.ui.community.compose.CommentItem
 import cc.bbq.xq.ui.compose.LinkifyText
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator

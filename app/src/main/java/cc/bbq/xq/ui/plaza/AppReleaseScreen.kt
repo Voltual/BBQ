@@ -45,10 +45,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cc.bbq.xq.ui.theme.BBQButton
 import cc.bbq.xq.ui.theme.BBQOutlinedButton
-import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
-import coil.request.ImageRequest
+import coil3.compose.AsyncImagePainter
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageContent
+import coil3.request.ImageRequest
 import cc.bbq.xq.ui.theme.ImagePreviewItem // 导入 ImagePreviewItem
 import cc.bbq.xq.R
 import kotlinx.coroutines.launch
