@@ -59,15 +59,17 @@ object ApkParser {
                 pm.getPackageArchiveInfo(archivePath, flags)
             }
 
-            if (packageInfo?.applicationInfo == null) {
+            // 修复：使用局部变量来避免智能转换问题
+            val appInfo = packageInfo?.applicationInfo
+            if (appInfo == null) {
                 tempApkFile.delete()
                 return null
             }
 
-            packageInfo.applicationInfo.sourceDir = archivePath
-            packageInfo.applicationInfo.publicSourceDir = archivePath
+            appInfo.sourceDir = archivePath
+            appInfo.publicSourceDir = archivePath
 
-            val appName = packageInfo.applicationInfo.loadLabel(pm).toString()
+            val appName = appInfo.loadLabel(pm).toString()
             val packageName = packageInfo.packageName
             val versionName = packageInfo.versionName ?: "N/A"
             val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -78,7 +80,7 @@ object ApkParser {
             }
             
             // Load the drawable, but only to save it to a file. Do not pass it on.
-            val iconDrawable = packageInfo.applicationInfo.loadIcon(pm)
+            val iconDrawable = appInfo.loadIcon(pm)
             val tempIconFileName = generateUniqueFileName("icon", "png")
             val tempIconFile = drawableToTempFile(context, iconDrawable, tempIconFileName)
             val tempIconFileUri = tempIconFile?.toUri()
@@ -103,26 +105,26 @@ object ApkParser {
         }
     }
     
-private fun uriToTempFile(context: Context, uri: Uri, fileName: String): File? {
-    return try {
-        val inputStream: InputStream = context.contentResolver.openInputStream(uri) ?: return null
-        val file = File(context.cacheDir, fileName)
-        if (file.exists()) {
-            file.delete()
-        }
-        FileOutputStream(file).use { outputStream ->
-            val buffer = ByteArray(4 * 1024) // 4KB buffer
-            var bytesRead: Int
-            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                outputStream.write(buffer, 0, bytesRead)
+    private fun uriToTempFile(context: Context, uri: Uri, fileName: String): File? {
+        return try {
+            val inputStream: InputStream = context.contentResolver.openInputStream(uri) ?: return null
+            val file = File(context.cacheDir, fileName)
+            if (file.exists()) {
+                file.delete()
             }
+            FileOutputStream(file).use { outputStream ->
+                val buffer = ByteArray(4 * 1024) // 4KB buffer
+                var bytesRead: Int
+                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                    outputStream.write(buffer, 0, bytesRead)
+                }
+            }
+            file
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-        file
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
     }
-}
 
     private fun drawableToTempFile(context: Context, drawable: Drawable?, fileName: String): File? {
         if (drawable == null) return null

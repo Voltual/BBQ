@@ -189,7 +189,7 @@ private fun StableUserListItem(
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(avatarUrl)
-                    .crossfade(true)
+//                    .crossfade(true)
                     .build(),
                 placeholder = painterResource(R.drawable.ic_menu_profile),
                 contentDescription = "用户头像",

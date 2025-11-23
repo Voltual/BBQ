@@ -19,18 +19,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.bbq.xq.ui.theme.BBQCard
 import cc.bbq.xq.ui.theme.BBQOutlinedButton
-import coil3.Coil
+import coil3.SingletonImageLoader  // 替换 coil3.Coil
 import kotlinx.coroutines.launch
-import coil3.annotation.ExperimentalCoilApi // 导入 ExperimentalCoilApi
-import coil3.imageLoader // 导入 imageLoader
+import coil3.annotation.ExperimentalCoilApi
+import coil3.compose.LocalPlatformContext  // 新增导入
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class) // 添加 ExperimentalCoilApi
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
 fun StoreManagerScreen() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    // 注释掉超级缓存状态
-    // val isSuperCacheEnabled by viewModel.isSuperCacheEnabled.collectAsState()
+    
+    // 获取 ImageLoader 的正确方式
+    val imageLoader = SingletonImageLoader.get(context)
 
     Column(
         modifier = Modifier
@@ -50,8 +51,9 @@ fun StoreManagerScreen() {
                 BBQOutlinedButton(
                     onClick = {
                         scope.launch {
-                            Coil.imageLoader(context).diskCache?.clear()
-                            Coil.imageLoader(context).memoryCache?.clear()
+                            // 使用新的 API 访问方式
+                            imageLoader.diskCache?.clear()
+                            imageLoader.memoryCache?.clear()
                         }
                     },
                     text = { Text("清除图片缓存") },
@@ -59,30 +61,5 @@ fun StoreManagerScreen() {
                 )
             }
         }
-
-        // 注释掉超级缓存开关部分
-        /*
-        BBQCard(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "超级缓存",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Switch(
-                        checked = isSuperCacheEnabled,
-                        onCheckedChange = { viewModel.onSuperCacheEnabledChanged(it) }
-                    )
-                }
-            }
-        }
-        */
     }
 }

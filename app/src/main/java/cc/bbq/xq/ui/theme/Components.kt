@@ -254,7 +254,7 @@ fun ImagePreviewItem(
         SubcomposeAsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(imageUrl)
-                .crossfade(true)
+//                .crossfade(true)
                 .build(),
             contentDescription = "预览图片",
             contentScale = ContentScale.Crop,

@@ -331,7 +331,7 @@ fun AppGridItem(
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(app.iconUrl)
-                    .crossfade(true)
+//                    .crossfade(true)
                     .build(),
                 contentDescription = app.name,
                 modifier = Modifier
