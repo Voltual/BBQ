@@ -45,8 +45,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Build with Gradle
-        run: ./gradlew assembleDebug
+      - name: Build  with Gradle
+        run: |
+                                       ./gradlew assembleRelease
 
       - name: Get version info
         id: version
@@ -83,7 +84,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Save Gradle cache
-        if: always()  # 无论构建成功与否都尝试保存缓存
+        if: ${{ success() }}
         uses: actions/cache@v3
         with:
           path: |
