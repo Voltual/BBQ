@@ -71,7 +71,7 @@ android {
 dependencies {
     // ===== 基础依赖 =====
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
-    implementation("androidx.datastore:datastore-preferences:1.2.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("com.google.android.material:material:1.9.0")
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
     implementation("com.github.chrisbanes:PhotoView:2.3.0")
