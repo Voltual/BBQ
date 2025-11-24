@@ -38,6 +38,7 @@ import cc.bbq.xq.ui.theme.billing_income
 import cc.bbq.xq.ui.theme.billing_income_dark
 import coil3.compose.rememberAsyncImagePainter
 import androidx.compose.ui.graphics.vector.ImageVector
+import cc.bbq.xq.util.cleanUrl
 
 @Composable
 fun SharedPostItem(
@@ -76,7 +77,7 @@ fun SharedPostItem(
             post.img_url?.takeIf { it.isNotEmpty() }?.firstOrNull()?.let { imageUrl ->
                 Spacer(modifier = Modifier.height(12.dp))
                 Image(
-                    painter = rememberAsyncImagePainter(model = imageUrl),
+                    painter = rememberAsyncImagePainter(model = imageUrl.cleanUrl),
                     contentDescription = "帖子图片",
                     modifier = Modifier.fillMaxWidth().height(150.dp).clip(MaterialTheme.shapes.medium),
                     contentScale = ContentScale.Crop

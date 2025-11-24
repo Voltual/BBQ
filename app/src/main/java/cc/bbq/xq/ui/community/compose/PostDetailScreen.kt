@@ -79,6 +79,7 @@ import java.io.File
 import cc.bbq.xq.ui.theme.SwitchWithText // 导入移动到公共位置的 SwitchWithText
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
+import cc.bbq.xq.util.cleanUrl
 
 @Composable
 fun PostDetailScreen(
@@ -288,7 +289,7 @@ fun PostDetailScreen(
                                     imgUrls.forEach { imageUrl ->
                                         Spacer(Modifier.height(16.dp))
                                         AsyncImage(
-                                            model = imageUrl,
+                                            model = imageUrl.cleanUrl(),
                                             contentDescription = "帖子图片",
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -796,7 +797,7 @@ fun CommentItem(
             comment.image_path?.firstOrNull()?.takeIf { it.isNotEmpty() }?.let { imageUrl ->
                 Spacer(Modifier.height(8.dp))
                 AsyncImage(
-                    model = imageUrl,
+                    model = imageUrl.cleanUrl(),
                     contentDescription = "评论图片",
                     modifier = Modifier
                         .fillMaxWidth()
