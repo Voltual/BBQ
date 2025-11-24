@@ -37,6 +37,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import cc.bbq.bbq.xq.ui.compose.UserAgreementDialog// 确保导入 UserAgreementDialog
 import cc.bbq.xq.ui.theme.BBQTheme
 import cc.bbq.xq.ui.theme.ThemeColorStore
 import cc.bbq.xq.ui.theme.ThemeCustomizeScreen
@@ -63,6 +64,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import android.app.Activity
 // 导入 BBQSnackbarHost
 import cc.bbq.xq.ui.theme.BBQSnackbarHost
+import cc.bbq.xq.data.UserAgreementDataStore // 导入 UserAgreementDataStore
 
 class MainActivity : ComponentActivity() {
 
@@ -78,6 +80,30 @@ class MainActivity : ComponentActivity() {
         setContent {
             val snackbarHostState = remember { SnackbarHostState() }
 
+            // 新增：检查用户协议是否已同意
+            val context = LocalContext.current
+            val agreementDataStore = remember { UserAgreementDataStore(context) }
+
+            // 协议状态
+            val userAgreementAcceptedFlow = agreementDataStore.userAgreementFlow.collectAsState(initial = false)
+            val xiaoquUserAgreementAcceptedFlow = agreementDataStore.xiaoquUserAgreementFlow.collectAsState(initial = false)
+            val sineUserAgreementAcceptedFlow = agreementDataStore.sineUserAgreementFlow.collectAsState(initial = false)
+            val sinePrivacyPolicyAcceptedFlow = agreementDataStore.sinePrivacyPolicyFlow.collectAsState(initial = false)
+
+            val userAgreementAccepted by userAgreementAcceptedFlow
+            val xiaoquUserAgreementAccepted by xiaoquUserAgreementAcceptedFlow
+            val sineUserAgreementAccepted by sineUserAgreementAcceptedFlow
+            val sinePrivacyPolicyAccepted by sinePrivacyPolicyAcceptedFlow
+
+            var showAgreementDialog by remember {
+                mutableStateOf(
+                    !(userAgreementAccepted &&
+                            xiaoquUserAgreementAccepted &&
+                            sineUserAgreementAccepted &&
+                            sinePrivacyPolicyAccepted)
+                )
+            }
+
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
                 Scaffold( // 使用 Scaffold
                     snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState) }, // 添加 SnackbarHost
@@ -92,6 +118,16 @@ class MainActivity : ComponentActivity() {
                             MainComposeApp(snackbarHostState = snackbarHostState) // 传递 SnackbarHostState
                             // 检查更新
                             CheckForUpdates(snackbarHostState) // 传递 snackbarHostState
+
+                            // 新增：用户协议对话框
+                            if (showAgreementDialog) {
+                                UserAgreementDialog(
+                                    onDismissRequest = { /* 禁止取消 */ },
+                                    onAgreed = {
+                                        showAgreementDialog = false
+                                    }
+                                )
+                            }
                         }
                     }
                 )

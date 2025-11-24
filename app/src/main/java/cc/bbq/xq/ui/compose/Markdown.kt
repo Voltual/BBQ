@@ -9,6 +9,7 @@
 
 //该组件Markdown.kt的初始版本来源自https://github.com/rikkahub/rikkahub
 //本版本仅作简化修改适应项目实际用途
+@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 package cc.bbq.xq.ui.compose
 
 import android.content.Intent
@@ -91,6 +92,7 @@ import org.intellij.markdown.flavours.gfm.GFMElementTypes
 import org.intellij.markdown.flavours.gfm.GFMFlavourDescriptor
 import org.intellij.markdown.flavours.gfm.GFMTokenTypes
 import org.intellij.markdown.parser.MarkdownParser
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 private val flavour by lazy {
     GFMFlavourDescriptor(
