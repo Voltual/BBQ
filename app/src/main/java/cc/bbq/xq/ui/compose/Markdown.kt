@@ -163,13 +163,14 @@ fun MarkDownText(
     }
 
     // 监听内容变化，重新解析AST树
+    // 这里在后台线程解析AST树, 防止频繁更新的时候掉帧
     val updatedContent by rememberUpdatedState(content)
     LaunchedEffect(Unit) {
         snapshotFlow { updatedContent }.distinctUntilChanged().mapLatest {
             val preprocessed = preProcess(it)
             val astTree = parser.buildMarkdownTreeFromString(preprocessed)
             preprocessed to astTree
-        }.catch { exception -> exception.printStackTrace() }.flowOn(Dispatchers.Default)
+        }.catch { exception -> exception.printStackTrace() }.flowOn(Dispatchers.Default) // 在后台线程解析AST树
             .collect {
                 setData(it)
             }
@@ -385,7 +386,7 @@ private fun MarkdownNode(
             )
         }
 
-        // 图片 - 简化版本，只显示链接文本
+/*        // 图片 - 简化版本，只显示链接文本
         MarkdownElementTypes.IMAGE -> {
             val altText = node.findChildOfTypeRecursive(MarkdownElementTypes.LINK_TEXT)?.getTextInNode(content) ?: ""
             val imageUrl =
@@ -399,7 +400,7 @@ private fun MarkdownNode(
                 }
             )
         }
-
+*/
         // 行内代码
         MarkdownElementTypes.CODE_SPAN -> {
             val code = node.getTextInNode(content).trim('`')
@@ -593,9 +594,12 @@ private fun Paragraph(
     }
 
     val colorScheme = MaterialTheme.colorScheme
+    val inlineContents = remember {
+        mutableStateMapOf<String, InlineTextContent>()
+    }
+
     val textStyle = LocalTextStyle.current
     val density = LocalDensity.current
-    
     FlowRow(
         modifier = modifier.then(
             if (node.nextSibling() != null) Modifier.padding(bottom = 4.dp)
@@ -608,6 +612,7 @@ private fun Paragraph(
                     appendMarkdownNodeContent(
                         node = child,
                         content = content,
+                        inlineContents = inlineContents,
                         colorScheme = colorScheme,
                         onClickCitation = onClickCitation,
                         style = textStyle,
@@ -620,6 +625,7 @@ private fun Paragraph(
         Text(
             text = annotatedString,
             modifier = Modifier,
+            inlineContent = inlineContents,
             softWrap = true,
             overflow = TextOverflow.Visible,
         )
@@ -699,6 +705,7 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
     node: ASTNode,
     content: String,
     trim: Boolean = false,
+    inlineContents: MutableMap<String, InlineTextContent>,
     colorScheme: ColorScheme,
     density: Density,
     style: TextStyle,
@@ -727,6 +734,7 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                     appendMarkdownNodeContent(
                         node = it,
                         content = content,
+                        inlineContents = inlineContents,
                         colorScheme = colorScheme,
                         density = density,
                         style = style,
@@ -742,6 +750,7 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                     appendMarkdownNodeContent(
                         node = it,
                         content = content,
+                        inlineContents = inlineContents,
                         colorScheme = colorScheme,
                         density = density,
                         style = style,
@@ -757,6 +766,7 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                     appendMarkdownNodeContent(
                         node = it,
                         content = content,
+                        inlineContents = inlineContents,
                         colorScheme = colorScheme,
                         density = density,
                         style = style,
@@ -813,6 +823,7 @@ private fun AnnotatedString.Builder.appendMarkdownNodeContent(
                 appendMarkdownNodeContent(
                     node = it,
                     content = content,
+                    inlineContents = inlineContents,
                     colorScheme = colorScheme,
                     density = density,
                     style = style,
