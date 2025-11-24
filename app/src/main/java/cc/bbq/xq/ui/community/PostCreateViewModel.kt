@@ -13,6 +13,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
+import io.ktor.client.call.*
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
