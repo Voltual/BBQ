@@ -12,14 +12,3 @@ package cc.bbq.xq.util
  * 清理URL中的转义符号
  */
 fun String.cleanUrl(): String = this.replace("\\/", "/")
-
-/**
- * 清理URL并转换为可用的URI
- */
-fun String.cleanUrlToUri(): Uri? {
-    return try {
-        Uri.parse(this.cleanUrl())
-    } catch (e: Exception) {
-        null
-    }
-}

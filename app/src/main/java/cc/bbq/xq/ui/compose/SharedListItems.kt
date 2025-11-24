@@ -77,7 +77,7 @@ fun SharedPostItem(
             post.img_url?.takeIf { it.isNotEmpty() }?.firstOrNull()?.let { imageUrl ->
                 Spacer(modifier = Modifier.height(12.dp))
                 Image(
-                    painter = rememberAsyncImagePainter(model = imageUrl.cleanUrl),
+                    painter = rememberAsyncImagePainter(model = imageUrl.cleanUrl()),
                     contentDescription = "帖子图片",
                     modifier = Modifier.fillMaxWidth().height(150.dp).clip(MaterialTheme.shapes.medium),
                     contentScale = ContentScale.Crop
