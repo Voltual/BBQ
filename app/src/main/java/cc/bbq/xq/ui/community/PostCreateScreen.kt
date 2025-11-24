@@ -7,8 +7,6 @@
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 package cc.bbq.xq.ui.community
 
-
-
 import android.app.Activity
 import android.net.Uri
 import android.os.Build
@@ -40,7 +38,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.AuthManager
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.flow.first
 import cc.bbq.xq.ui.theme.ImagePreviewItem // 导入 ImagePreviewItem
@@ -168,15 +166,15 @@ fun PostCreateScreen(
         }
     }
 
-    val startImagePicker = {
-        activity?.let {
-            ImagePicker.with(it)
-                .crop()
-                .compress(1024)
-                .maxResultSize(1080, 1080)
-                .createIntent { intent -> imagePickerLauncher.launch(intent) } // 这行是正确的
-        }
+    val startImagePicker: () -> Unit = {
+    activity?.let {
+        ImagePicker.with(it)
+            .crop()
+            .compress(1024)
+            .maxResultSize(1080, 1080)
+            .createIntent { intent -> imagePickerLauncher.launch(intent) }
     }
+}
 
     if (uiState.showProgressDialog) {
         AlertDialog(
@@ -222,47 +220,49 @@ fun PostCreateScreen(
         }
 
         ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it }
-        ) {
-            OutlinedTextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    //fixed: remove menuAnchor
-                   ,
-                readOnly = true,
-                value = selectedTopicName,
-                onValueChange = {},
-                label = { Text(if (isRefundMode) "问题类型" else "选择话题") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
-            )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                if (isRefundMode) {
-                    REFUND_REASONS.forEach { reason ->
-                        DropdownMenuItem(
-                            text = { Text(reason.name) },
-                            onClick = {
-                                selectedRefundReason = reason.name
-                                expanded = false
-                            }
-                        )
+    expanded = expanded,
+    onExpandedChange = { expanded = it }
+) {
+    OutlinedTextField(
+        modifier = Modifier
+            .fillMaxWidth()
+            .menuAnchor(
+                type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, // 修正这里
+                enabled = true
+            ),
+        readOnly = true,
+        value = selectedTopicName,
+        onValueChange = {},
+        label = { Text(if (isRefundMode) "问题类型" else "选择话题") },
+        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
+    )
+    ExposedDropdownMenu(
+        expanded = expanded,
+        onDismissRequest = { expanded = false }
+    ) {
+        if (isRefundMode) {
+            REFUND_REASONS.forEach { reason ->
+                DropdownMenuItem(
+                    text = { Text(reason.name) },
+                    onClick = {
+                        selectedRefundReason = reason.name
+                        expanded = false
                     }
-                } else {
-                    SUBSECTIONS.forEach { subsection ->
-                        DropdownMenuItem(
-                            text = { Text(subsection.name) },
-                            onClick = {
-                                viewModel.onSubsectionChange(subsection.id)
-                                expanded = false
-                            }
-                        )
+                )
+            }
+        } else {
+            SUBSECTIONS.forEach { subsection ->
+                DropdownMenuItem(
+                    text = { Text(subsection.name) },
+                    onClick = {
+                        viewModel.onSubsectionChange(subsection.id)
+                        expanded = false
                     }
-                }
+                )
             }
         }
+    }
+}
 
         Spacer(modifier = Modifier.height(16.dp))
 
