@@ -125,6 +125,9 @@ dependencies {
     // ===== protobuf 依赖 =====
     implementation("com.google.protobuf:protobuf-kotlin:4.32.1")//永远不要用lite!
     implementation("androidx.security:security-crypto:1.1.0") // 加密库
+    
+    // ===== MarkDown 依赖 =====
+    implementation("org.jetbrains:markdown:0.7.3")
 }
 
 protobuf {
