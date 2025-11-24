@@ -47,14 +47,33 @@ fun UserAgreementDialog(
     // 当前显示的协议索引
     var currentAgreementIndex by remember { mutableStateOf(0) }
 
-    // 协议列表 - 修复：正确加载raw资源
-    val agreements = remember {
-        listOf(
-            "《OpenQu 用户协议》" to loadRawResourceText(context, R.raw.useragreement),
-            "《小趣空间用户协议》" to loadRawResourceText(context, R.raw.xiaoquuseragreement),
-            "《弦-应用商店用户协议》" to loadRawResourceText(context, R.raw.sineuseragreement),
-            "《弦-应用商店隐私政策》" to loadRawResourceText(context, R.raw.sineprivacypolicy)
-        )
+    // 协议内容状态
+    val agreementContents = remember { mutableStateMapOf<Int, String>() }
+
+    // 协议标题列表
+    val agreementTitles = listOf(
+        "《OpenQu 用户协议》",
+        "《小趣空间用户协议》", 
+        "《弦-应用商店用户协议》",
+        "《弦-应用商店隐私政策》"
+    )
+
+    // 协议资源ID列表
+    val agreementResourceIds = listOf(
+        R.raw.useragreement,
+        R.raw.xiaoquuseragreement,
+        R.raw.sineuseragreement,
+        R.raw.sineprivacypolicy
+    )
+
+    // 加载协议内容
+    LaunchedEffect(Unit) {
+        agreementResourceIds.forEachIndexed { index, resId ->
+            val content = withContext(Dispatchers.IO) {
+                loadRawResourceText(context, resId)
+            }
+            agreementContents[index] = content
+        }
     }
 
     // 动画方向
@@ -93,12 +112,14 @@ fun UserAgreementDialog(
                     },
                     label = "协议切换动画"
                 ) { targetIndex ->
+                    val currentContent = agreementContents[targetIndex] ?: "加载中..."
+                    
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = agreements[targetIndex].first,
+                            text = agreementTitles[targetIndex],
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
                             style = TextStyle(
@@ -117,7 +138,7 @@ fun UserAgreementDialog(
                         ) {
                             val scrollState = rememberScrollState()
                             MarkDownText(
-                                content = agreements[targetIndex].second,
+                                content = currentContent,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .verticalScroll(scrollState)
@@ -155,7 +176,7 @@ fun UserAgreementDialog(
                                     3 -> agreementDataStore.setSinePrivacyPolicyAccepted(true)
                                 }
 
-                                if (currentAgreementIndex < agreements.size - 1) {
+                                if (currentAgreementIndex < agreementTitles.size - 1) {
                                     animationForward = true
                                     currentAgreementIndex++
                                 } else {
@@ -164,7 +185,7 @@ fun UserAgreementDialog(
                             }
                         },
                     ) {
-                        Text(text = if (currentAgreementIndex < agreements.size - 1) "同意并继续" else "同意")
+                        Text(text = if (currentAgreementIndex < agreementTitles.size - 1) "同意并继续" else "同意")
                     }
                 }
             }
@@ -172,22 +193,13 @@ fun UserAgreementDialog(
     }
 }
 
-// 新增：正确加载raw资源文件的函数
-@Composable
-fun loadRawResourceText(context: android.content.Context, @androidx.annotation.RawRes resId: Int): String {
-    var text by remember { mutableStateOf("") }
-    
-    LaunchedEffect(resId) {
-        withContext(Dispatchers.IO) {
-            try {
-                context.resources.openRawResource(resId).use { inputStream ->
-                    text = inputStream.bufferedReader().use { it.readText() }
-                }
-            } catch (e: Exception) {
-                text = "加载协议内容失败: ${e.message}"
-            }
+// 修复：移除非Composable注解，改为普通函数
+private fun loadRawResourceText(context: android.content.Context, resId: Int): String {
+    return try {
+        context.resources.openRawResource(resId).use { inputStream ->
+            inputStream.bufferedReader().use { it.readText() }
         }
+    } catch (e: Exception) {
+        "加载协议内容失败: ${e.message}"
     }
-    
-    return text
 }
