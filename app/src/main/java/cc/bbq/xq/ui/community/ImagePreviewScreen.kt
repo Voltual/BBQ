@@ -42,6 +42,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import cc.bbq.xq.R
+import cc.bbq.xq.util.cleanUrl // 导入 cleanUrl 函数
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +55,9 @@ fun ImagePreviewScreen(
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val internalSnackbarHostState = remember { SnackbarHostState() } // fixed: rename to internalSnackbarHostState
     val scope = rememberCoroutineScope()
+    
+    // 清理图片 URL
+    val cleanedImageUrl = imageUrl.cleanUrl()
 
     Scaffold(
         containerColor = Color.Black,
@@ -86,7 +90,7 @@ fun ImagePreviewScreen(
 
                             setOnLongClickListener {
                                 clipboardManager.setPrimaryClip(
-                                    ClipData.newPlainText("image_url", imageUrl)
+                                    ClipData.newPlainText("image_url", cleanedImageUrl) // 使用清理后的 URL
                                 )
                                 scope.launch {
                                     internalSnackbarHostState.showSnackbar(
@@ -101,7 +105,7 @@ fun ImagePreviewScreen(
                 },
                 update = { frameLayout ->
                     val photoView = frameLayout.getChildAt(0) as PhotoView
-                    photoView.load(imageUrl) {
+                    photoView.load(cleanedImageUrl) { // 使用清理后的 URL
                         size(coil3.size.Size.ORIGINAL)
                         diskCachePolicy(coil3.request.CachePolicy.ENABLED)
                         memoryCachePolicy(coil3.request.CachePolicy.ENABLED)
