@@ -1,4 +1,4 @@
-//Copyright (C) 2025 Voltual
+    //Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
@@ -11,18 +11,13 @@ package cc.bbq.xq.ui.compose
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.with
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import cc.bbq.xq.R
@@ -31,13 +26,13 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.animation.*
-import cc.bbq.xq.ui.animation.materialSharedAxisXIn
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
+import cc.bbq.xq.ui.animation.materialSharedAxisX
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.InputStream
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -49,31 +44,18 @@ fun UserAgreementDialog(
     val scope = rememberCoroutineScope()
     val agreementDataStore = remember { UserAgreementDataStore(context) }
 
-    // 协议状态
-    var userAgreementAccepted by remember { mutableStateOf(false) }
-    var xiaoquUserAgreementAccepted by remember { mutableStateOf(false) }
-    var sineUserAgreementAccepted by remember { mutableStateOf(false) }
-    var sinePrivacyPolicyAccepted by remember { mutableStateOf(false) }
-
     // 当前显示的协议索引
     var currentAgreementIndex by remember { mutableStateOf(0) }
 
-    // 加载协议内容
-    val userAgreementText = stringResource(id = R.raw.useragreement)
-    val xiaoquUserAgreementText = stringResource(id = R.raw.xiaoquuseragreement)
-    val sineUserAgreementText = stringResource(id = R.raw.sineuseragreement)
-    val sinePrivacyPolicyText = stringResource(id = R.raw.sineprivacypolicy)
-
-    // 协议列表
-    val agreements = listOf(
-        "《OpenQu 用户协议》" to userAgreementText,
-        "《小趣空间用户协议》" to xiaoquUserAgreementText,
-        "《弦-应用商店用户协议》" to sineUserAgreementText,
-        "《弦-应用商店隐私政策》" to sinePrivacyPolicyText
-    )
-
-    // 根据索引获取当前协议内容
-    val currentAgreement = agreements[currentAgreementIndex]
+    // 协议列表 - 修复：正确加载raw资源
+    val agreements = remember {
+        listOf(
+            "《OpenQu 用户协议》" to loadRawResourceText(context, R.raw.useragreement),
+            "《小趣空间用户协议》" to loadRawResourceText(context, R.raw.xiaoquuseragreement),
+            "《弦-应用商店用户协议》" to loadRawResourceText(context, R.raw.sineuseragreement),
+            "《弦-应用商店隐私政策》" to loadRawResourceText(context, R.raw.sineprivacypolicy)
+        )
+    }
 
     // 动画方向
     var animationForward by remember { mutableStateOf(true) }
@@ -99,31 +81,51 @@ fun UserAgreementDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = currentAgreement.component1(),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = TextStyle(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                )
+                // 修复：添加动画切换效果
+                AnimatedContent(
+                    targetState = currentAgreementIndex,
+                    transitionSpec = {
+                        materialSharedAxisX(
+                            forward = animationForward,
+                            slideDistance = 30,
+                            durationMillis = 500
+                        )
+                    },
+                    label = "协议切换动画"
+                ) { targetIndex ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = agreements[targetIndex].first,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                            style = TextStyle(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        )
 
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp) // 固定高度，内容超出则滚动
-                ) {
-                    val scrollState = rememberScrollState()
-                    MarkDownText(
-                        content = currentAgreement.component2(),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(scrollState)
-                    )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(300.dp)
+                        ) {
+                            val scrollState = rememberScrollState()
+                            MarkDownText(
+                                content = agreements[targetIndex].second,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(scrollState)
+                            )
+                        }
+                    }
                 }
+
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
@@ -139,6 +141,8 @@ fun UserAgreementDialog(
                         ) {
                             Text(text = "上一个")
                         }
+                    } else {
+                        Spacer(modifier = Modifier.width(80.dp)) // 占位保持布局平衡
                     }
 
                     Button(
@@ -166,4 +170,24 @@ fun UserAgreementDialog(
             }
         }
     }
+}
+
+// 新增：正确加载raw资源文件的函数
+@Composable
+fun loadRawResourceText(context: android.content.Context, @androidx.annotation.RawRes resId: Int): String {
+    var text by remember { mutableStateOf("") }
+    
+    LaunchedEffect(resId) {
+        withContext(Dispatchers.IO) {
+            try {
+                context.resources.openRawResource(resId).use { inputStream ->
+                    text = inputStream.bufferedReader().use { it.readText() }
+                }
+            } catch (e: Exception) {
+                text = "加载协议内容失败: ${e.message}"
+            }
+        }
+    }
+    
+    return text
 }
