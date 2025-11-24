@@ -37,7 +37,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import cc.bbq.bbq.xq.ui.compose.UserAgreementDialog// 确保导入 UserAgreementDialog
+import cc.bbq.xq.ui.compose.UserAgreementDialog// 确保导入 UserAgreementDialog
 import cc.bbq.xq.ui.theme.BBQTheme
 import cc.bbq.xq.ui.theme.ThemeColorStore
 import cc.bbq.xq.ui.theme.ThemeCustomizeScreen
