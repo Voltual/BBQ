@@ -213,6 +213,7 @@ class PostCreateViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
+    
 
     private suspend fun uploadImageKtor(fileBytes: ByteArray, fileName: String): Result<String> {
     return withContext(Dispatchers.IO) {
