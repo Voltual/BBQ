@@ -5,8 +5,7 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
-package cc.bbq.xq.ui.home
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.package cc.bbq.xq.ui.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -28,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cc.bbq.xq.ui.theme.BBQCard
 import coil3.compose.AsyncImage
+import cc.bbq.xq.SineShopClient // 导入 SineShopClient
+import androidx.compose.foundation.clickable // 导入 clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -151,6 +152,7 @@ fun SineShopProfileScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FunctionCard(
     icon: ImageVector,
@@ -170,14 +172,14 @@ private fun FunctionCard(
                     tint = MaterialTheme.colorScheme.primary
                 )
             },
-            headlineText = {
+            headlineContent = { // 使用 headlineContent 替代 headlineText
                 Text(
                     text = label,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium
                 )
             },
-            modifier = Modifier.clickable(onClick = onClick)
+            modifier = Modifier.clickable(onClick = onClick) // 导入 clickable
         )
     }
 }

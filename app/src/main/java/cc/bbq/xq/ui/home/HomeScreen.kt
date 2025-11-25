@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.res.painterResource
+import cc.bbq.xq.SineShopClient // 导入 SineShopClient
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column

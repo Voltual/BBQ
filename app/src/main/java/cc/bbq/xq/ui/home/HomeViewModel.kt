@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
 //import cc.bbq.xq.RetrofitClient // 移除 RetrofitClient
 import cc.bbq.xq.KtorClient // 导入 KtorClient
+import cc.bbq.xq.SineShopClient
 import cc.bbq.xq.ui.theme.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -57,7 +58,9 @@ data class HomeUiState(
     val lastSignTime: String = "",
     val displayDaysDiff: Int = 0,
     // 添加数据加载状态
-    val dataLoadState: DataLoadState = DataLoadState.NotLoaded
+    val dataLoadState: DataLoadState = DataLoadState.NotLoaded,
+    // 新增：弦应用商店用户信息
+    val sineShopUserInfo: SineShopClient.SineShopUserInfo? = null
 )
 
 class HomeViewModel : ViewModel() {
@@ -142,6 +145,31 @@ class HomeViewModel : ViewModel() {
                     isLoading = false,
                     dataLoadState = DataLoadState.Error
                 )
+            }
+
+            // 加载弦应用商店用户信息
+            loadSineShopUserInfo(context)
+        }
+    }
+
+    // 新增：加载弦应用商店用户信息
+    private fun loadSineShopUserInfo(context: Context) {
+        viewModelScope.launch {
+            try {
+                val sineShopUserInfoResult = withContext(Dispatchers.IO) {
+                    SineShopClient.getUserInfo()
+                }
+
+                sineShopUserInfoResult.onSuccess { userInfo ->
+                    uiState.value = uiState.value.copy(
+                        sineShopUserInfo = userInfo
+                    )
+                }.onFailure { e ->
+                    // 处理失败情况，例如显示错误信息
+                    println("Failed to load SineShop user info: ${e.message}")
+                }
+            } catch (e: Exception) {
+                println("Error loading SineShop user info: ${e.message}")
             }
         }
     }

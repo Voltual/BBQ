@@ -4,7 +4,7 @@
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 package cc.bbq.xq.ui.home
 
 import androidx.compose.runtime.Composable
@@ -97,6 +97,7 @@ fun HomeDestination(
                 signStatusMessage = uiState.signStatusMessage,
                 displayDaysDiff = uiState.displayDaysDiff
             ),
+            sineShopUserInfo = uiState.sineShopUserInfo, // 传递 sineShopUserInfo
             onPaymentCenterClick = { navController.navigate(PaymentCenterAdvanced.route) },
             onAvatarClick = onAvatarClick,
             onAvatarLongClick = onAvatarLongClick,
