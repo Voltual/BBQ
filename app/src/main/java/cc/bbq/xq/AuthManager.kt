@@ -58,13 +58,26 @@ object AuthManager {
         token: String,
         userId: Long
     ) {
-        encryptedAuthDataStore.updateData { _ -> // fixed: mark as unused explicitly
+        encryptedAuthDataStore.updateData { currentCredentials ->
             UserCredentials.newBuilder()
                 .setUsername(username)
                 .setPassword(password)
                 .setToken(token)
                 .setUserId(userId)
-                .setDeviceId(generateDeviceId())
+                .setDeviceId(currentCredentials.deviceId.ifEmpty { generateDeviceId() })
+                .setSineMarketToken(currentCredentials.sineMarketToken) // 保留现有的弦应用商店token
+                .build()
+        }
+    }
+
+    // --- 新增：保存弦应用商店token ---
+    suspend fun saveSineMarketToken(
+        @Suppress("UNUSED_PARAMETER") context: Context,
+        token: String
+    ) {
+        encryptedAuthDataStore.updateData { currentCredentials ->
+            currentCredentials.toBuilder()
+                .setSineMarketToken(token)
                 .build()
         }
     }
@@ -72,6 +85,14 @@ object AuthManager {
     // --- 获取凭证 ---
     fun getCredentials(@Suppress("UNUSED_PARAMETER") context: Context): Flow<UserCredentials?> { // fixed: mark as unused explicitly
         return encryptedAuthDataStore.data
+    }
+
+    // 新增方法：获取弦应用商店token
+    fun getSineMarketToken(@Suppress("UNUSED_PARAMETER") context: Context): Flow<String> {
+        return encryptedAuthDataStore.data
+            .map { userCredentials: UserCredentials? ->
+                userCredentials?.sineMarketToken ?: ""
+            }
     }
 
     // 新增方法：单独获取userid
@@ -123,6 +144,7 @@ object AuthManager {
                     .setToken(token)
                     .setUserId(userId)
                     .setDeviceId(deviceId)
+                    .setSineMarketToken("") // 新增：初始化为空字符串
                     .build()
             }
 
