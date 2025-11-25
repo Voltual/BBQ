@@ -29,6 +29,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 //import cc.bbq.xq.RetrofitClient
+import cc.bbq.xq.AppStore
+import cc.bbq.xq.ui.theme.AppStoreDropdownMenu
 import coil3.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -61,7 +63,8 @@ fun LoginScreen(
         } else {
             LoginContent(
                 viewModel = viewModel,
-                onNavigateToRegister = { isRegistering = true }
+                onNavigateToRegister = { isRegistering = true },
+                viewModel = viewModel // 传递 ViewModel
             )
         }
     }
@@ -80,6 +83,7 @@ fun LoginContent(
     var passwordVisible by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val selectedStore by viewModel.selectedStore.collectAsState() // 收集商店选择状态
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
@@ -93,6 +97,14 @@ fun LoginContent(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // 添加商店选择下拉菜单
+            AppStoreDropdownMenu(
+                selectedStore = selectedStore,
+                onStoreChange = { viewModel.onStoreSelected(it) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
             OutlinedTextField(
                 value = username,
                 onValueChange = { viewModel.onUsernameChange(it) },
@@ -116,7 +128,7 @@ fun LoginContent(
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(
-                onClick = { viewModel.login() },
+                onClick = { viewModel.login() }, // 确保调用的是 ViewModel 的 login() 方法
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
             ) {

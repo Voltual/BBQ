@@ -27,7 +27,7 @@ import kotlinx.serialization.json.Json
 import java.io.IOException
 
 object SineShopClient {
-    private const val BASE_URL = "http://api.sineshop.xin/"
+    private const val BASE_URL = "https://api.market.sineworld.cn"
     private const val MAX_RETRIES = 3
     private const val RETRY_DELAY = 1000L
     private const val REQUEST_TIMEOUT = 30000L
@@ -35,7 +35,7 @@ object SineShopClient {
     private const val SOCKET_TIMEOUT = 30000L
 
     // 用户代理信息 - 需要根据实际设备信息调整
-    private const val USER_AGENT = "Token:占位符"
+    private const val USER_AGENT = "SineMarket:2025110901;Device:HONOR-smdk4x12;Hash:-672009692;Token:"
 
     // Ktor HttpClient 实例
     val httpClient = HttpClient(OkHttp) {
@@ -50,7 +50,7 @@ object SineShopClient {
         // 默认请求配置
         client.defaultRequest {
             url(BASE_URL)
-            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            header(HttpHeaders.ContentType, ContentType.Application.FormUrlEncoded.toString())
             header(HttpHeaders.Accept, ContentType.Application.Json.toString())
             header(HttpHeaders.UserAgent, USER_AGENT)
         }
@@ -181,9 +181,30 @@ object SineShopClient {
     fun close() {
         httpClient.close()
     }
-}
 
-// 扩展函数，便于参数构建
-internal fun sineShopParameters(block: ParametersBuilder.() -> Unit): Parameters {
-    return Parameters.build(block)
+    // 扩展函数，便于参数构建
+    internal fun sineShopParameters(block: ParametersBuilder.() -> Unit): Parameters {
+        return Parameters.build(block)
+    }
+
+    // 新增：弦应用商店登录方法
+    suspend fun login(username: String, password: String): Result<String> {
+        val url = "/user/login"
+        val parameters = sineShopParameters {
+            append("username", username)
+            append("password", password)
+        }
+        return safeApiCall {
+            httpClient.post(url) {
+                contentType(ContentType.Application.FormUrlEncoded)
+                setBody(FormDataContent(parameters))
+            }
+        }.map { response: BaseResponse<String> ->
+            if (response.code == 0) {
+                response.data ?: "" // 返回 token，如果 data 为 null 则返回空字符串
+            } else {
+                throw IOException(response.msg)
+            }
+        }
+    }
 }

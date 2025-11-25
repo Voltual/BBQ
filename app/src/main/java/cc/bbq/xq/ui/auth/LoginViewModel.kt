@@ -12,8 +12,10 @@ import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.*
+import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
+import cc.bbq.xq.SineShopClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +29,14 @@ import kotlinx.coroutines.flow.Flow // 添加这个导入
 class LoginViewModel(
     application: Application
 ) : AndroidViewModel(application) {
-    // 移除 isBotLoginMode 参数，改为在方法中判断
+
+    // --- 商店选择状态 ---
+    private val _selectedStore = MutableStateFlow(AppStore.XIAOQU_SPACE)
+    val selectedStore: StateFlow<AppStore> = _selectedStore.asStateFlow()
+
+    fun onStoreSelected(store: AppStore) {
+        _selectedStore.value = store
+    }
 
     // --- 通用状态 ---
     private val _isLoading = MutableStateFlow(false)
@@ -73,38 +82,73 @@ class LoginViewModel(
             _isLoading.value = true
             _errorMessage.value = null
             try {
-                // 显式转换为 Application 类型
-                val context: Application = getApplication()
-                // 显式指定 Flow 的类型为 String
-                val deviceIdFlow: Flow<String> = AuthManager.getDeviceId(context)
-                val deviceId = deviceIdFlow.first()
-                val loginResult = KtorClient.ApiServiceImpl.login(
-                    username = _username.value,
-                    password = _password.value,
-                    device = deviceId
-                )
-                if (loginResult.isSuccess) {
-                    val loginResponse = loginResult.getOrNull()
-                    if (loginResponse?.code == 1) {
-                        loginResponse.data?.let { 
-                            saveCredentialsAndNotifySuccess(
-                                usertoken = it.usertoken,
-                                userId = it.id
-                            )
-                        } ?: run {
-                            _errorMessage.value = "登录失败: 无法获取用户信息"
-                        }
-                    } else {
-                        _errorMessage.value = loginResponse?.msg ?: "登录失败"
-                    }
-                } else {
-                    _errorMessage.value = loginResult.exceptionOrNull()?.message ?: "登录失败"
+                when (_selectedStore.value) {
+                    AppStore.XIAOQU_SPACE -> loginXiaoqu()
+                    AppStore.SIENE_SHOP -> loginSineShop()
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+
+    private suspend fun loginXiaoqu() {
+        try {
+            // 显式转换为 Application 类型
+            val context: Application = getApplication()
+            // 显式指定 Flow 的类型为 String
+            val deviceIdFlow: Flow<String> = AuthManager.getDeviceId(context)
+            val deviceId = deviceIdFlow.first()
+            val loginResult = KtorClient.ApiServiceImpl.login(
+                username = _username.value,
+                password = _password.value,
+                device = deviceId
+            )
+            if (loginResult.isSuccess) {
+                val loginResponse = loginResult.getOrNull()
+                if (loginResponse?.code == 1) {
+                    loginResponse.data?.let { 
+                        saveCredentialsAndNotifySuccess(
+                            usertoken = it.usertoken,
+                            userId = it.id
+                        )
+                    } ?: run {
+                        _errorMessage.value = "登录失败: 无法获取用户信息"
+                    }
+                } else {
+                    _errorMessage.value = loginResponse?.msg ?: "登录失败"
+                }
+            } else {
+                _errorMessage.value = loginResult.exceptionOrNull()?.message ?: "登录失败"
+            }
+        } catch (e: Exception) {
+            _errorMessage.value = "网络错误: ${e.message}"
+        }
+    }
+
+    private suspend fun loginSineShop() {
+        try {
+            val loginResult = SineShopClient.login(
+                username = _username.value,
+                password = _password.value
+            )
+            if (loginResult.isSuccess) {
+                val token = loginResult.getOrNull() ?: ""
+                if (token.isNotEmpty()) {
+                    // 保存弦应用商店的token
+                    val context: Application = getApplication()
+                    AuthManager.saveSineMarketToken(context, token)
+                    _loginSuccess.value = true // 登录成功
+                } else {
+                    _errorMessage.value = "弦应用商店登录失败: 无法获取token"
+                }
+            } else {
+                _errorMessage.value = "弦应用商店登录失败: ${loginResult.exceptionOrNull()?.message}"
+            }
+        } catch (e: Exception) {
+            _errorMessage.value = "弦应用商店登录失败: ${e.message}"
         }
     }
 
