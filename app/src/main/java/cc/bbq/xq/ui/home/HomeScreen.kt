@@ -12,7 +12,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.res.painterResource
-import cc.bbq.xq.SineShopClient // 导入 SineShopClient
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,10 +68,11 @@ import cc.bbq.xq.ui.theme.BBQBackgroundCard
 import coil3.compose.AsyncImage
 import cc.bbq.xq.MainActivity
 import cc.bbq.xq.ui.*
-import com.google.accompanist.pager.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.launch
+import cc.bbq.xq.SineShopClient // 导入 SineShopClient
 
-@OptIn(ExperimentalPagerApi::class)
 @Composable
 fun HomeScreen(
     state: HomeState,
@@ -98,14 +98,13 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     snackbarHostState: SnackbarHostState//新增ViewModel和snackbar参数
 ) {
-    val pagerState = rememberPagerState()
+    val pagerState = rememberPagerState(pageCount = { 2 })
 
     LaunchedEffect(Unit) {
         viewModel.setSnackbarHostState(snackbarHostState)
     }
 
     HorizontalPager(
-        count = 2,
         state = pagerState,
         modifier = modifier.fillMaxSize()
     ) { page ->

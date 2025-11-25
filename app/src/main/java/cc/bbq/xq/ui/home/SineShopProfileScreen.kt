@@ -6,7 +6,6 @@
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
-
 package cc.bbq.xq.ui.home
 
 import androidx.compose.foundation.Image
@@ -16,6 +15,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Comment
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -87,7 +89,7 @@ fun SineShopProfileScreen(
             onClick = { /* TODO: Implement upload app */ }
         )
         FunctionCard(
-            icon = Icons.Filled.List,
+            icon = Icons.AutoMirrored.Filled.List, // 使用自动镜像版本
             label = "我的上传",
             onClick = { /* TODO: Implement my uploads */ }
         )
@@ -102,7 +104,7 @@ fun SineShopProfileScreen(
             onClick = { /* TODO: Implement my reviews */ }
         )
         FunctionCard(
-            icon = Icons.Filled.Comment,
+            icon = Icons.AutoMirrored.Filled.Comment, // 使用自动镜像版本
             label = "我的评论",
             onClick = { /* TODO: Implement my comments */ }
         )
@@ -132,7 +134,7 @@ fun SineShopProfileScreen(
             onClick = { /* TODO: Implement account security */ }
         )
         FunctionCard(
-            icon = Icons.Filled.ExitToApp,
+            icon = Icons.AutoMirrored.Filled.ExitToApp, // 使用自动镜像版本
             label = "退出登录",
             onClick = { /* TODO: Implement logout */ }
         )
