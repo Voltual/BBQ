@@ -2,7 +2,6 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
@@ -41,6 +40,9 @@ import cc.bbq.xq.ui.compose.PaginationControls
 import cc.bbq.xq.ui.theme.AppShapes
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import cc.bbq.xq.AppStore
+import cc.bbq.xq.ui.theme.AppStoreDropdownMenu
+import cc.bbq.xq.KtorClient
 
 @Composable
 fun ResourcePlazaScreen(
@@ -70,9 +72,10 @@ fun ResourcePlazaContent(
 ) {
     // 修复：使用简单的 rememberSaveable 而不需要自定义 Saver
     var selectedCategoryIndex by rememberSaveable { mutableStateOf(0) }
+    val selectedAppStore by viewModel.appStore.observeAsState(AppStore.XIAOQU_SPACE)
 
     val plazaState by viewModel.plazaData.observeAsState(PlazaData(emptyList()))
-    val searchState by viewModel.searchResults.observeAsState(emptyList())
+    val searchState by viewModel.searchResults.observeAsState(emptyList<AppItem>())
     val isLoading by viewModel.isLoading.observeAsState(false)
     val currentPage by viewModel.currentPage.observeAsState(1)
     val totalPages by viewModel.totalPages.observeAsState(1)
@@ -109,12 +112,12 @@ fun ResourcePlazaContent(
     }
 
     // 修复：简化的初始化，只在模式或用户ID变化时重新初始化
-    LaunchedEffect(isMyResourceMode, userId) {
+    LaunchedEffect(isMyResourceMode, userId, selectedAppStore) {
         viewModel.initializeData(isMyResourceMode, userId)
     }
 
     // 修复：分类变化时正确调用 ViewModel 方法
-    LaunchedEffect(currentCategory) {
+    LaunchedEffect(currentCategory, selectedAppStore) {
         if (!isSearchMode) { // 只有在非搜索模式下才响应分类变化
             viewModel.loadDataByCategory(
                 categoryId = currentCategory.categoryId, 
@@ -143,6 +146,12 @@ fun ResourcePlazaContent(
             .fillMaxSize()
             .padding(horizontal = 8.dp)
     ) {
+        AppStoreDropdownMenu(
+            selectedStore = selectedAppStore,
+            onStoreChange = { viewModel.setAppStore(it) },
+            modifier = Modifier.fillMaxWidth()
+        )
+        
         if (!isMyResourceMode) {
             OutlinedTextField(
                 value = searchQuery,
@@ -317,8 +326,22 @@ fun AppGridItem(
     app: AppItem,
     onClick: (AppItem) -> Unit
 ) {
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val selectedAppStore by remember { mutableStateOf(AppStore.XIAOQU_SPACE) } // 假设默认是小趣空间
+
     Card(
-        onClick = { onClick(app) },
+        onClick = {
+            if (selectedAppStore == AppStore.XIAOQU_SPACE) {
+                onClick(app)
+            } else {
+                // TODO: Implement SineShop App Detail Navigation
+                scope.launch {
+                    snackbarHostState.showSnackbar("弦应用商店应用详情功能暂未实现")
+                }
+            }
+        },
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp),

@@ -13,8 +13,10 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.*
 import android.util.Log
+import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
+import cc.bbq.xq.SineShopClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import androidx.datastore.preferences.preferencesDataStore
@@ -52,6 +54,8 @@ class PlazaViewModel(
     private val _searchResults = MutableLiveData(emptyList<AppItem>())
     private val _errorMessage = MutableLiveData("")
     private val _isLoading = MutableLiveData(false)
+    private val _appStore = MutableLiveData(AppStore.XIAOQU_SPACE) // 默认商店
+    private val _appTagList = MutableLiveData<List<SineShopClient.AppTag>>(emptyList()) // 弦应用商店标签
 
     // 模式管理
     private var currentMode = initialMode
@@ -86,11 +90,22 @@ class PlazaViewModel(
     val searchResults: LiveData<List<AppItem>> = _searchResults
     val errorMessage: LiveData<String> = _errorMessage
     val isLoading: LiveData<Boolean> = _isLoading
+    val appStore: LiveData<AppStore> = _appStore
+    val appTagList: LiveData<List<SineShopClient.AppTag>> = _appTagList // 弦应用商店标签
 
     init {
         Log.d("PlazaViewModel", "初始模式: $currentMode")
         viewModelScope.launch {
             _autoScrollMode.postValue(getAutoScrollMode())
+        }
+    }
+
+    fun setAppStore(store: AppStore) {
+        _appStore.value = store
+        resetState()
+        loadData()
+        if (store == AppStore.SIENE_SHOP) {
+            loadSineShopAppTags()
         }
     }
 
@@ -190,13 +205,19 @@ class PlazaViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 Log.d("PlazaViewModel", "加载数据: 模式=$currentMode, 页码=$popularAppsPage, categoryId=$categoryId, subCategoryId=$subCategoryId, userId=$userId")
-                val result = repository.getAppsList(
-                    limit = if (currentMode) 12 else 9,
-                    page = popularAppsPage,
-                    userId = userId,
-                    categoryId = categoryId,
-                    subCategoryId = subCategoryId
-                )
+                val result = when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> repository.getAppsList(
+                        limit = if (currentMode) 12 else 9,
+                        page = popularAppsPage,
+                        userId = userId,
+                        categoryId = categoryId,
+                        subCategoryId = subCategoryId
+                    )
+                    AppStore.SIENE_SHOP -> {
+                        //TODO
+                        Result.success(Pair(emptyList<KtorClient.AppItem>(),1))
+                    }
+                }
                 
                 if (result.isSuccess) {
                     val (apps, totalPages) = result.getOrThrow()
@@ -223,6 +244,21 @@ class PlazaViewModel(
         }
     }
 
+    private fun loadSineShopAppTags() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val result = SineShopClient.getAppTagList()
+                if (result.isSuccess) {
+                    _appTagList.postValue(result.getOrThrow())
+                } else {
+                    _errorMessage.postValue("加载弦应用商店分类失败: ${result.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                _errorMessage.postValue("加载弦应用商店分类失败: ${e.localizedMessage}")
+            }
+        }
+    }
+
     fun nextPage(onComplete: (() -> Unit)? = null) {
         if (_isLoading.value == true || popularAppsPage >= popularAppsTotalPages) return
         _isLoading.value = true
@@ -237,13 +273,16 @@ class PlazaViewModel(
                      val userCredentials = userCredentialsFlow.first()
                      userCredentials?.userId
                 } else null
-                val result = repository.getAppsList(
-                    limit = if (currentMode) 12 else 9,
-                    page = popularAppsPage,
-                    userId = finalUserId,
-                    categoryId = currentCategoryId,
-                    subCategoryId = currentSubCategoryId
-                )
+                val result = when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> repository.getAppsList(
+                        limit = if (currentMode) 12 else 9,
+                        page = popularAppsPage,
+                        userId = finalUserId,
+                        categoryId = currentCategoryId,
+                        subCategoryId = currentSubCategoryId
+                    )
+                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
+                }
                 
                 if (result.isSuccess) {
                     val (newApps, totalPages) = result.getOrThrow()
@@ -285,13 +324,16 @@ class PlazaViewModel(
                      val userCredentials = userCredentialsFlow.first()
                      userCredentials?.userId
                 } else null
-                val result = repository.getAppsList(
-                    limit = if (currentMode) 12 else 9,
-                    page = popularAppsPage,
-                    userId = finalUserId,
-                    categoryId = currentCategoryId,
-                    subCategoryId = currentSubCategoryId
-                )
+                val result = when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> repository.getAppsList(
+                        limit = if (currentMode) 12 else 9,
+                        page = popularAppsPage,
+                        userId = finalUserId,
+                        categoryId = currentCategoryId,
+                        subCategoryId = currentSubCategoryId
+                    )
+                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
+                }
                 
                 if (result.isSuccess) {
                     val (newApps, totalPages) = result.getOrThrow()
@@ -337,7 +379,10 @@ class PlazaViewModel(
                     else -> null
                 }
                 
-                val result = repository.searchApps(query, page = searchPage, userId = finalUserId)
+                val result = when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> repository.searchApps(query, page = searchPage, userId = finalUserId)
+                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App Search")
+                }
                 
                 if (result.isSuccess) {
                     val (results, totalPages) = result.getOrThrow()
@@ -377,13 +422,16 @@ class PlazaViewModel(
                           val context = getApplication<Application>().applicationContext
                         val userCredentialsFlow = AuthManager.getCredentials(context)
                          val userCredentials = userCredentialsFlow.first()
-                         userCredentials?.userId
+                          userCredentials?.userId
                     }
                     currentUserId != null -> currentUserId
                     else -> null
                 }
                 
-                val result = repository.searchApps(currentQuery, page = searchPage, userId = finalUserId)
+                val result = when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> repository.searchApps(query, page = searchPage, userId = finalUserId)
+                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App Search Next Page")
+                }
                 
                 if (result.isSuccess) {
                     val (newResults, totalPages) = result.getOrThrow()
@@ -431,7 +479,10 @@ class PlazaViewModel(
                     else -> null
                 }
                 
-                val result = repository.searchApps(currentQuery, page = searchPage, userId = finalUserId)
+                val result = when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> repository.searchApps(query, page = searchPage, userId = finalUserId)
+                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App Search Prev Page")
+                }
                 
                 if (result.isSuccess) {
                     val (newResults, totalPages) = result.getOrThrow()
@@ -483,13 +534,16 @@ class PlazaViewModel(
                      val userCredentials = userCredentialsFlow.first()
                      userCredentials?.userId
                 } else null
-                val result = repository.getAppsList(
-                    limit = if (currentMode) 12 else 9,
-                    page = page,
-                    userId = finalUserId,
-                    categoryId = currentCategoryId,
-                    subCategoryId = currentSubCategoryId
-                )
+                val result = when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> repository.getAppsList(
+                        limit = if (currentMode) 12 else 9,
+                        page = page,
+                        userId = finalUserId,
+                        categoryId = currentCategoryId,
+                        subCategoryId = currentSubCategoryId
+                    )
+                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
+                }
                 
                 if (result.isSuccess) {
                     val (newApps, totalPages) = result.getOrThrow()
@@ -532,13 +586,16 @@ class PlazaViewModel(
                     else -> null
                 }
                 
-                val result = repository.searchApps(currentQuery, page = page, userId = finalUserId)
+                val result = when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> repository.searchApps(currentQuery, page = page, userId = finalUserId)
+                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App Search GoToPage")
+                }
                 
                 if (result.isSuccess) {
                     val (newResults, totalPages) = result.getOrThrow()
                     searchTotalPages = totalPages
                     this@PlazaViewModel.totalPages.postValue(totalPages)
-                    _searchResults.postValue(newResults.map { convertToUiModel(it) })
+                    _searchResults.postValue(newResults.map { convertToUiModel(it) }))
                 } else {
                     _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message}")
                 }

@@ -124,6 +124,21 @@ object SineShopClient {
         @SerialName("Valid") val valid: Boolean?
     )
 
+    // 新增：应用分类标签模型
+    @Serializable
+    data class AppTag(
+        val id: Int,
+        val name: String,
+        val icon: String?
+    )
+
+    // 新增：TagListData
+    @Serializable
+    data class TagListData(
+        val total: Int,
+        val list: List<AppTag>
+    )
+
     /**
      * 安全地执行 Ktor 请求，并处理异常和重试
      */
@@ -260,6 +275,49 @@ object SineShopClient {
                 response.data ?: throw IOException("Failed to get user info: Data is null")
             } else {
                 throw IOException("Failed to get user info: ${response.msg}")
+            }
+        }
+    }
+
+    // 新增：获取应用分类标签列表方法
+    suspend fun getAppTagList(): Result<List<AppTag>> {
+        val url = "/tag/list"
+        return safeApiCall<BaseResponse<TagListData>> {
+            httpClient.get(url) {
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }.map { response: BaseResponse<TagListData> ->
+            if (response.code == 0) {
+                response.data?.list ?: emptyList()
+            } else {
+                throw IOException("Failed to get app tag list: ${response.msg}")
+            }
+        }
+    }
+
+    // 新增：获取指定分类应用列表方法
+    suspend fun getAppsList(tag: Int, page: Int = 1): Result<List<AppTag>> {
+        val url = "/app/list"
+        val parameters = sineShopParameters {
+            append("tag", tag.toString())
+            append("page", page.toString())
+        }
+        return safeApiCall<BaseResponse<TagListData>> {
+            httpClient.get(url) {
+                parameters.entries().forEach { (key, values) ->
+                    values.forEach { value ->
+                        parameter(key, value)
+                    }
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }.map { response: BaseResponse<TagListData> ->
+            if (response.code == 0) {
+                response.data?.list ?: emptyList()
+            } else {
+                throw IOException("Failed to get app list: ${response.msg}")
             }
         }
     }
