@@ -69,6 +69,10 @@ import androidx.compose.material3.Divider
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.filled.Store
 import cc.bbq.xq.AppStore
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.layout.fillMaxWidth
 
 // 基础按钮组件
 @Composable
