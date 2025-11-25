@@ -80,7 +80,9 @@ class MainActivity : ComponentActivity() {
             val snackbarHostState = remember { SnackbarHostState() }
             val context = LocalContext.current
 
-            // 修复：使用正确的 Flow 监听方式，参考 UpdateSettingsScreen
+            // 修复：添加加载状态
+            var isAgreementDataLoaded by remember { mutableStateOf(false) }
+            
             val userAgreementDataStore = remember { UserAgreementDataStore(context) }
             
             // 使用 collectAsState 监听所有协议状态
@@ -89,17 +91,30 @@ class MainActivity : ComponentActivity() {
             val sineUserAgreementAccepted by userAgreementDataStore.sineUserAgreementFlow.collectAsState(initial = false)
             val sinePrivacyPolicyAccepted by userAgreementDataStore.sinePrivacyPolicyFlow.collectAsState(initial = false)
 
+            // 修复：在 LaunchedEffect 中标记数据已加载
+            LaunchedEffect(Unit) {
+                // 等待一小段时间确保 DataStore 状态已加载
+                delay(100)
+                isAgreementDataLoaded = true
+            }
+
             // 计算是否显示协议对话框
             val showAgreementDialog = remember(
                 userAgreementAccepted, 
                 xiaoquUserAgreementAccepted, 
                 sineUserAgreementAccepted, 
-                sinePrivacyPolicyAccepted
+                sinePrivacyPolicyAccepted,
+                isAgreementDataLoaded
             ) {
-                !(userAgreementAccepted && 
-                  xiaoquUserAgreementAccepted && 
-                  sineUserAgreementAccepted && 
-                  sinePrivacyPolicyAccepted)
+                // 只有在数据加载完成后才决定是否显示对话框
+                if (!isAgreementDataLoaded) {
+                    false // 数据未加载完成时不显示
+                } else {
+                    !(userAgreementAccepted && 
+                      xiaoquUserAgreementAccepted && 
+                      sineUserAgreementAccepted && 
+                      sinePrivacyPolicyAccepted)
+                }
             }
 
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
