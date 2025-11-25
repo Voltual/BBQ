@@ -128,6 +128,10 @@ dependencies {
     
     // ===== MarkDown 依赖 =====
     implementation("org.jetbrains:markdown:0.7.3")
+    //Accompanist依赖
+    val accompanist_version = "0.37.3"
+    implementation("com.google.accompanist:accompanist-pager:$accompanist_version")
+    implementation("com.google.accompanist:accompanist-pager-indicators:$accompanist_version")
 }
 
 protobuf {

@@ -25,6 +25,8 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.IOException
 
@@ -89,6 +91,38 @@ object SineShopClient {
     ) {
         val isSuccess: Boolean get() = code == 0
     }
+
+    // 新增：用户信息模型
+    @Serializable
+    data class SineShopUserInfo(
+        val id: Int,
+        val username: String,
+        @SerialName("display_name") val displayName: String,
+        @SerialName("user_describe") val userDescribe: String?,
+        @SerialName("user_official") val userOfficial: String?,
+        @SerialName("user_avatar") val userAvatar: String?,
+        @SerialName("user_badge") val userBadge: String?,
+        @SerialName("user_status") val userStatus: Int,
+        @SerialName("user_status_reason") val userStatusReason: String?,
+        @SerialName("ban_time") val banTime: Int,
+        @SerialName("join_time") val joinTime: Long,
+        @SerialName("user_permission") val userPermission: Int,
+        @SerialName("bind_qq") val bindQq: Long?,
+        @SerialName("bind_email") val bindEmail: String?,
+        @SerialName("bind_bilibili") val bindBilibili: Int?,
+        @SerialName("verify_email") val verifyEmail: Int,
+        @SerialName("last_login_device") val lastLoginDevice: String?,
+        @SerialName("last_online_time") val lastOnlineTime: Long,
+        @SerialName("pub_favourite") val pubFavourite: JsonObjectWrapper?,
+        @SerialName("upload_count") val uploadCount: Int,
+        @SerialName("reply_count") val replyCount: Int
+    )
+
+    @Serializable
+    data class JsonObjectWrapper(
+        @SerialName("Int64") val int64: Long?,
+        @SerialName("Valid") val valid: Boolean?
+    )
 
     /**
      * 安全地执行 Ktor 请求，并处理异常和重试
@@ -209,6 +243,23 @@ object SineShopClient {
                 response.data ?: "" // 返回 token，如果 data 为 null 则返回空字符串
             } else {
                 throw IOException(response.msg)
+            }
+        }
+    }
+
+    // 新增：获取用户信息方法
+    suspend fun getUserInfo(): Result<SineShopUserInfo> {
+        val url = "/user/info"
+        return safeApiCall<BaseResponse<SineShopUserInfo>> {
+            httpClient.get(url) {
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }.map { response: BaseResponse<SineShopUserInfo> ->
+            if (response.code == 0) {
+                response.data ?: throw IOException("Failed to get user info: Data is null")
+            } else {
+                throw IOException("Failed to get user info: ${response.msg}")
             }
         }
     }

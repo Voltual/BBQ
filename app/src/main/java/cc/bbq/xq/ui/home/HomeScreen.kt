@@ -2,7 +2,6 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>。
@@ -46,6 +45,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope // 添加导入
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,10 +68,14 @@ import cc.bbq.xq.ui.theme.BBQBackgroundCard
 import coil3.compose.AsyncImage
 import cc.bbq.xq.MainActivity
 import cc.bbq.xq.ui.*
+import com.google.accompanist.pager.*
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalPagerApi::class)
 @Composable
 fun HomeScreen(
     state: HomeState,
+    sineShopUserInfo: SineShopClient.SineShopUserInfo?,
     onAvatarClick: () -> Unit,
     onAvatarLongClick: () -> Unit,
     onMessageCenterClick: () -> Unit,
@@ -93,12 +97,78 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     snackbarHostState: SnackbarHostState//新增ViewModel和snackbar参数
 ) {
-  
+    val pagerState = rememberPagerState()
 
     LaunchedEffect(Unit) {
         viewModel.setSnackbarHostState(snackbarHostState)
     }
 
+    HorizontalPager(
+        count = 2,
+        state = pagerState,
+        modifier = modifier.fillMaxSize()
+    ) { page ->
+        when (page) {
+            0 -> {
+                // 小趣空间主页
+                XiaoquSpaceHomePage(
+                    state = state,
+                    onAvatarClick = onAvatarClick,
+                    onAvatarLongClick = onAvatarLongClick,
+                    onMessageCenterClick = onMessageCenterClick,
+                    onBrowseHistoryClick = onBrowseHistoryClick,
+                    onMyLikesClick = onMyLikesClick,
+                    onFollowersClick = onFollowersClick,
+                    onFansClick = onFansClick,
+                    onPostsClick = onPostsClick,
+                    onMyResourcesClick = onMyResourcesClick,
+                    onBillingClick = onBillingClick,
+                    onLoginClick = onLoginClick,
+                    onSettingsClick = onSettingsClick,
+                    onPaymentCenterClick = onPaymentCenterClick,
+                    onSignClick = onSignClick,
+                    onRecalculateDays = onRecalculateDays,
+                    onAboutClick = onAboutClick,
+                    onAccountProfileClick = onAccountProfileClick,
+                    viewModel = viewModel,
+                    snackbarHostState = snackbarHostState
+                )
+            }
+            1 -> {
+                // 弦应用商店个人主页
+                SineShopProfileScreen(
+                    userInfo = sineShopUserInfo,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun XiaoquSpaceHomePage(
+    state: HomeState,
+    onAvatarClick: () -> Unit,
+    onAvatarLongClick: () -> Unit,
+    onMessageCenterClick: () -> Unit,
+    onBrowseHistoryClick: () -> Unit,
+    onMyLikesClick: () -> Unit,
+    onFollowersClick: () -> Unit,
+    onFansClick: () -> Unit,
+    onPostsClick: () -> Unit,
+    onMyResourcesClick: () -> Unit,
+    onBillingClick: () -> Unit,
+    onLoginClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onPaymentCenterClick: () -> Unit,
+    onSignClick: () -> Unit,
+    onRecalculateDays: () -> Unit,
+    onAboutClick: () -> Unit, // 添加onAboutClick参数
+    onAccountProfileClick: () -> Unit, // 新增“账号资料”点击事件
+    modifier: Modifier = Modifier,
+    viewModel: HomeViewModel,
+    snackbarHostState: SnackbarHostState
+) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
