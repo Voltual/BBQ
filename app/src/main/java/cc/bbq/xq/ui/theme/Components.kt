@@ -73,6 +73,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 // 基础按钮组件
 @Composable
@@ -484,6 +486,7 @@ fun AppStoreDropdownMenu(
  * 带有图标的商店切换下拉菜单
  * 在紧凑空间中使用
  */
+ /*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CompactAppStoreDropdownMenu(
@@ -567,7 +570,7 @@ fun CompactAppStoreDropdownMenu(
         }
     }
 }
-
+*/
 /**
  * 商店切换卡片组件
  * 包含标签和下拉菜单的完整卡片形式
