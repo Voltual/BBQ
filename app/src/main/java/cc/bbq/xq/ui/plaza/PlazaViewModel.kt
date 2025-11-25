@@ -193,7 +193,7 @@ class PlazaViewModel(
         }
     }
 
-    fun loadData(categoryId: Int? = null, subCategoryId: Int? = null, userId: Long? = null) {
+        fun loadData(categoryId: Int? = null, subCategoryId: Int? = null, userId: Long? = null) {
         if (_isLoading.value == true) return
         _isLoading.value = true
         popularAppsPage = 1
@@ -216,6 +216,9 @@ class PlazaViewModel(
                     AppStore.SIENE_SHOP -> {
                         //TODO
                         Result.success(Pair(emptyList<KtorClient.AppItem>(),1))
+                    }
+                    else -> { // 添加 else 分支
+                        Result.failure(Exception("不支持的应用商店类型"))
                     }
                 }
                 
@@ -244,21 +247,6 @@ class PlazaViewModel(
         }
     }
 
-    private fun loadSineShopAppTags() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val result = SineShopClient.getAppTagList()
-                if (result.isSuccess) {
-                    _appTagList.postValue(result.getOrThrow())
-                } else {
-                    _errorMessage.postValue("加载弦应用商店分类失败: ${result.exceptionOrNull()?.message}")
-                }
-            } catch (e: Exception) {
-                _errorMessage.postValue("加载弦应用商店分类失败: ${e.localizedMessage}")
-            }
-        }
-    }
-
     fun nextPage(onComplete: (() -> Unit)? = null) {
         if (_isLoading.value == true || popularAppsPage >= popularAppsTotalPages) return
         _isLoading.value = true
@@ -282,6 +270,9 @@ class PlazaViewModel(
                         subCategoryId = currentSubCategoryId
                     )
                     AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
+                    else -> { // 添加 else 分支
+                        Result.failure(Exception("不支持的应用商店类型"))
+                    }
                 }
                 
                 if (result.isSuccess) {
@@ -333,6 +324,9 @@ class PlazaViewModel(
                         subCategoryId = currentSubCategoryId
                     )
                     AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
+                    else -> { // 添加 else 分支
+                        Result.failure(Exception("不支持的应用商店类型"))
+                    }
                 }
                 
                 if (result.isSuccess) {
@@ -380,8 +374,11 @@ class PlazaViewModel(
                 }
                 
                 val result = when (_appStore.value) {
-                    AppStore.XIAOQU_SPACE -> repository.searchApps(query, page = searchPage, userId = finalUserId)
+                    AppStore.XIAOQU_SPACE -> repository.searchApps(query = query, page = searchPage, userId = finalUserId)
                     AppStore.SIENE_SHOP -> TODO("Implement SineShop App Search")
+                    else -> { // 添加 else 分支
+                        Result.failure(Exception("不支持的应用商店类型"))
+                    }
                 }
                 
                 if (result.isSuccess) {
@@ -408,7 +405,7 @@ class PlazaViewModel(
         }
     }
 
-    fun searchNextPage(onComplete: (() -> Unit)? = null) {
+    fun searchNextPage(query: String, onComplete: (() -> Unit)? = null) {
         if (_isLoading.value == true || searchPage >= searchTotalPages) return
         _isLoading.postValue(true)
         searchPage++
@@ -429,8 +426,11 @@ class PlazaViewModel(
                 }
                 
                 val result = when (_appStore.value) {
-                    AppStore.XIAOQU_SPACE -> repository.searchApps(query, page = searchPage, userId = finalUserId)
+                    AppStore.XIAOQU_SPACE -> repository.searchApps(query = query, page = searchPage, userId = finalUserId)
                     AppStore.SIENE_SHOP -> TODO("Implement SineShop App Search Next Page")
+                    else -> { // 添加 else 分支
+                        Result.failure(Exception("不支持的应用商店类型"))
+                    }
                 }
                 
                 if (result.isSuccess) {
@@ -459,7 +459,7 @@ class PlazaViewModel(
         }
     }
 
-    fun searchPrevPage() {
+    fun searchPrevPage(query: String) {
         if (_isLoading.value == true || searchPage <= 1) return
         _isLoading.postValue(true)
         searchPage--
@@ -480,8 +480,11 @@ class PlazaViewModel(
                 }
                 
                 val result = when (_appStore.value) {
-                    AppStore.XIAOQU_SPACE -> repository.searchApps(query, page = searchPage, userId = finalUserId)
+                    AppStore.XIAOQU_SPACE -> repository.searchApps(query = query, page = searchPage, userId = finalUserId)
                     AppStore.SIENE_SHOP -> TODO("Implement SineShop App Search Prev Page")
+                    else -> { // 添加 else 分支
+                        Result.failure(Exception("不支持的应用商店类型"))
+                    }
                 }
                 
                 if (result.isSuccess) {
@@ -543,6 +546,9 @@ class PlazaViewModel(
                         subCategoryId = currentSubCategoryId
                     )
                     AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
+                    else -> { // 添加 else 分支
+                        Result.failure(Exception("不支持的应用商店类型"))
+                    }
                 }
                 
                 if (result.isSuccess) {
@@ -589,13 +595,16 @@ class PlazaViewModel(
                 val result = when (_appStore.value) {
                     AppStore.XIAOQU_SPACE -> repository.searchApps(currentQuery, page = page, userId = finalUserId)
                     AppStore.SIENE_SHOP -> TODO("Implement SineShop App Search GoToPage")
+                    else -> { // 添加 else 分支
+                        Result.failure(Exception("不支持的应用商店类型"))
+                    }
                 }
                 
                 if (result.isSuccess) {
                     val (newResults, totalPages) = result.getOrThrow()
                     searchTotalPages = totalPages
                     this@PlazaViewModel.totalPages.postValue(totalPages)
-                    _searchResults.postValue(newResults.map { convertToUiModel(it) }))
+                    _searchResults.postValue(newResults.map { convertToUiModel(it) })
                 } else {
                     _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message}")
                 }
@@ -611,7 +620,7 @@ class PlazaViewModel(
         if (autoScrollMode.value == true && _isLoading.value != true) {
             if (isSearchMode) {
                 if (searchPage < searchTotalPages) {
-                    searchNextPage()
+                    searchNextPage(currentQuery)
                 }
             } else {
                 if (popularAppsPage < popularAppsTotalPages) {
