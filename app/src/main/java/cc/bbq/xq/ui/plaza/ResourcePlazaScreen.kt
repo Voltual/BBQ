@@ -271,8 +271,8 @@ fun ResourcePlazaContent(
             PaginationControls(
                 currentPage = currentPage,
                 totalPages = totalPages,
-                onPrevClick = { if (isSearchMode) viewModel.searchPrevPage() else viewModel.prevPage() },
-                onNextClick = { if (isSearchMode) viewModel.searchNextPage() else viewModel.nextPage() },
+                onPrevClick = { if (isSearchMode) viewModel.searchPrevPage(searchQuery) else viewModel.prevPage() },
+                onNextClick = { if (isSearchMode) viewModel.searchNextPage(searchQuery) else viewModel.nextPage() },
                 onPageClick = { showPageDialog = true },
                 isPrevEnabled = currentPage > 1 && !isLoading,
                 isNextEnabled = currentPage < totalPages && !isLoading,
@@ -381,3 +381,4 @@ fun AppGridItem(
             )
         }
     }
+}
