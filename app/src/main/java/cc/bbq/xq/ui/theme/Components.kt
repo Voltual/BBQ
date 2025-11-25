@@ -41,26 +41,34 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.rememberAsyncImagePainter
-import androidx.compose.foundation.layout.width // 添加正确的导入路径
-// --- 新增导入 ---
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.clickable // 确保导入 clickable
-import androidx.compose.material.icons.Icons // 导入 Icons
+import androidx.compose.foundation.clickable 
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape // 确保导入 CircleShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.Arrangement
-import coil3.compose.SubcomposeAsyncImage // 确保导入 SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImage 
 import coil3.compose.rememberAsyncImagePainter
 import coil3.compose.AsyncImagePainter
 import coil3.compose.SubcomposeAsyncImageContent
-import coil3.request.ImageRequest // 确保导入 ImageRequest
+import coil3.request.ImageRequest 
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarData
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.filled.Store
+import cc.bbq.xq.AppStore
 
 // 基础按钮组件
 @Composable
@@ -404,4 +412,211 @@ fun BBQSnackbarHost(
         modifier = modifier,
         snackbar = snackbar
     )
+}
+
+/**
+ * 商店切换下拉菜单组件
+ * 用于在不同商店之间切换，可在多个界面复用
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppStoreDropdownMenu(
+    selectedStore: AppStore,
+    onStoreChange: (AppStore) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    label: String = "选择商店"
+) {
+    var expanded by remember { mutableStateOf(false) }
+    
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it }
+    ) {
+        OutlinedTextField(
+            modifier = modifier
+                .fillMaxWidth()
+                .menuAnchor(
+                    type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                    enabled = enabled
+                ),
+            readOnly = true,
+            value = selectedStore.displayName,
+            onValueChange = {},
+            label = { Text(label) },
+            trailingIcon = { 
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) 
+            },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            shape = AppShapes.medium
+        )
+        
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            AppStore.entries.forEach { store ->
+                DropdownMenuItem(
+                    text = { 
+                        Text(
+                            store.displayName,
+                            style = MaterialTheme.typography.bodyMedium
+                        ) 
+                    },
+                    onClick = {
+                        onStoreChange(store)
+                        expanded = false
+                    },
+                    colors = MenuDefaults.itemColors(
+                        textColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 带有图标的商店切换下拉菜单
+ * 在紧凑空间中使用
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CompactAppStoreDropdownMenu(
+    selectedStore: AppStore,
+    onStoreChange: (AppStore) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    var expanded by remember { mutableStateOf(false) }
+    
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it }
+    ) {
+        // 使用图标按钮作为触发器
+        Box(
+            modifier = modifier
+                .menuAnchor(
+                    type = ExposedDropdownMenuAnchorType.Icon,
+                    enabled = enabled
+                )
+        ) {
+            IconButton(
+                onClick = { expanded = true },
+                enabled = enabled
+            ) {
+                Icon(
+                    // 这里可以使用商店相关的图标，暂时使用默认图标
+                    imageVector = Icons.Default.Store,
+                    contentDescription = "切换商店",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.exposedDropdownSize(matchAnchorWidth = false)
+        ) {
+            // 显示当前选中的商店
+            DropdownMenuItem(
+                text = { 
+                    Text(
+                        "当前: ${selectedStore.displayName}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    ) 
+                },
+                onClick = { expanded = false },
+                enabled = false
+            )
+            
+            Divider(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            )
+            
+            // 商店选项
+            AppStore.entries.forEach { store ->
+                DropdownMenuItem(
+                    text = { 
+                        Text(
+                            store.displayName,
+                            style = MaterialTheme.typography.bodyMedium
+                        ) 
+                    },
+                    onClick = {
+                        onStoreChange(store)
+                        expanded = false
+                    },
+                    colors = MenuDefaults.itemColors(
+                        textColor = if (store == selectedStore) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
+                    )
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 商店切换卡片组件
+ * 包含标签和下拉菜单的完整卡片形式
+ */
+@Composable
+fun AppStoreSelectorCard(
+    selectedStore: AppStore,
+    onStoreChange: (AppStore) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    title: String = "商店选择",
+    description: String? = "选择要浏览的应用商店"
+) {
+    BBQCard(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // 标题和描述
+            Column(
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                description?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+            
+            // 下拉菜单
+            AppStoreDropdownMenu(
+                selectedStore = selectedStore,
+                onStoreChange = onStoreChange,
+                enabled = enabled,
+                label = "当前商店"
+            )
+            
+            // 当前选择提示
+            Text(
+                "已选择: ${selectedStore.displayName}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
 }

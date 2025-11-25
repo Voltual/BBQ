@@ -8,7 +8,7 @@
 
 package cc.bbq.xq
 
-enum class AppStore {
-    XIAOQU_SPACE,    // 小趣空间
-    SIENE_SHOP       // 弦应用商店
+enum class AppStore(val displayName: String) {
+    XIAOQU_SPACE("小趣空间"),
+    SIENE_SHOP("弦应用商店")
 }
