@@ -5,7 +5,9 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.package cc.bbq.xq.ui.home
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+
+package cc.bbq.xq.ui.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*

@@ -71,7 +71,6 @@ import cc.bbq.xq.MainActivity
 import cc.bbq.xq.ui.*
 import com.google.accompanist.pager.*
 import kotlinx.coroutines.launch
-import cc.bbq.xq.ui.home.SineShopProfileScreen
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
