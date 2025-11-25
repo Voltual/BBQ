@@ -62,7 +62,6 @@ import cc.bbq.xq.util.UpdateChecker//导入公共的更新函数
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogWindowProvider
 import android.app.Activity
-// 导入 BBQSnackbarHost
 import cc.bbq.xq.ui.theme.BBQSnackbarHost
 import cc.bbq.xq.data.UserAgreementDataStore // 导入 UserAgreementDataStore
 
@@ -79,52 +78,50 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val snackbarHostState = remember { SnackbarHostState() }
-
-            // 新增：检查用户协议是否已同意
             val context = LocalContext.current
-            val agreementDataStore = remember { UserAgreementDataStore(context) }
 
-            // 协议状态
-            val userAgreementAcceptedFlow = agreementDataStore.userAgreementFlow.collectAsState(initial = false)
-            val xiaoquUserAgreementAcceptedFlow = agreementDataStore.xiaoquUserAgreementFlow.collectAsState(initial = false)
-            val sineUserAgreementAcceptedFlow = agreementDataStore.sineUserAgreementFlow.collectAsState(initial = false)
-            val sinePrivacyPolicyAcceptedFlow = agreementDataStore.sinePrivacyPolicyFlow.collectAsState(initial = false)
+            // 修复：使用正确的 Flow 监听方式，参考 UpdateSettingsScreen
+            val userAgreementDataStore = remember { UserAgreementDataStore(context) }
+            
+            // 使用 collectAsState 监听所有协议状态
+            val userAgreementAccepted by userAgreementDataStore.userAgreementFlow.collectAsState(initial = false)
+            val xiaoquUserAgreementAccepted by userAgreementDataStore.xiaoquUserAgreementFlow.collectAsState(initial = false)
+            val sineUserAgreementAccepted by userAgreementDataStore.sineUserAgreementFlow.collectAsState(initial = false)
+            val sinePrivacyPolicyAccepted by userAgreementDataStore.sinePrivacyPolicyFlow.collectAsState(initial = false)
 
-            val userAgreementAccepted by userAgreementAcceptedFlow
-            val xiaoquUserAgreementAccepted by xiaoquUserAgreementAcceptedFlow
-            val sineUserAgreementAccepted by sineUserAgreementAcceptedFlow
-            val sinePrivacyPolicyAccepted by sinePrivacyPolicyAcceptedFlow
-
-            var showAgreementDialog by remember {
-                mutableStateOf(
-                    !(userAgreementAccepted &&
-                            xiaoquUserAgreementAccepted &&
-                            sineUserAgreementAccepted &&
-                            sinePrivacyPolicyAccepted)
-                )
+            // 计算是否显示协议对话框
+            val showAgreementDialog = remember(
+                userAgreementAccepted, 
+                xiaoquUserAgreementAccepted, 
+                sineUserAgreementAccepted, 
+                sinePrivacyPolicyAccepted
+            ) {
+                !(userAgreementAccepted && 
+                  xiaoquUserAgreementAccepted && 
+                  sineUserAgreementAccepted && 
+                  sinePrivacyPolicyAccepted)
             }
 
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
-                Scaffold( // 使用 Scaffold
-                    snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState) }, // 添加 SnackbarHost
+                Scaffold(
+                    snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState) },
                     modifier = Modifier.fillMaxSize(),
                     content = { innerPadding ->
                         Surface(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(innerPadding), // 应用内边距
+                                .padding(innerPadding),
                             color = MaterialTheme.colorScheme.background
                         ) {
-                            MainComposeApp(snackbarHostState = snackbarHostState) // 传递 SnackbarHostState
-                            // 检查更新
-                            CheckForUpdates(snackbarHostState) // 传递 snackbarHostState
+                            MainComposeApp(snackbarHostState = snackbarHostState)
+                            CheckForUpdates(snackbarHostState)
 
-                            // 新增：用户协议对话框
+                            // 修复：正确使用状态控制对话框显示
                             if (showAgreementDialog) {
                                 UserAgreementDialog(
                                     onDismissRequest = { /* 禁止取消 */ },
                                     onAgreed = {
-                                        showAgreementDialog = false
+                                        // 当用户同意所有协议后，状态会自动更新，对话框会消失
                                     }
                                 )
                             }
