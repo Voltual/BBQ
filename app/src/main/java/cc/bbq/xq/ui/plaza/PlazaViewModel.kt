@@ -348,6 +348,21 @@ class PlazaViewModel(
             }
         }
     }
+    
+    private fun loadSineShopAppTags() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val result = SineShopClient.getAppTagList()
+                if (result.isSuccess) {
+                    _appTagList.postValue(result.getOrThrow())
+                } else {
+                    _errorMessage.postValue("加载弦应用商店分类失败: ${result.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                _errorMessage.postValue("加载弦应用商店分类失败: ${e.localizedMessage}")
+            }
+        }
+    }
 
     fun searchResources(query: String, isMyResource: Boolean = false) {
         if (_isLoading.value == true) return

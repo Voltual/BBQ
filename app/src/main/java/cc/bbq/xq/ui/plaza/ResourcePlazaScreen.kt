@@ -43,6 +43,7 @@ import coil3.request.ImageRequest
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.ui.theme.AppStoreDropdownMenu
 import cc.bbq.xq.KtorClient
+import kotlinx.coroutines.launch
 
 @Composable
 fun ResourcePlazaScreen(
@@ -87,24 +88,30 @@ fun ResourcePlazaContent(
     var showPagination by rememberSaveable { mutableStateOf(true) }
     val dialogShape = remember { RoundedCornerShape(4.dp) }
     val gridState = rememberLazyGridState()
+    val appTagList by viewModel.appTagList.observeAsState(emptyList()) // 弦应用商店标签
 
-    val categories = remember {
-        listOf(
-            AppCategory(null, null, "最新分享"),
-            AppCategory(45, 47, "影音阅读"),
-            AppCategory(45, 55, "音乐听歌"),
-            AppCategory(45, 61, "休闲娱乐"),
-            AppCategory(45, 58, "文件管理"),
-            AppCategory(45, 59, "图像摄影"),
-            AppCategory(45, 53, "输入方式"),
-            AppCategory(45, 54, "生活出行"),
-            AppCategory(45, 50, "社交通讯"),
-            AppCategory(45, 56, "上网浏览"),
-            AppCategory(45, 60, "其他类型"),
-            AppCategory(45, 62, "跑酷竞技")
-        )
+    val categories = remember(selectedAppStore) {
+        if (selectedAppStore == AppStore.XIAOQU_SPACE) {
+            listOf(
+                AppCategory(null, null, "最新分享"),
+                AppCategory(45, 47, "影音阅读"),
+                AppCategory(45, 55, "音乐听歌"),
+                AppCategory(45, 61, "休闲娱乐"),
+                AppCategory(45, 58, "文件管理"),
+                AppCategory(45, 59, "图像摄影"),
+                AppCategory(45, 53, "输入方式"),
+                AppCategory(45, 54, "生活出行"),
+                AppCategory(45, 50, "社交通讯"),
+                AppCategory(45, 56, "上网浏览"),
+                AppCategory(45, 60, "其他类型"),
+                AppCategory(45, 62, "跑酷竞技")
+            )
+        } else {
+            // 将 SineShopClient.AppTag 转换为 AppCategory
+           appTagList.map { AppCategory(it.id, null, it.name) }
+        }
     }
-    val selectedCategory = categories[selectedCategoryIndex]
+    val selectedCategory = categories.getOrNull(selectedCategoryIndex) ?: AppCategory(null, null, "暂无分类")
 
     // 修复：使用 derivedStateOf 跟踪分类变化，避免不必要的重组
     val currentCategory by remember(selectedCategory) {
@@ -374,4 +381,3 @@ fun AppGridItem(
             )
         }
     }
-}
