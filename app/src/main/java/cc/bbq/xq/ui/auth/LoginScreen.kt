@@ -63,8 +63,7 @@ fun LoginScreen(
         } else {
             LoginContent(
                 viewModel = viewModel,
-                onNavigateToRegister = { isRegistering = true },
-                viewModel = viewModel // 传递 ViewModel
+                onNavigateToRegister = { isRegistering = true }
             )
         }
     }

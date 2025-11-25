@@ -188,23 +188,23 @@ object SineShopClient {
     }
 
     // 新增：弦应用商店登录方法
-    suspend fun login(username: String, password: String): Result<String> {
-        val url = "/user/login"
-        val parameters = sineShopParameters {
-            append("username", username)
-            append("password", password)
+suspend fun login(username: String, password: String): Result<String> {
+    val url = "/user/login"
+    val parameters = sineShopParameters {
+        append("username", username)
+        append("password", password)
+    }
+    return safeApiCall<BaseResponse<String>> { // 显式指定类型参数
+        httpClient.post(url) {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(FormDataContent(parameters))
         }
-        return safeApiCall {
-            httpClient.post(url) {
-                contentType(ContentType.Application.FormUrlEncoded)
-                setBody(FormDataContent(parameters))
-            }
-        }.map { response: BaseResponse<String> ->
-            if (response.code == 0) {
-                response.data ?: "" // 返回 token，如果 data 为 null 则返回空字符串
-            } else {
-                throw IOException(response.msg)
-            }
+    }.map { response: BaseResponse<String> ->
+        if (response.code == 0) {
+            response.data ?: "" // 返回 token，如果 data 为 null 则返回空字符串
+        } else {
+            throw IOException(response.msg)
         }
     }
+}
 }
