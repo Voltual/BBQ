@@ -267,7 +267,14 @@ fun ResourcePlazaContent(
                         if (visibleItemsInfo.isEmpty()) return@derivedStateOf false
                         val lastVisibleItem = visibleItemsInfo.last()
                         val totalItemsCount = layoutInfo.totalItemsCount
-                        lastVisibleItem.index >= totalItemsCount - 4
+                        // 修改：确保在第一页时也能触发加载更多
+                        // 只有当 totalItemsCount 大于 0 时才进行判断
+                        if (totalItemsCount > 0) {
+                            lastVisibleItem.index >= totalItemsCount - 4
+                        } else {
+                            // 如果 totalItemsCount 为 0，则不加载更多
+                            false
+                        }
                     }
                 }
             }

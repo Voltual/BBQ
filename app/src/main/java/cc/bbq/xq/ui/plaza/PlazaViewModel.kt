@@ -328,7 +328,8 @@ class PlazaViewModel(
                             // 没有更多数据，回退页码
                             popularAppsPage--
                             currentPage.postValue(popularAppsPage)
-                            // 不更新 totalPages，保持之前的值
+                            // 修改：更新 totalPages 为当前页码，防止重复请求
+                            popularAppsTotalPages = popularAppsPage
                             this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
                             // 明确指定泛型类型为 AppItem
                             val appItems: List<AppItem> = emptyList() // 返回空列表
