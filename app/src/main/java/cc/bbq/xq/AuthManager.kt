@@ -26,7 +26,7 @@ private const val ENCRYPTED_FILE_NAME = "user_credentials_encrypted.pb"
 object AuthManager {
 
     private lateinit var masterKey: MasterKey
-    private lateinit var encryptedFile: EncryptedFile
+    private var encryptedFile: EncryptedFile? = null
     private lateinit var dataStoreFile: File
 
     // --- 初始化加密 ---
@@ -37,13 +37,23 @@ object AuthManager {
 
         // 使用新的文件名
         dataStoreFile = File(context.filesDir, ENCRYPTED_FILE_NAME)
+        
+        // 只有在文件不存在时才创建 EncryptedFile 实例
+        // 如果文件已存在，我们将在需要时再创建 EncryptedFile
+    }
 
-        encryptedFile = EncryptedFile.Builder(
-            context,
-            dataStoreFile,
-            masterKey,
-            EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB
-        ).build()
+    // --- 获取或创建 EncryptedFile ---
+    private fun getOrCreateEncryptedFile(context: Context): EncryptedFile {
+        return encryptedFile ?: run {
+            val file = EncryptedFile.Builder(
+                context,
+                dataStoreFile,
+                masterKey,
+                EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB
+            ).build()
+            encryptedFile = file
+            file
+        }
     }
 
     // --- 保存凭证 ---
@@ -54,7 +64,7 @@ object AuthManager {
         token: String,
         userId: Long
     ) {
-        val currentCredentials = readCredentials()
+        val currentCredentials = readCredentials(context)
         val newCredentials = UserCredentials.newBuilder()
             .setUsername(username)
             .setPassword(password)
@@ -64,23 +74,23 @@ object AuthManager {
             .setSineMarketToken(currentCredentials?.sineMarketToken ?: "") // 保留现有的弦应用商店token
             .build()
         
-        writeCredentials(newCredentials)
+        writeCredentials(context, newCredentials)
     }
 
     // --- 新增：保存弦应用商店token ---
     suspend fun saveSineMarketToken(context: Context, token: String) {
-        val currentCredentials = readCredentials() ?: UserCredentials.getDefaultInstance()
+        val currentCredentials = readCredentials(context) ?: UserCredentials.getDefaultInstance()
         val newCredentials = currentCredentials.toBuilder()
             .setSineMarketToken(token)
             .build()
         
-        writeCredentials(newCredentials)
+        writeCredentials(context, newCredentials)
     }
 
     // --- 获取凭证 ---
     fun getCredentials(context: Context): Flow<UserCredentials?> {
         return flow {
-            emit(readCredentials())
+            emit(readCredentials(context))
         }
     }
 
@@ -100,7 +110,7 @@ object AuthManager {
 
     // --- 清除凭证 ---
     suspend fun clearCredentials(context: Context) {
-        writeCredentials(UserCredentials.getDefaultInstance())
+        writeCredentials(context, UserCredentials.getDefaultInstance())
     }
 
     // --- 获取设备ID ---
@@ -111,9 +121,9 @@ object AuthManager {
     }
 
     // --- 私有方法：读取凭证 ---
-    private suspend fun readCredentials(): UserCredentials? {
+    private suspend fun readCredentials(context: Context): UserCredentials? {
         return try {
-            if (!::encryptedFile.isInitialized) {
+            if (!::masterKey.isInitialized) {
                 return null
             }
             
@@ -122,6 +132,7 @@ object AuthManager {
                 return null
             }
             
+            val encryptedFile = getOrCreateEncryptedFile(context)
             encryptedFile.openFileInput().use { inputStream ->
                 UserCredentialsSerializer.readFrom(inputStream)
             }
@@ -135,6 +146,8 @@ object AuthManager {
                 if (dataStoreFile.exists()) {
                     dataStoreFile.delete()
                 }
+                // 重置 encryptedFile 引用
+                encryptedFile = null
             } catch (deleteException: Exception) {
                 deleteException.printStackTrace()
             }
@@ -143,12 +156,20 @@ object AuthManager {
     }
 
     // --- 私有方法：写入凭证 ---
-    private suspend fun writeCredentials(credentials: UserCredentials) {
-        if (!::encryptedFile.isInitialized) {
+    private suspend fun writeCredentials(context: Context, credentials: UserCredentials) {
+        if (!::masterKey.isInitialized) {
             throw IllegalStateException("AuthManager not initialized. Call initialize() first.")
         }
         
         try {
+            // 如果文件已存在，先删除它
+            if (dataStoreFile.exists()) {
+                dataStoreFile.delete()
+                // 重置 encryptedFile 引用，因为文件已被删除
+                encryptedFile = null
+            }
+            
+            val encryptedFile = getOrCreateEncryptedFile(context)
             encryptedFile.openFileOutput().use { outputStream ->
                 UserCredentialsSerializer.writeTo(credentials, outputStream)
             }
@@ -159,6 +180,8 @@ object AuthManager {
                 if (dataStoreFile.exists()) {
                     dataStoreFile.delete()
                 }
+                // 重置 encryptedFile 引用
+                encryptedFile = null
             } catch (deleteException: Exception) {
                 deleteException.printStackTrace()
             }
@@ -194,13 +217,13 @@ object AuthManager {
                 .setSineMarketToken("")
                 .build()
             
-            writeCredentials(credentials)
+            writeCredentials(context, credentials)
 
             // 清除 SharedPreferences 中的数据
             sharedPrefs.edit().clear().apply()
             
             // 删除旧的未加密 DataStore 文件（如果存在）
-            val oldDataStoreFile = File(context.filesDir.parent, "datastore/${ENCRYPTED_FILE_NAME}")
+            val oldDataStoreFile = File(context.filesDir.parent, "datastore/auth_preferences.pb")
             if (oldDataStoreFile.exists()) {
                 oldDataStoreFile.delete()
             }
@@ -210,7 +233,7 @@ object AuthManager {
     // --- 新增：检查文件是否损坏 ---
     suspend fun isFileCorrupted(context: Context): Boolean {
         return try {
-            val credentials = readCredentials()
+            val credentials = readCredentials(context)
             // 如果文件存在但无法读取有效数据，则认为文件损坏
             dataStoreFile.exists() && credentials == null
         } catch (e: Exception) {
@@ -224,8 +247,8 @@ object AuthManager {
             if (dataStoreFile.exists()) {
                 dataStoreFile.delete()
             }
-            // 重新初始化
-            initialize(context)
+            // 重置 encryptedFile 引用
+            encryptedFile = null
         } catch (e: Exception) {
             e.printStackTrace()
         }
