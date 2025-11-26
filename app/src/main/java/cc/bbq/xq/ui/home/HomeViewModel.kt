@@ -314,3 +314,4 @@ class HomeViewModel : ViewModel() {
             snackbarHostState.value?.showSnackbar(message)
         }
     }
+}
