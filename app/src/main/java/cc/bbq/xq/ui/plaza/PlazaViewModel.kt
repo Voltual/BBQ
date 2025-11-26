@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.catch
+import kotlin.math.ceil
 
 // ==================== 内部类 - 数据模型和ViewModel ====================
 
@@ -70,10 +71,6 @@ class PlazaViewModel(
     private var currentCategoryId: Int? = null
     private var currentSubCategoryId: Int? = null
     private var currentUserId: Long? = null
-    
-    // 新增：总项目数量
-    private val _totalItems = MutableLiveData(0)
-    val totalItems: LiveData<Int> = _totalItems
 
     // DataStore keys
     private val AUTO_SCROLL_MODE_KEY = booleanPreferencesKey("auto_scroll_mode")
@@ -197,87 +194,84 @@ class PlazaViewModel(
         }
     }
 
-        fun loadData(categoryId: Int? = null, subCategoryId: Int? = null, userId: Long? = null) {
-    if (_isLoading.value == true) return
-    _isLoading.value = true
-    popularAppsPage = 1
-    currentPage.value = 1
-    currentCategoryId = categoryId
-    currentSubCategoryId = subCategoryId
-    currentUserId = userId
+    fun loadData(categoryId: Int? = null, subCategoryId: Int? = null, userId: Long? = null) {
+        if (_isLoading.value == true) return
+        _isLoading.value = true
+        popularAppsPage = 1
+        currentPage.value = 1
+        currentCategoryId = categoryId
+        currentSubCategoryId = subCategoryId
+        currentUserId = userId
 
-    viewModelScope.launch(Dispatchers.IO) {
-        try {
-            Log.d("PlazaViewModel", "加载数据: 模式=$currentMode, 页码=$popularAppsPage, categoryId=$categoryId, subCategoryId=$subCategoryId, userId=$userId")
-            val result: Result<Pair<List<AppItem>, Int>> = when (_appStore.value) { // 明确指定 result 的类型
-                AppStore.XIAOQU_SPACE -> {
-                    val res = repository.getAppsList(
-                        limit = if (currentMode) 12 else 9,
-                        page = popularAppsPage,
-                        userId = userId,
-                        categoryId = categoryId,
-                        subCategoryId = subCategoryId
-                    )
-                    res.map { pair -> // 将 Pair<KtorClient.AppItem, Int> 映射为 Pair<AppItem, Int>
-                        val (apps, totalPages) = pair
-                        val appItems: List<AppItem> = apps.map { appItem ->
-                            convertToUiModel(appItem)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                Log.d("PlazaViewModel", "加载数据: 模式=$currentMode, 页码=$popularAppsPage, categoryId=$categoryId, subCategoryId=$subCategoryId, userId=$userId")
+                val result: Result<Pair<List<AppItem>, Int>> = when (_appStore.value) { // 明确指定 result 的类型
+                    AppStore.XIAOQU_SPACE -> {
+                        val res = repository.getAppsList(
+                            limit = if (currentMode) 12 else 9,
+                            page = popularAppsPage,
+                            userId = userId,
+                            categoryId = categoryId,
+                            subCategoryId = subCategoryId
+                        )
+                        res.map { pair -> // 将 Pair<KtorClient.AppItem, Int> 映射为 Pair<AppItem, Int>
+                            val (apps, totalPages) = pair
+                            val appItems: List<AppItem> = apps.map { appItem ->
+                                convertToUiModel(appItem)
+                            }
+                            Pair(appItems, totalPages)
                         }
-                        Pair(appItems, totalPages)
+                    }
+                    AppStore.SIENE_SHOP -> {
+                        val tagId = categoryId ?: 0 // 默认使用第一个分类
+                        val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
+                        if (appListResult.isSuccess) {
+                            val appListData = appListResult.getOrThrow()
+                            val apps = appListData.list
+                            val total = appListData.total
+
+                            // 计算总页数
+                            popularAppsTotalPages = ceil(total.toDouble() / 10).toInt()
+                            this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+
+                            val appItems: List<AppItem> = apps.map { app ->
+                                convertToUiModel(app)
+                            }
+                            Result.success(Pair(appItems, popularAppsTotalPages))
+                        } else {
+                            Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
+                        }
+                    }
+                    else -> { // 添加 else 分支
+                        Result.failure(Exception("不支持的应用商店类型"))
                     }
                 }
-                AppStore.SIENE_SHOP -> {
-                    // 修改：处理可空类型
-                    val tagId = categoryId ?: 0 // 如果 categoryId 为 null，则使用默认值 0
-                    val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
-                    if (appListResult.isSuccess) {
-                        val appListData = appListResult.getOrThrow()
-                        val apps = appListData.list
-                        val total = appListData.total
+                
+                if (result.isSuccess) {
+                    val (apps, totalPages) = result.getOrThrow() // apps 的类型现在是 List<AppItem>
+                    popularAppsTotalPages = totalPages
+                    if (popularAppsTotalPages <= 0) popularAppsTotalPages = 1
+                    this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
 
-                        // 更新总项目数量
-                        _totalItems.postValue(total)
-
-                        popularAppsTotalPages = 0 // 弦应用商店没有提供总页数，暂时设置为 1
-                        this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
-                        // 明确指定泛型类型为 AppItem
-                        val appItems: List<AppItem> = apps.map { app ->
-                            convertToUiModel(app) // 使用新的 convertToUiModel
-                        }
-                        Result.success(Pair(appItems, popularAppsTotalPages))
+                    if (apps.isEmpty()) {
+                        _errorMessage.postValue("加载失败或暂无资源")
+                        _plazaData.postValue(PlazaData(emptyList()))
                     } else {
-                        Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
+                        _plazaData.postValue(PlazaData(apps)) // apps 的类型现在是 List<AppItem>
                     }
-                }
-                else -> { // 添加 else 分支
-                    Result.failure(Exception("不支持的应用商店类型"))
-                }
-            }
-            
-            if (result.isSuccess) {
-                val (apps, totalPages) = result.getOrThrow() // apps 的类型现在是 List<AppItem>
-                popularAppsTotalPages = totalPages
-                if (popularAppsTotalPages <= 0) popularAppsTotalPages = 1
-                this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
-
-                if (apps.isEmpty()) {
-                    _errorMessage.postValue("加载失败或暂无资源")
-                    _plazaData.postValue(PlazaData(emptyList()))
                 } else {
-                    _plazaData.postValue(PlazaData(apps)) // apps 的类型现在是 List<AppItem>
+                    _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message}")
+                    _plazaData.postValue(PlazaData(emptyList()))
                 }
-            } else {
-                _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message}")
+            } catch (e: Exception) {
+                _errorMessage.postValue("发生错误: ${e.localizedMessage}")
                 _plazaData.postValue(PlazaData(emptyList()))
+            } finally {
+                _isLoading.postValue(false)
             }
-        } catch (e: Exception) {
-            _errorMessage.postValue("发生错误: ${e.localizedMessage}")
-            _plazaData.postValue(PlazaData(emptyList()))
-        } finally {
-            _isLoading.postValue(false)
         }
     }
-}
 
     private fun loadSineShopAppTags() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -295,117 +289,102 @@ class PlazaViewModel(
         }
     }
 
-             fun nextPage(onComplete: (() -> Unit)? = null) {
-    if (_isLoading.value == true) return // 如果已经在加载，则直接返回
-    // 对于弦应用商店，我们不检查 totalPages，而是通过检查返回的列表是否为空来判断是否还有更多数据
-    if (_appStore.value != AppStore.SIENE_SHOP && popularAppsPage >= popularAppsTotalPages) return
-    _isLoading.value = true
-    popularAppsPage++
-    currentPage.postValue(popularAppsPage)
+    fun nextPage(onComplete: (() -> Unit)? = null) {
+        if (_isLoading.value == true) return // 如果已经在加载，则直接返回
+        // 对于弦应用商店，我们不检查 totalPages，而是通过检查返回的列表是否为空来判断是否还有更多数据
+        if (_appStore.value != AppStore.SIENE_SHOP && popularAppsPage >= popularAppsTotalPages) return
+        _isLoading.value = true
+        popularAppsPage++
+        currentPage.postValue(popularAppsPage)
 
-    viewModelScope.launch(Dispatchers.IO) {
-        try {
-            val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) {
-                val context = getApplication<Application>().applicationContext
-                val userCredentialsFlow = AuthManager.getCredentials(context)
-                 val userCredentials = userCredentialsFlow.first()
-                 userCredentials?.userId
-            } else null
-            val result: Result<Pair<List<AppItem>, Int>> = when (_appStore.value) { // 明确指定 result 的类型
-                AppStore.XIAOQU_SPACE -> {
-                    val res = repository.getAppsList(
-                        limit = if (currentMode) 12 else 9,
-                        page = popularAppsPage,
-                        userId = finalUserId,
-                        categoryId = this@PlazaViewModel.currentCategoryId, // 使用 this@PlazaViewModel 访问成员变量
-                        subCategoryId = this@PlazaViewModel.currentSubCategoryId // 使用 this@PlazaViewModel 访问成员变量
-                    )
-                    res.map { pair -> // 将 Pair<KtorClient.AppItem, Int> 映射为 Pair<AppItem, Int>
-                        val (apps, totalPages) = pair
-                        val appItems: List<AppItem> = apps.map { appItem ->
-                            convertToUiModel(appItem)
-                        }
-                        Pair(appItems, totalPages)
-                    }
-                }
-                AppStore.SIENE_SHOP -> {
-                    val tagId = this@PlazaViewModel.currentCategoryId ?: 0 // 使用 this@PlazaViewModel 访问成员变量
-                    val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
-                    if (appListResult.isSuccess) {
-                        val appListData = appListResult.getOrThrow()
-                        val apps = appListData.list
-                        val total = appListData.total
-
-                        // 更新总项目数量
-                        _totalItems.postValue(total)
-
-                        // 对于弦应用商店，我们不使用 totalPages，而是通过检查返回的列表是否为空来判断是否还有更多数据
-                        // 如果返回的列表为空，则说明没有更多数据了
-                        if (apps.isEmpty()) {
-                            // 没有更多数据，回退页码
-                            popularAppsPage--
-                            currentPage.postValue(popularAppsPage)
-                            // 修改：更新 totalPages 为当前页码，防止重复请求
-                            popularAppsTotalPages = popularAppsPage
-                            this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
-                            // 明确指定泛型类型为 AppItem
-                            val appItems: List<AppItem> = emptyList() // 返回空列表
-                            Result.success(Pair(appItems, popularAppsTotalPages))
-                        } else {
-                            // 有数据，继续加载
-                            // 弦应用商店没有提供总页数，暂时设置为一个较大的值，确保可以继续翻页
-                            // 实际的翻页终止条件是返回空列表
-                            popularAppsTotalPages = Int.MAX_VALUE 
-                            this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
-                            // 明确指定泛型类型为 AppItem
-                            val appItems: List<AppItem> = apps.map { app ->
-                                convertToUiModel(app)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) {
+                    val context = getApplication<Application>().applicationContext
+                    val userCredentialsFlow = AuthManager.getCredentials(context)
+                    val userCredentials = userCredentialsFlow.first()
+                    userCredentials?.userId
+                } else null
+                val result: Result<Pair<List<AppItem>, Int>> = when (_appStore.value) { // 明确指定 result 的类型
+                    AppStore.XIAOQU_SPACE -> {
+                        val res = repository.getAppsList(
+                            limit = if (currentMode) 12 else 9,
+                            page = popularAppsPage,
+                            userId = finalUserId,
+                            categoryId = this@PlazaViewModel.currentCategoryId, // 使用 this@PlazaViewModel 访问成员变量
+                            subCategoryId = this@PlazaViewModel.currentSubCategoryId // 使用 this@PlazaViewModel 访问成员变量
+                        )
+                        res.map { pair -> // 将 Pair<KtorClient.AppItem, Int> 映射为 Pair<AppItem, Int>
+                            val (apps, totalPages) = pair
+                            val appItems: List<AppItem> = apps.map { appItem ->
+                                convertToUiModel(appItem)
                             }
-                            Result.success(Pair(appItems, popularAppsTotalPages))
+                            Pair(appItems, totalPages)
                         }
-                    } else {
-                        Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
                     }
-                }
-                else -> { // 添加 else 分支
-                    Result.failure(Exception("不支持的应用商店类型"))
-                }
-            }
-            
-            if (result.isSuccess) {
-                val (newApps, totalPages) = result.getOrThrow() // newApps 的类型现在是 List<AppItem>
-                // 只有在小趣空间时才更新 totalPages
-                if (_appStore.value == AppStore.XIAOQU_SPACE) {
-                    popularAppsTotalPages = totalPages
-                    this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+                    AppStore.SIENE_SHOP -> {
+                        val tagId = this@PlazaViewModel.currentCategoryId ?: 0 // 使用 this@PlazaViewModel 访问成员变量
+                        val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
+                        if (appListResult.isSuccess) {
+                            val appListData = appListResult.getOrThrow()
+                            val apps = appListData.list
+                            val total = appListData.total
+
+                            // 计算总页数
+                            popularAppsTotalPages = ceil(total.toDouble() / 10).toInt()
+                            this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+
+                            // 对于弦应用商店，我们不使用 totalPages，而是通过检查返回的列表是否为空来判断是否还有更多数据
+                            if (apps.isEmpty()) {
+                                // 没有更多数据，回退页码
+                                popularAppsPage--
+                                currentPage.postValue(popularAppsPage)
+                                // 修改：更新 totalPages 为当前页码，防止重复请求
+                                popularAppsTotalPages = popularAppsPage
+                                this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+                                val appItems: List<AppItem> = emptyList() // 返回空列表
+                                Result.success(Pair(appItems, popularAppsTotalPages))
+                            } else {
+                                // 有数据，继续加载
+                                val appItems: List<AppItem> = apps.map { app ->
+                                    convertToUiModel(app)
+                                }
+                                Result.success(Pair(appItems, popularAppsTotalPages))
+                            }
+                        } else {
+                            Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
+                        }
+                    }
+                    else -> { // 添加 else 分支
+                        Result.failure(Exception("不支持的应用商店类型"))
+                    }
                 }
                 
-                // 如果是弦应用商店且返回空列表，则说明没有更多数据了
-                if (_appStore.value == AppStore.SIENE_SHOP && newApps.isEmpty()) {
-                    _errorMessage.postValue("没有更多数据了")
-                    // 不更新 _plazaData
-                } else if (newApps.isNotEmpty()) {
+                if (result.isSuccess) {
+                    val (newApps, totalPages) = result.getOrThrow() // newApps 的类型现在是 List<AppItem>
+                    popularAppsTotalPages = totalPages
+                    this@PlazaViewModel.totalPages.postValue(totalPages)
+                    
                     val currentApps = _plazaData.value?.popularApps ?: emptyList()
                     val updatedApps = currentApps + newApps
                     _plazaData.postValue(PlazaData(popularApps = updatedApps))
+                } else {
+                    // 加载失败，回退页码
+                    popularAppsPage--
+                    currentPage.postValue(popularAppsPage)
+                    _errorMessage.postValue("加载更多失败: ${result.exceptionOrNull()?.message}")
                 }
-            } else {
-                // 加载失败，回退页码
+            } catch (e: Exception) {
+                // 发生异常，回退页码
                 popularAppsPage--
                 currentPage.postValue(popularAppsPage)
-                _errorMessage.postValue("加载更多失败: ${result.exceptionOrNull()?.message}")
+                _errorMessage.postValue("加载更多失败: ${e.localizedMessage}")
+            } finally {
+                _isLoading.postValue(false)
+                onComplete?.invoke()
             }
-        } catch (e: Exception) {
-            // 发生异常，回退页码
-            popularAppsPage--
-            currentPage.postValue(popularAppsPage)
-            _errorMessage.postValue("加载更多失败: ${e.localizedMessage}")
-        } finally {
-            _isLoading.postValue(false)
-            onComplete?.invoke()
         }
     }
-}
 
     fun prevPage() {
         if (_isLoading.value == true || popularAppsPage <= 1) return
@@ -416,10 +395,10 @@ class PlazaViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) {
-                     val context = getApplication<Application>().applicationContext
+                    val context = getApplication<Application>().applicationContext
                     val userCredentialsFlow = AuthManager.getCredentials(context)
-                     val userCredentials = userCredentialsFlow.first()
-                     userCredentials?.userId
+                    val userCredentials = userCredentialsFlow.first()
+                    userCredentials?.userId
                 } else null
                 val result: Result<Pair<List<AppItem>, Int>> = when (_appStore.value) { // 明确指定 result 的类型
                     AppStore.XIAOQU_SPACE -> {
@@ -477,10 +456,10 @@ class PlazaViewModel(
                 val finalUserId = when {
                     // 如果是"我的资源"模式，使用当前登录用户的ID
                     isMyResource && currentUserId == null ->{
-                       val context = getApplication<Application>().applicationContext
+                        val context = getApplication<Application>().applicationContext
                         val userCredentialsFlow = AuthManager.getCredentials(context)
-                     val userCredentials = userCredentialsFlow.first()
-                      userCredentials?.userId
+                        val userCredentials = userCredentialsFlow.first()
+                        userCredentials?.userId
                     }
                     // 如果是"TA的资源"模式，使用指定的 userId
                     currentUserId != null -> currentUserId
@@ -531,10 +510,10 @@ class PlazaViewModel(
                 // 修复：在分页搜索时也传递正确的 userId
                 val finalUserId = when {
                     currentMode && currentUserId == null -> {
-                          val context = getApplication<Application>().applicationContext
+                        val context = getApplication<Application>().applicationContext
                         val userCredentialsFlow = AuthManager.getCredentials(context)
-                         val userCredentials = userCredentialsFlow.first()
-                          userCredentials?.userId
+                        val userCredentials = userCredentialsFlow.first()
+                        userCredentials?.userId
                     }
                     currentUserId != null -> currentUserId
                     else -> null
@@ -585,10 +564,10 @@ class PlazaViewModel(
                 // 修复：在上一页搜索时也传递正确的 userId
                 val finalUserId = when {
                     currentMode && currentUserId == null ->{
-                         val context = getApplication<Application>().applicationContext
+                        val context = getApplication<Application>().applicationContext
                         val userCredentialsFlow = AuthManager.getCredentials(context)
-                          val userCredentials = userCredentialsFlow.first()
-                          userCredentials?.userId
+                        val userCredentials = userCredentialsFlow.first()
+                        userCredentials?.userId
                     }
                     currentUserId != null -> currentUserId
                     else -> null
@@ -648,62 +627,62 @@ class PlazaViewModel(
     )
 
     fun goToPage(page: Int) {
-    if (page < 1 || page > popularAppsTotalPages) {
-        _errorMessage.postValue("页码超出范围")
-        return
-    }
-    if (page == popularAppsPage && _plazaData.value?.popularApps?.isNotEmpty() == true) return
+        if (page < 1 || page > popularAppsTotalPages) {
+            _errorMessage.postValue("页码超出范围")
+            return
+        }
+        if (page == popularAppsPage && _plazaData.value?.popularApps?.isNotEmpty() == true) return
 
-    _isLoading.value = true
-    popularAppsPage = page
-    currentPage.postValue(page)
+        _isLoading.value = true
+        popularAppsPage = page
+        currentPage.postValue(page)
 
-    viewModelScope.launch(Dispatchers.IO) {
-        try {
-            val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) {
-                val context = getApplication<Application>().applicationContext
-                val userCredentialsFlow = AuthManager.getCredentials(context)
-                 val userCredentials = userCredentialsFlow.first()
-                 userCredentials?.userId
-            } else null
-            val result: Result<Pair<List<AppItem>, Int>> = when (_appStore.value) { // 明确指定 result 的类型
-                AppStore.XIAOQU_SPACE -> {
-                    val res = repository.getAppsList(
-                        limit = if (currentMode) 12 else 9,
-                        page = page,
-                        userId = finalUserId,
-                        categoryId = currentCategoryId,
-                        subCategoryId = this@PlazaViewModel.currentSubCategoryId // 使用 this@PlazaViewModel 访问成员变量
-                    )
-                    res.map { pair -> // 将 Pair<KtorClient.AppItem, Int> 映射为 Pair<AppItem, Int>
-                        val (apps, totalPages) = pair
-                        val appItems: List<AppItem> = apps.map { appItem ->
-                            convertToUiModel(appItem)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) {
+                    val context = getApplication<Application>().applicationContext
+                    val userCredentialsFlow = AuthManager.getCredentials(context)
+                    val userCredentials = userCredentialsFlow.first()
+                    userCredentials?.userId
+                } else null
+                val result: Result<Pair<List<AppItem>, Int>> = when (_appStore.value) { // 明确指定 result 的类型
+                    AppStore.XIAOQU_SPACE -> {
+                        val res = repository.getAppsList(
+                            limit = if (currentMode) 12 else 9,
+                            page = page,
+                            userId = finalUserId,
+                            categoryId = currentCategoryId,
+                            subCategoryId = this@PlazaViewModel.currentSubCategoryId // 使用 this@PlazaViewModel 访问成员变量
+                        )
+                        res.map { pair -> // 将 Pair<KtorClient.AppItem, Int> 映射为 Pair<AppItem, Int>
+                            val (apps, totalPages) = pair
+                            val appItems: List<AppItem> = apps.map { appItem ->
+                                convertToUiModel(appItem)
+                            }
+                            Pair(appItems, totalPages)
                         }
-                        Pair(appItems, totalPages)
+                    }
+                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
+                    else -> { // 添加 else 分支
+                        Result.failure(Exception("不支持的应用商店类型"))
                     }
                 }
-                AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
-                else -> { // 添加 else 分支
-                    Result.failure(Exception("不支持的应用商店类型"))
+                
+                if (result.isSuccess) {
+                    val (newApps, totalPages) = result.getOrThrow() // newApps 的类型现在是 List<AppItem>
+                    popularAppsTotalPages = totalPages
+                    this@PlazaViewModel.totalPages.postValue(totalPages)
+                    _plazaData.postValue(PlazaData(popularApps = newApps)) // newApps 的类型现在是 List<AppItem>
+                } else {
+                    _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message}")
                 }
+            } catch (e: Exception) {
+                _errorMessage.postValue("加载失败: ${e.message}")
+            } finally {
+                _isLoading.postValue(false)
             }
-            
-            if (result.isSuccess) {
-                val (newApps, totalPages) = result.getOrThrow() // newApps 的类型现在是 List<AppItem>
-                popularAppsTotalPages = totalPages
-                this@PlazaViewModel.totalPages.postValue(totalPages)
-                _plazaData.postValue(PlazaData(popularApps = newApps)) // newApps 的类型现在是 List<AppItem>
-            } else {
-                _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message}")
-            }
-        } catch (e: Exception) {
-            _errorMessage.postValue("加载失败: ${e.message}")
-        } finally {
-            _isLoading.postValue(false)
         }
     }
-}
 
     fun searchGoToPage(page: Int) {
         if (page < 1 || page > searchTotalPages) {
@@ -721,10 +700,10 @@ class PlazaViewModel(
                 // 修复：在跳页搜索时也传递正确的 userId
                 val finalUserId = when {
                     currentMode && currentUserId == null ->{
-                         val context = getApplication<Application>().applicationContext
+                        val context = getApplication<Application>().applicationContext
                         val userCredentialsFlow = AuthManager.getCredentials(context)
-                         val userCredentials = userCredentialsFlow.first()
-                         userCredentials?.userId
+                        val userCredentials = userCredentialsFlow.first()
+                        userCredentials?.userId
                     }
                     currentUserId != null -> currentUserId
                     else -> null
@@ -761,21 +740,18 @@ class PlazaViewModel(
                     searchNextPage(currentQuery)
                 }
             } else {
-                // 修改：对于弦应用商店，判断是否还有更多项目
-                if (_appStore.value == AppStore.SIENE_SHOP) {
-                    val currentItemsCount = _plazaData.value?.popularApps?.size ?: 0
-                    if (currentItemsCount < _totalItems.value) {
-                        nextPage()
-                    }
-                } else {
-                    if (popularAppsPage < popularAppsTotalPages) {
-                        nextPage()
-                    }
+                if (popularAppsPage < popularAppsTotalPages) {
+                    nextPage()
                 }
             }
         }
     }
+
+    private fun calculateTotalPages(totalItems: Int): Int {
+        return ceil(totalItems.toDouble() / 10).toInt()
+    }
 }
+
 class PlazaRepository(private val context: Context) {
     private val api = KtorClient.ApiServiceImpl
 
@@ -823,45 +799,45 @@ class PlazaRepository(private val context: Context) {
         }
     }
 
-    suspend fun searchApps(
-    query: String, 
-    page: Int = 1, 
-    limit: Int = 20, 
-    userId: Long? = null
-): Result<Pair<List<KtorClient.AppItem>, Int>> {
-    return try {
-        val result = api.getAppsList(
-            limit = limit,
-            page = page,
-            appName = query,
-            sortOrder = "desc",
-            userId = userId
-            // 移除了 categoryId 和 subCategoryId 参数
-        )
-        
-        when {
-            result.isSuccess -> {
-                val response = result.getOrThrow()
-                if (response.code == 1) {
-                    val apps = response.data.list
-                    val totalPages = response.data.pagecount.takeIf { it > 0 } ?: 1
-                    Result.success(Pair(apps, totalPages))
-                } else {
-                    Result.failure(Exception("搜索失败: ${response.msg}"))
+        suspend fun searchApps(
+        query: String,
+        page: Int = 1,
+        limit: Int = 20,
+        userId: Long? = null
+    ): Result<Pair<List<KtorClient.AppItem>, Int>> {
+        return try {
+            val result = api.getAppsList(
+                limit = limit,
+                page = page,
+                appName = query,
+                sortOrder = "desc",
+                userId = userId
+                // 移除了 categoryId 和 subCategoryId 参数
+            )
+
+            when {
+                result.isSuccess -> {
+                    val response = result.getOrThrow()
+                    if (response.code == 1) {
+                        val apps = response.data.list
+                        val totalPages = response.data.pagecount.takeIf { it > 0 } ?: 1
+                        Result.success(Pair(apps, totalPages))
+                    } else {
+                        Result.failure(Exception("搜索失败: ${response.msg}"))
+                    }
+                }
+                else -> result.map {
+                    if (it.code == 1) {
+                        val apps = it.data.list
+                        val totalPages = it.data.pagecount.takeIf { it > 0 } ?: 1
+                        Pair(apps, totalPages)
+                    } else {
+                        throw Exception("搜索失败: ${it.msg}")
+                    }
                 }
             }
-            else -> result.map { 
-                if (it.code == 1) {
-                    val apps = it.data.list
-                    val totalPages = it.data.pagecount.takeIf { it > 0 } ?: 1
-                    Pair(apps, totalPages)
-                } else {
-                    throw Exception("搜索失败: ${it.msg}")
-                }
-            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-    } catch (e: Exception) {
-        Result.failure(e)
     }
-}
 }

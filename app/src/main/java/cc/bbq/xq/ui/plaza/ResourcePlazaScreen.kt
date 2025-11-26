@@ -153,8 +153,6 @@ fun ResourcePlazaContent(
             )
         }
     }
-    
-    val totalItems by viewModel.totalItems.observeAsState(0)
 
     // ==================== 自动翻页逻辑 ====================
     val shouldLoadMore by remember {
@@ -170,22 +168,18 @@ fun ResourcePlazaContent(
                 
                 val lastVisibleItem = visibleItemsInfo.last()
                 val totalItemsCount = layoutInfo.totalItemsCount
-                
-                // 对于弦应用商店，判断是否还有更多项目
-                val hasMoreItems = if (selectedAppStore == AppStore.SIENE_SHOP) {
-                    totalItemsCount < totalItems // 如果已加载的项目数量小于总项目数量，则认为还有更多项目
-                } else {
-                    currentPage < totalPages
-                }
+
+                // 检查是否还有更多页
+                val hasMorePages = currentPage < totalPages
                 
                 // 如果总项目数大于0，则检查是否接近底部
-                if (totalItemsCount > 0 && hasMoreItems) {
+                if (totalItemsCount > 0 && hasMorePages) {
                     // 当最后一个可见项目接近列表底部时，触发加载更多
                     // 使用更宽松的条件：最后3个可见项目中的任何一个接近底部都触发
                     val isNearBottom = lastVisibleItem.index >= totalItemsCount - 3
                     isNearBottom
                 } else {
-                    // 如果总项目数为0或者没有更多项目，则不加载更多
+                    // 如果总项目数为0或者没有更多页面，则不加载更多
                     false
                 }
             }
@@ -317,13 +311,7 @@ fun ResourcePlazaContent(
                 onNextClick = { if (isSearchMode) viewModel.searchNextPage(searchQuery) else viewModel.nextPage() },
                 onPageClick = { showPageDialog = true },
                 isPrevEnabled = currentPage > 1 && !isLoading,
-                isNextEnabled = if (selectedAppStore == AppStore.SIENE_SHOP) {
-                    // 对于弦应用商店，只要不在加载中，就允许点击下一页
-                    !isLoading
-                } else {
-                    // 对于小趣空间，需要检查 currentPage < totalPages
-                    currentPage < totalPages && !isLoading
-                },
+                isNextEnabled = currentPage < totalPages && !isLoading,
                 // 新增参数：对于弦应用商店，不显示总页数
                 showTotalPages = selectedAppStore != AppStore.SIENE_SHOP,
                 extraControls = {
