@@ -89,8 +89,10 @@ fun ResourcePlazaContent(
     val dialogShape = remember { RoundedCornerShape(4.dp) }
     val gridState = rememberLazyGridState()
     val appTagList by viewModel.appTagList.observeAsState(emptyList()) // 弦应用商店标签
+    val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    val categories = remember(selectedAppStore) {
+    val categories = remember(selectedAppStore, appTagList) {
         if (selectedAppStore == AppStore.XIAOQU_SPACE) {
             listOf(
                 AppCategory(null, null, "最新分享"),
@@ -111,6 +113,8 @@ fun ResourcePlazaContent(
            appTagList.map { AppCategory(it.id, null, it.name) }
         }
     }
+    
+    // 确保 categories 列表不为空
     val selectedCategory = categories.getOrNull(selectedCategoryIndex) ?: AppCategory(null, null, "暂无分类")
 
     // 修复：使用 derivedStateOf 跟踪分类变化，避免不必要的重组
@@ -191,22 +195,31 @@ fun ResourcePlazaContent(
             PrimaryScrollableTabRow(
                 selectedTabIndex = selectedCategoryIndex,
                 containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary
+                contentColor = MaterialTheme.colorScheme.primary,
+                // 确保categories不为空
+                modifier = Modifier.fillMaxWidth()
             ) {
-                categories.forEachIndexed { index, category ->
-                    Tab(
-                        selected = selectedCategoryIndex == index,
-                        onClick = { 
-                            selectedCategoryIndex = index
-                            // 立即更新分类，不等待 LaunchedEffect
-                            viewModel.loadDataByCategory(
-                                categoryId = category.categoryId,
-                                subCategoryId = category.subCategoryId,
-                                userId = userId
-                            )
-                        },
-                        text = { Text(category.categoryName) }
+                if (categories.isEmpty()) {
+                    Text(
+                        text = "暂无分类",
+                        modifier = Modifier.padding(16.dp)
                     )
+                } else {
+                    categories.forEachIndexed { index, category ->
+                        Tab(
+                            selected = selectedCategoryIndex == index,
+                            onClick = { 
+                                selectedCategoryIndex = index
+                                // 立即更新分类，不等待 LaunchedEffect
+                                viewModel.loadDataByCategory(
+                                    categoryId = category.categoryId,
+                                    subCategoryId = category.subCategoryId,
+                                    userId = userId
+                                )
+                            },
+                            text = { Text(category.categoryName) }
+                        )
+                    }
                 }
             }
         }
@@ -381,4 +394,3 @@ fun AppGridItem(
             )
         }
     }
-}

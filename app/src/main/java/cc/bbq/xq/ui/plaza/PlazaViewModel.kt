@@ -350,19 +350,21 @@ class PlazaViewModel(
     }
     
     private fun loadSineShopAppTags() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val result = SineShopClient.getAppTagList()
-                if (result.isSuccess) {
-                    _appTagList.postValue(result.getOrThrow())
-                } else {
-                    _errorMessage.postValue("加载弦应用商店分类失败: ${result.exceptionOrNull()?.message}")
-                }
-            } catch (e: Exception) {
-                _errorMessage.postValue("加载弦应用商店分类失败: ${e.localizedMessage}")
+    viewModelScope.launch(Dispatchers.IO) {
+        try {
+            val result = SineShopClient.getAppTagList()
+            if (result.isSuccess) {
+                _appTagList.postValue(result.getOrThrow())
+            } else {
+                _errorMessage.postValue("加载弦应用商店分类失败: ${result.exceptionOrNull()?.message}")
+                _appTagList.postValue(emptyList()) // 确保即使加载失败，也设置为空列表
             }
+        } catch (e: Exception) {
+            _errorMessage.postValue("加载弦应用商店分类失败: ${e.localizedMessage}")
+            _appTagList.postValue(emptyList()) // 确保即使发生异常，也设置为空列表
         }
     }
+}
 
     fun searchResources(query: String, isMyResource: Boolean = false) {
         if (_isLoading.value == true) return
