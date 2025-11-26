@@ -84,8 +84,8 @@ class PlazaViewModel(
     val autoScrollMode: LiveData<Boolean> = _autoScrollMode
 
     // 公开的LiveData
-    val currentPage = MutableLiveData(1)
-    val totalPages = MutableLiveData(1)
+    val currentPage = MutableLiveData(2)
+    val totalPages = MutableLiveData(4)
     val plazaData: LiveData<PlazaData> = _plazaData
     val searchResults: LiveData<List<AppItem>> = _searchResults
     val errorMessage: LiveData<String> = _errorMessage
