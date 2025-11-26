@@ -760,14 +760,21 @@ class PlazaViewModel(
                     searchNextPage(currentQuery)
                 }
             } else {
-                if (popularAppsPage < popularAppsTotalPages) {
-                    nextPage()
+                // 修改：对于弦应用商店，判断是否还有更多项目
+                if (_appStore.value == AppStore.SIENE_SHOP) {
+                    val currentItemsCount = _plazaData.value?.popularApps?.size ?: 0
+                    if (currentItemsCount < _totalItems.value) {
+                        nextPage()
+                    }
+                } else {
+                    if (popularAppsPage < popularAppsTotalPages) {
+                        nextPage()
+                    }
                 }
             }
         }
     }
 }
-
 class PlazaRepository(private val context: Context) {
     private val api = KtorClient.ApiServiceImpl
 
