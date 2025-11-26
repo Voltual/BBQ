@@ -64,7 +64,6 @@ fun ResourcePlazaScreen(
     )
 }
 
-
 @Composable
 fun ResourcePlazaContent(
     modifier: Modifier = Modifier,
@@ -314,7 +313,7 @@ fun ResourcePlazaContent(
                 isPrevEnabled = currentPage > 1 && !isLoading,
                 isNextEnabled = currentPage < totalPages && !isLoading,
                 // 新增参数：对于弦应用商店，不显示总页数
-                showTotalPages = selectedAppStore != AppStore.SIENE_SHOP,
+       //         showTotalPages = selectedAppStore != AppStore.SIENE_SHOP,
                 extraControls = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
