@@ -11,17 +11,16 @@ package cc.bbq.xq
 
 import android.content.Context
 import android.util.Base64
-import androidx.datastore.core.DataStore
 import androidx.datastore.dataStoreFile
 import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKey
 import cc.bbq.xq.data.proto.UserCredentials
 import cc.bbq.xq.data.proto.UserCredentialsSerializer
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
+import java.io.FileNotFoundException
 
 private const val DATA_STORE_FILE_NAME = "auth_preferences.pb"
 
@@ -29,6 +28,7 @@ object AuthManager {
 
     private lateinit var masterKey: MasterKey
     private lateinit var encryptedFile: EncryptedFile
+    private lateinit var dataStoreFile: File
 
     // --- 初始化加密 ---
     fun initialize(context: Context) {
@@ -36,11 +36,11 @@ object AuthManager {
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
 
-        val authDataStoreFile = context.dataStoreFile(DATA_STORE_FILE_NAME)
+        dataStoreFile = context.dataStoreFile(DATA_STORE_FILE_NAME)
 
         encryptedFile = EncryptedFile.Builder(
             context,
-            authDataStoreFile,
+            dataStoreFile,
             masterKey,
             EncryptedFile.FileEncryptionScheme.AES256_GCM_HKDF_4KB
         ).build()
@@ -79,7 +79,7 @@ object AuthManager {
 
     // --- 获取凭证 ---
     fun getCredentials(context: Context): Flow<UserCredentials?> {
-        return kotlinx.coroutines.flow.flow {
+        return flow {
             emit(readCredentials())
         }
     }
@@ -117,13 +117,17 @@ object AuthManager {
                 return null
             }
             
-            if (!File(encryptedFile.file.absolutePath).exists()) {
+            // 修复：检查文件是否存在
+            if (!dataStoreFile.exists()) {
                 return null
             }
             
             encryptedFile.openFileInput().use { inputStream ->
                 UserCredentialsSerializer.readFrom(inputStream)
             }
+        } catch (e: FileNotFoundException) {
+            // 文件不存在，返回null
+            null
         } catch (e: Exception) {
             e.printStackTrace()
             null
