@@ -236,7 +236,8 @@ fun ResourcePlazaContent(
                     apps = if (isSearchMode) searchState else plazaState.popularApps,
                     columns = if (isMyResourceMode) 4 else 3,
                     onItemClick = { app -> navigateToAppDetail(app.id, app.versionId) },
-                    gridState = gridState
+                    gridState = gridState,
+                    selectedAppStore = selectedAppStore // 传入 selectedAppStore
                 )
             }
 
@@ -325,7 +326,8 @@ fun AppGrid(
     apps: List<AppItem>,
     columns: Int,
     onItemClick: (AppItem) -> Unit,
-    gridState: LazyGridState
+    gridState: LazyGridState,
+    selectedAppStore: AppStore // 新增参数
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
@@ -336,7 +338,8 @@ fun AppGrid(
         state = gridState
     ) {
         items(apps, key = { it.uniqueId }) { app ->
-            AppGridItem(app, onItemClick)
+            // 将 selectedAppStore 传递给 AppGridItem
+            AppGridItem(app, onItemClick, selectedAppStore) 
         }
     }
 }
@@ -344,12 +347,15 @@ fun AppGrid(
 @Composable
 fun AppGridItem(
     app: AppItem,
-    onClick: (AppItem) -> Unit
+    onClick: (AppItem) -> Unit,
+    selectedAppStore: AppStore // 新增参数
 ) {
+    // 移除这里的硬编码状态
+    // val selectedAppStore by remember { mutableStateOf(AppStore.XIAOQU_SPACE) } // 假设默认是小趣空间
+
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val selectedAppStore by remember { mutableStateOf(AppStore.XIAOQU_SPACE) } // 假设默认是小趣空间
 
     Card(
         onClick = {
