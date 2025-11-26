@@ -433,7 +433,7 @@ class PlazaViewModel(
         }
     }
 
-    fun searchResources(query: String, isMyResource: Boolean = false) {
+        fun searchResources(query: String, isMyResource: Boolean = false) {
         if (_isLoading.value == true) return
         _isLoading.postValue(true)
         searchPage = 1
@@ -446,10 +446,10 @@ class PlazaViewModel(
                 val finalUserId = when {
                     // 如果是"我的资源"模式，使用当前登录用户的ID
                     isMyResource && currentUserId == null ->{
-                        val context = getApplication<Application>().applicationContext
+                       val context = getApplication<Application>().applicationContext
                         val userCredentialsFlow = AuthManager.getCredentials(context)
-                        val userCredentials = userCredentialsFlow.first()
-                        userCredentials?.userId
+                         val userCredentials = userCredentialsFlow.first()
+                          userCredentials?.userId
                     }
                     // 如果是"TA的资源"模式，使用指定的 userId
                     currentUserId != null -> currentUserId
@@ -459,7 +459,18 @@ class PlazaViewModel(
                 
                 val result = when (_appStore.value) {
                     AppStore.XIAOQU_SPACE -> repository.searchApps(query = query, page = searchPage, userId = finalUserId)
-                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App Search")
+                    AppStore.SIENE_SHOP -> {
+                        val appListResult = SineShopClient.getAppsList(tag = null, page = searchPage, keyword = query)
+                        if (appListResult.isSuccess) {
+                            val appListData = appListResult.getOrThrow()
+                            val apps = appListData.list
+                            popularAppsTotalPages = calculateTotalPages(appListData.total)
+                            this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+                            Result.success(Pair(apps.map { convertToUiModel(it) }, popularAppsTotalPages))
+                        } else {
+                            Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
+                        }
+                    }
                     else -> { // 添加 else 分支
                         Result.failure(Exception("不支持的应用商店类型"))
                     }
@@ -500,10 +511,10 @@ class PlazaViewModel(
                 // 修复：在分页搜索时也传递正确的 userId
                 val finalUserId = when {
                     currentMode && currentUserId == null -> {
-                        val context = getApplication<Application>().applicationContext
+                          val context = getApplication<Application>().applicationContext
                         val userCredentialsFlow = AuthManager.getCredentials(context)
-                        val userCredentials = userCredentialsFlow.first()
-                        userCredentials?.userId
+                         val userCredentials = userCredentialsFlow.first()
+                          userCredentials?.userId
                     }
                     currentUserId != null -> currentUserId
                     else -> null
@@ -511,7 +522,20 @@ class PlazaViewModel(
                 
                 val result = when (_appStore.value) {
                     AppStore.XIAOQU_SPACE -> repository.searchApps(query = query, page = searchPage, userId = finalUserId)
-                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App Search Next Page")
+                    AppStore.SIENE_SHOP -> {
+                        val appListResult = SineShopClient.getAppsList(tag = null, page = searchPage, keyword = query)
+                        if (appListResult.isSuccess) {
+                            val appListData = appListResult.getOrThrow()
+                            val apps = appListData.list
+                            searchTotalPages = calculateTotalPages(appListData.total)
+                            this@PlazaViewModel.totalPages.postValue(searchTotalPages)
+
+                            _searchResults.postValue(apps.map { convertToUiModel(it) })
+                        } else {
+                            _errorMessage.postValue("搜索失败: ${appListResult.exceptionOrNull()?.message}")
+                            _searchResults.postValue(emptyList())
+                        }
+                    }
                     else -> { // 添加 else 分支
                         Result.failure(Exception("不支持的应用商店类型"))
                     }
@@ -551,13 +575,13 @@ class PlazaViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // 修复：在上一页搜索时也传递正确的 userId
+                // 修复：在分页搜索时也传递正确的 userId
                 val finalUserId = when {
-                    currentMode && currentUserId == null ->{
-                        val context = getApplication<Application>().applicationContext
+                    currentMode && currentUserId == null -> {
+                          val context = getApplication<Application>().applicationContext
                         val userCredentialsFlow = AuthManager.getCredentials(context)
-                        val userCredentials = userCredentialsFlow.first()
-                        userCredentials?.userId
+                         val userCredentials = userCredentialsFlow.first()
+                          userCredentials?.userId
                     }
                     currentUserId != null -> currentUserId
                     else -> null

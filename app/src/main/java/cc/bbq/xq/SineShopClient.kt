@@ -320,14 +320,12 @@ object SineShopClient {
         }
     }
 
-    // 新增：获取指定分类应用列表方法
-    // SineShopClient.kt
-
-// 新增：获取指定分类应用列表方法
-suspend fun getAppsList(tag: Int, page: Int = 1): Result<AppListData> { // 修改返回类型为 AppListData
+// 修改：获取指定分类应用列表方法，支持关键词搜索
+suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null): Result<AppListData> {
     val url = "/app/list"
     val parameters = sineShopParameters {
-        append("tag", tag.toString())
+        tag?.let { append("tag", it.toString()) }
+        keyword?.let { append("keyword", it) }
         append("page", page.toString())
     }
     return safeApiCall<BaseResponse<AppListData>> {
