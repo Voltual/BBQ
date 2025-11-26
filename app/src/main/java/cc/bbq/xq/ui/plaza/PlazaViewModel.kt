@@ -227,7 +227,8 @@ class PlazaViewModel(
                     }
                 }
                 AppStore.SIENE_SHOP -> {
-                    val tagId = categoryId ?: 0 // 默认使用第一个分类
+                    // 修改：处理可空类型
+                    val tagId = categoryId ?: 0 // 如果 categoryId 为 null，则使用默认值 0
                     val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
                     if (appListResult.isSuccess) {
                         val appListData = appListResult.getOrThrow()
