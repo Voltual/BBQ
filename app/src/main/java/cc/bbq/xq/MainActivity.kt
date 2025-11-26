@@ -455,16 +455,15 @@ fun MainComposeApp(snackbarHostState: SnackbarHostState) {
     val isLoggedIn = remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        val userCredentialsFlow = AuthManager.getCredentials(context)
-        val userCredentials = userCredentialsFlow.first()
-        // 检查 userCredentials 是否存在，且 username 和 password 都不为空
-        isLoggedIn.value = userCredentials?.userId != 0L // fixed: remove unnecessary non-null assertion
+    val userCredentialsFlow = AuthManager.getCredentials(context)
+    val userCredentials = userCredentialsFlow.first()
+    isLoggedIn.value = userCredentials?.userId != 0L
 
-        // 只有在用户已登录的情况下才尝试自动登录
-        if (isLoggedIn.value) {
-            tryAutoLogin(userCredentials!!.username, userCredentials.password, context, navController, snackbarHostState) // 传递 snackbarHostState
-        }
+    // 只有在用户已登录的情况下才尝试自动登录
+    if (isLoggedIn.value && userCredentials != null) {
+        tryAutoLogin(userCredentials.username, userCredentials.password, context, navController, snackbarHostState)
     }
+}
     
 
     ModalNavigationDrawer(
