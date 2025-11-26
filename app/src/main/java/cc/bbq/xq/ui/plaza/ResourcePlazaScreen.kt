@@ -259,20 +259,30 @@ fun ResourcePlazaContent(
 
             val shouldLoadMore by remember {
                 derivedStateOf {
-                    if (!autoScrollMode || isLoading || currentPage >= totalPages) {
+                    // 检查基本条件：自动滚动模式是否开启、是否正在加载、是否已达到最后一页
+                    // 对于弦应用商店，不检查 totalPages
+                    if (!autoScrollMode || isLoading || 
+                        (selectedAppStore != AppStore.SIENE_SHOP && currentPage >= totalPages)) {
                         false
                     } else {
                         val layoutInfo = gridState.layoutInfo
                         val visibleItemsInfo = layoutInfo.visibleItemsInfo
+                        // 如果没有可见项目，则不加载更多
                         if (visibleItemsInfo.isEmpty()) return@derivedStateOf false
+                        
                         val lastVisibleItem = visibleItemsInfo.last()
                         val totalItemsCount = layoutInfo.totalItemsCount
-                        // 修改：确保在第一页时也能触发加载更多
-                        // 只有当 totalItemsCount 大于 0 时才进行判断
+                        
+                        // 如果总项目数大于0，则检查是否接近底部
                         if (totalItemsCount > 0) {
-                            lastVisibleItem.index >= totalItemsCount - 4
+                            // 修改：使用更宽松的条件触发加载更多
+                            // 当可见项目数少于总项目数，或者最后可见项目接近底部时，触发加载更多
+                            val isNearBottom = lastVisibleItem.index >= totalItemsCount - 4
+                            val hasFewItems = totalItemsCount <= 10 // 如果总项目数很少，也触发加载更多
+                            
+                            isNearBottom || hasFewItems
                         } else {
-                            // 如果 totalItemsCount 为 0，则不加载更多
+                            // 如果总项目数为0，则不加载更多
                             false
                         }
                     }
