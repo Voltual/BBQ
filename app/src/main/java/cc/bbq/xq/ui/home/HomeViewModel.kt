@@ -60,7 +60,9 @@ data class HomeUiState(
     // 添加数据加载状态
     val dataLoadState: DataLoadState = DataLoadState.NotLoaded,
     // 新增：弦应用商店用户信息
-    val sineShopUserInfo: SineShopClient.SineShopUserInfo? = null
+    val sineShopUserInfo: SineShopClient.SineShopUserInfo? = null,
+    // 新增：弦应用商店登录提示
+    val sineShopLoginPrompt: Boolean = true
 )
 
 class HomeViewModel : ViewModel() {
@@ -156,22 +158,49 @@ class HomeViewModel : ViewModel() {
     private fun loadSineShopUserInfo(context: Context) {
         viewModelScope.launch {
             try {
+                // 获取弦应用商店token
+                val sineShopTokenFlow = AuthManager.getSineMarketToken(context)
+                val sineShopToken = sineShopTokenFlow.first()
+
+                // 如果没有token，则显示登录提示
+                if (sineShopToken.isNullOrEmpty()) {
+                    uiState.value = uiState.value.copy(
+                        sineShopLoginPrompt = true,
+                        sineShopUserInfo = null
+                    )
+                    return@launch
+                }
+
                 val sineShopUserInfoResult = withContext(Dispatchers.IO) {
                     SineShopClient.getUserInfo()
                 }
 
                 sineShopUserInfoResult.onSuccess { userInfo ->
                     uiState.value = uiState.value.copy(
-                        sineShopUserInfo = userInfo
+                        sineShopUserInfo = userInfo,
+                        sineShopLoginPrompt = false
                     )
                 }.onFailure { e ->
                     // 处理失败情况，例如显示错误信息
                     println("Failed to load SineShop user info: ${e.message}")
+                    uiState.value = uiState.value.copy(
+                        sineShopLoginPrompt = true,
+                        sineShopUserInfo = null
+                    )
                 }
             } catch (e: Exception) {
                 println("Error loading SineShop user info: ${e.message}")
+                uiState.value = uiState.value.copy(
+                    sineShopLoginPrompt = true,
+                    sineShopUserInfo = null
+                )
             }
         }
+    }
+
+    // 新增：更新弦应用商店登录提示状态
+    fun updateSineShopLoginState(isLoggedIn: Boolean) {
+        uiState.value = uiState.value.copy(sineShopLoginPrompt = !isLoggedIn)
     }
 
     // 强制刷新用户数据
@@ -285,4 +314,3 @@ class HomeViewModel : ViewModel() {
             snackbarHostState.value?.showSnackbar(message)
         }
     }
-}

@@ -46,6 +46,11 @@ fun HomeDestination(
         if (isLoggedIn && uiState.dataLoadState == DataLoadState.NotLoaded) {
             viewModel.loadUserData(context)
         }
+
+        // 初始化弦应用商店登录状态
+        val sineShopTokenFlow = AuthManager.getSineMarketToken(context)
+        val sineShopToken = sineShopTokenFlow.first()
+        viewModel.updateSineShopLoginState(sineShopToken.isNullOrEmpty())
     }
 
     val onAvatarClick = remember {
@@ -76,6 +81,10 @@ fun HomeDestination(
         { navController.navigate(Login.route) }
     }
 
+    val onSineShopLoginClick = remember {
+        { navController.navigate(Login.route) }
+    }
+
     val userIdFlow = AuthManager.getUserId(context)
 
     BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
@@ -98,6 +107,8 @@ fun HomeDestination(
                 displayDaysDiff = uiState.displayDaysDiff
             ),
             sineShopUserInfo = uiState.sineShopUserInfo, // 传递 sineShopUserInfo
+            sineShopLoginPrompt = uiState.sineShopLoginPrompt, // 传递 sineShopLoginPrompt
+            onSineShopLoginClick = onSineShopLoginClick, // 传递 onSineShopLoginClick
             onPaymentCenterClick = { navController.navigate(PaymentCenterAdvanced.route) },
             onAvatarClick = onAvatarClick,
             onAvatarLongClick = onAvatarLongClick,

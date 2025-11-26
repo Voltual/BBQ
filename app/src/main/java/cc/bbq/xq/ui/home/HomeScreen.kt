@@ -77,6 +77,8 @@ import cc.bbq.xq.SineShopClient // 导入 SineShopClient
 fun HomeScreen(
     state: HomeState,
     sineShopUserInfo: SineShopClient.SineShopUserInfo?,
+    sineShopLoginPrompt: Boolean, // 新增参数
+    onSineShopLoginClick: () -> Unit, // 新增参数
     onAvatarClick: () -> Unit,
     onAvatarLongClick: () -> Unit,
     onMessageCenterClick: () -> Unit,
@@ -130,16 +132,21 @@ fun HomeScreen(
                     onRecalculateDays = onRecalculateDays,
                     onAboutClick = onAboutClick,
                     onAccountProfileClick = onAccountProfileClick,
+                    onSineShopLoginClick = onSineShopLoginClick, // 传递新参数
                     viewModel = viewModel,
                     snackbarHostState = snackbarHostState
                 )
             }
             1 -> {
                 // 弦应用商店个人主页
-                SineShopProfileScreen(
-                    userInfo = sineShopUserInfo,
-                    modifier = Modifier.fillMaxSize()
-                )
+                if (sineShopLoginPrompt) {
+                    SineShopLoginPrompt(onSineShopLoginClick = onSineShopLoginClick)
+                } else {
+                    SineShopProfileScreen(
+                        userInfo = sineShopUserInfo,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }
@@ -165,6 +172,7 @@ fun XiaoquSpaceHomePage(
     onRecalculateDays: () -> Unit,
     onAboutClick: () -> Unit, // 添加onAboutClick参数
     onAccountProfileClick: () -> Unit, // 新增“账号资料”点击事件
+    onSineShopLoginClick: () -> Unit, // 新增参数
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
     snackbarHostState: SnackbarHostState
@@ -692,3 +700,27 @@ data class HomeState(
     val exp: Int = 0,
     val displayDaysDiff: Int = 0
 )
+
+@Composable
+fun SineShopLoginPrompt(onSineShopLoginClick: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "您尚未登录弦应用商店，请登录后使用完整功能",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
+
+        TextButton(
+            onClick = onSineShopLoginClick,
+            modifier = Modifier.padding(horizontal = 32.dp)
+        ) {
+            Text("立即登录", style = MaterialTheme.typography.bodyLarge)
+        }
+    }
+}
