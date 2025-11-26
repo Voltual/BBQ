@@ -375,7 +375,7 @@ class PlazaViewModel(
             onComplete?.invoke()
         }
     }
-
+}
     fun prevPage() {
         if (_isLoading.value == true || popularAppsPage <= 1) return
         _isLoading.value = true
