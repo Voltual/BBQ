@@ -230,8 +230,8 @@ class PlazaViewModel(
                         popularAppsTotalPages = 1 // 弦应用商店没有提供总页数，暂时设置为 1
                         this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
                         // 明确指定泛型类型为 AppItem
-                        val appItems: List<AppItem> = apps.map { appTag ->
-                            convertToUiModel(appTag)
+                        val appItems: List<AppItem> = apps.map { app ->
+                            convertToUiModel(app) // 使用新的 convertToUiModel
                         }
                         Result.success(Pair(appItems, popularAppsTotalPages))
                     } else {
@@ -323,8 +323,8 @@ class PlazaViewModel(
                         popularAppsTotalPages = 1 // 弦应用商店没有提供总页数，暂时设置为 1
                         this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
                         // 明确指定泛型类型为 AppItem
-                        val appItems: List<AppItem> = apps.map { appTag ->
-                            convertToUiModel(appTag)
+                        val appItems: List<AppItem> = apps.map { app ->
+                            convertToUiModel(app)
                         }
                         Result.success(Pair(appItems, popularAppsTotalPages))
                     } else {
@@ -586,6 +586,13 @@ class PlazaViewModel(
         name = apiItem.appname,
         iconUrl = apiItem.app_icon,
         versionId = apiItem.apps_version_id
+    )
+
+    private fun convertToUiModel(apiItem: SineShopClient.SineShopApp): AppItem = AppItem(
+        id = apiItem.id.toString(),
+        name = apiItem.app_name,
+        iconUrl = apiItem.app_icon,
+        versionId = apiItem.version_code.toLong() // 将 version_code 转换为 Long
     )
 
     private fun convertToUiModel(apiItem: SineShopClient.AppTag): AppItem = AppItem(

@@ -132,11 +132,27 @@ object SineShopClient {
         val icon: String?
     )
 
+    // 新增：应用数据模型
+    @Serializable
+    data class SineShopApp(
+        val id: Int,
+        @SerialName("package_name") val package_name: String,
+        @SerialName("app_icon") val app_icon: String,
+        @SerialName("app_name") val app_name: String,
+        @SerialName("version_code") val version_code: Int,
+        @SerialName("version_name") val version_name: String,
+        @SerialName("app_type") val app_type: String,
+        @SerialName("app_version_type") val app_version_type: String,
+        @SerialName("app_abi") val app_abi: Int,
+        @SerialName("app_sdk_min") val app_sdk_min: Int,
+        @SerialName("version_count") val version_count: Int
+    )
+
     // 新增：TagListData
     @Serializable
     data class TagListData(
         val total: Int,
-        val list: List<AppTag>
+        val list: List<SineShopApp>
     )
 
     /**
@@ -289,7 +305,9 @@ object SineShopClient {
             }
         }.map { response: BaseResponse<TagListData> ->
             if (response.code == 0) {
-                response.data?.list ?: emptyList()
+                // 修改这里，因为TagListData现在包含的是SineShopApp列表
+                // 我们只需要AppTag信息，所以需要从SineShopApp列表中提取
+                response.data?.list?.map { AppTag(it.id, it.app_name, it.app_icon) } ?: emptyList()
             } else {
                 throw IOException("Failed to get app tag list: ${response.msg}")
             }
@@ -297,7 +315,7 @@ object SineShopClient {
     }
 
     // 新增：获取指定分类应用列表方法
-    suspend fun getAppsList(tag: Int, page: Int = 1): Result<List<AppTag>> {
+    suspend fun getAppsList(tag: Int, page: Int = 1): Result<List<SineShopApp>> {
         val url = "/app/list"
         val parameters = sineShopParameters {
             append("tag", tag.toString())

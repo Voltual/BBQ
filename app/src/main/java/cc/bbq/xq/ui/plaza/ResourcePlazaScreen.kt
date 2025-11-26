@@ -44,6 +44,7 @@ import cc.bbq.xq.AppStore
 import cc.bbq.xq.ui.theme.AppStoreDropdownMenu
 import cc.bbq.xq.KtorClient
 import kotlinx.coroutines.launch
+import kotlin.math.min
 
 @Composable
 fun ResourcePlazaScreen(
@@ -115,7 +116,8 @@ fun ResourcePlazaContent(
     }
     
     // 确保 categories 列表不为空
-    val selectedCategory = categories.getOrNull(selectedCategoryIndex) ?: AppCategory(null, null, "暂无分类")
+    val clampedSelectedCategoryIndex = minOf(selectedCategoryIndex, (categories.size - 1).coerceAtLeast(0))
+    val selectedCategory = categories.getOrNull(clampedSelectedCategoryIndex) ?: AppCategory(null, null, "暂无分类")
 
     // 修复：使用 derivedStateOf 跟踪分类变化，避免不必要的重组
     val currentCategory by remember(selectedCategory) {
@@ -193,7 +195,7 @@ fun ResourcePlazaContent(
         } else {
             // 修复：使用 PrimaryScrollableTabRow 替代弃用的 ScrollableTabRow
             PrimaryScrollableTabRow(
-                selectedTabIndex = selectedCategoryIndex,
+                selectedTabIndex = clampedSelectedCategoryIndex,
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.primary,
                 // 确保categories不为空
@@ -207,7 +209,7 @@ fun ResourcePlazaContent(
                 } else {
                     categories.forEachIndexed { index, category ->
                         Tab(
-                            selected = selectedCategoryIndex == index,
+                            selected = clampedSelectedCategoryIndex == index,
                             onClick = { 
                                 selectedCategoryIndex = index
                                 // 立即更新分类，不等待 LaunchedEffect
