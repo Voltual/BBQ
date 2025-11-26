@@ -751,7 +751,7 @@ class PlazaViewModel(
     }
 
     fun loadMore(isSearchMode: Boolean) {
-        if (autoScrollMode.value == true && _isLoading.value != true) {
+                if (autoScrollMode.value == true && _isLoading.value != true) {
             if (isSearchMode) {
                 if (searchPage < searchTotalPages) {
                     searchNextPage(currentQuery)
@@ -773,17 +773,24 @@ class PlazaViewModel(
 
     // 新增：获取弦应用商店应用总数
     private suspend fun getTotalCount(tagId: Int): Int {
-        val appListResult = SineShopClient.getAppsList(tag = tagId, page = 1)
-        return if (appListResult.isSuccess) {
-            val appListData = SineShopClient.safeApiCall<SineShopClient.BaseResponse<SineShopClient.AppListData>> {
-                SineShopClient.httpClient.get("/app/list") {
-                    parameter("tag", tagId.toString())
-                    parameter("page", "1")
-                    val token = SineShopClient.getToken()
-                    header("User-Agent", "Token:$token")
-                }
-            }.getOrNull()?.data?.total ?: 0
-        } else {
+        return try {
+            val appListResult = SineShopClient.getAppsList(tag = tagId, page = 1)
+            if (appListResult.isSuccess) {
+                val apps = appListResult.getOrThrow()
+                // 从 AppListData 中获取 total
+                val totalCount = SineShopClient.safeApiCall<SineShopClient.BaseResponse<SineShopClient.AppListData>> {
+                    SineShopClient.httpClient.get("/app/list") {
+                        parameter("tag", tagId.toString())
+                        parameter("page", "1")
+                        val token = SineShopClient.getToken()
+                        header("User-Agent", "Token:$token")
+                    }
+                }.getOrNull()?.data?.total ?: 0
+                totalCount
+            } else {
+                0
+            }
+        } catch (e: Exception) {
             0
         }
     }
