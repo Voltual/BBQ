@@ -227,7 +227,7 @@ class PlazaViewModel(
                     val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
                     if (appListResult.isSuccess) {
                         val apps = appListResult.getOrThrow()
-                        popularAppsTotalPages = 1 // 弦应用商店没有提供总页数，暂时设置为 1
+                        popularAppsTotalPages = 0 // 弦应用商店没有提供总页数，暂时设置为 1
                         this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
                         // 明确指定泛型类型为 AppItem
                         val appItems: List<AppItem> = apps.map { app ->
