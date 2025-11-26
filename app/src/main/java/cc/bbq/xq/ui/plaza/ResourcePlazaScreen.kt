@@ -45,6 +45,7 @@ import cc.bbq.xq.ui.theme.AppStoreDropdownMenu
 import cc.bbq.xq.KtorClient
 import kotlinx.coroutines.launch
 import kotlin.math.min
+import cc.bbq.xq.ui.theme.BBQSnackbarHost // 确保导入 BBQSnackbarHost
 
 @Composable
 fun ResourcePlazaScreen(
@@ -64,6 +65,7 @@ fun ResourcePlazaScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResourcePlazaContent(
     modifier: Modifier = Modifier,
@@ -91,7 +93,7 @@ fun ResourcePlazaContent(
     val gridState = rememberLazyGridState()
     val appTagList by viewModel.appTagList.observeAsState(emptyList()) // 弦应用商店标签
     val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { SnackbarHostState() } // 使用 remember 创建 SnackbarHostState
 
     val categories = remember(selectedAppStore, appTagList) {
         if (selectedAppStore == AppStore.XIAOQU_SPACE) {
@@ -152,39 +154,7 @@ fun ResourcePlazaContent(
                 userId = userId
             )
         }
-    }   
-
-// 使用 derivedStateOf 计算是否接近底部
-val isNearBottom by remember {
-    derivedStateOf {
-        val layoutInfo = gridState.layoutInfo
-        val visibleItemsInfo = layoutInfo.visibleItemsInfo
-        if (visibleItemsInfo.isEmpty()) return@derivedStateOf false
-        
-        val lastVisibleItem = visibleItemsInfo.last()
-        val totalItemsCount = layoutInfo.totalItemsCount
-        
-        if (totalItemsCount > 0) {
-            lastVisibleItem.index >= totalItemsCount - 3
-        } else {
-            false
-        }
     }
-}
-
-// 使用 LaunchedEffect 监听所有相关状态的变化
-LaunchedEffect(isNearBottom, autoScrollMode, isLoading, currentPage, totalPages, selectedAppStore) {
-    // 检查所有条件
-    val hasMorePages = if (selectedAppStore == AppStore.SIENE_SHOP) {
-        true // 弦应用商店总是认为有下一页，直到返回空数据
-    } else {
-        currentPage < totalPages
-    }
-    
-    if (autoScrollMode && !isLoading && hasMorePages && isNearBottom) {
-        viewModel.loadMore(isSearchMode)
-    }
-}
 
     // ==================== 自动翻页逻辑 ====================
     // 借鉴 BaseListScreen 的实现
@@ -223,6 +193,13 @@ LaunchedEffect(isNearBottom, autoScrollMode, isLoading, currentPage, totalPages,
         }
     }
 
+    // 显示 shouldLoadMore 的值
+    LaunchedEffect(shouldLoadMore) {
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar("shouldLoadMore: $shouldLoadMore")
+        }
+    }
+
     // 当 shouldLoadMore 为 true 时，调用 ViewModel 的 loadMore 方法
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore) {
@@ -231,160 +208,166 @@ LaunchedEffect(isNearBottom, autoScrollMode, isLoading, currentPage, totalPages,
     }
     // ==================== 自动翻页逻辑结束 ====================
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 8.dp)
-    ) {
-        AppStoreDropdownMenu(
-            selectedStore = selectedAppStore,
-            onStoreChange = { viewModel.setAppStore(it) },
-            modifier = Modifier.fillMaxWidth()
-        )
-        
-        if (!isMyResourceMode) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester)
-                    .padding(top = 8.dp, bottom = 12.dp),
-                shape = AppShapes.medium,
-                label = { Text("搜索资源...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = {
-                    if (searchQuery.isNotBlank()) {
-                        viewModel.searchResources(searchQuery, isMyResourceMode)
-                    }
-                }),
-                singleLine = true
-            )
-        }
-
-        if (isSearchMode) {
-            Text(
-                text = if (isMyResourceMode) "搜索结果（我的资源）" else "搜索结果",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        } else {
-            // 修复：使用 PrimaryScrollableTabRow 替代弃用的 ScrollableTabRow
-            PrimaryScrollableTabRow(
-                selectedTabIndex = clampedSelectedCategoryIndex,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary,
-                // 确保categories不为空
+    Scaffold( // 使用 Scaffold 包裹整个内容
+        snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState) } ,// 使用自定义 SnackbarHost
+        modifier = modifier.fillMaxSize()
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding) // 应用内边距
+                .fillMaxSize()
+                .padding(horizontal = 8.dp)
+        ) {
+            AppStoreDropdownMenu(
+                selectedStore = selectedAppStore,
+                onStoreChange = { viewModel.setAppStore(it) },
                 modifier = Modifier.fillMaxWidth()
-            ) {
-                if (categories.isEmpty()) {
-                    Text(
-                        text = "暂无分类",
-                        modifier = Modifier.padding(16.dp)
-                    )
-                } else {
-                    categories.forEachIndexed { index, category ->
-                        Tab(
-                            selected = clampedSelectedCategoryIndex == index,
-                            onClick = { 
-                                selectedCategoryIndex = index
-                                // 立即更新分类，不等待 LaunchedEffect
-                                viewModel.loadDataByCategory(
-                                    categoryId = category.categoryId,
-                                    subCategoryId = category.subCategoryId,
-                                    userId = userId
-                                )
-                            },
-                            text = { Text(category.categoryName) }
-                        )
-                    }
-                }
+            )
+            
+            if (!isMyResourceMode) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester)
+                        .padding(top = 8.dp, bottom = 12.dp),
+                    shape = AppShapes.medium,
+                    label = { Text("搜索资源...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = {
+                        if (searchQuery.isNotBlank()) {
+                            viewModel.searchResources(searchQuery, isMyResourceMode)
+                        }
+                    }),
+                    singleLine = true
+                )
             }
-        }
 
-        Box(modifier = Modifier.weight(1f)) {
-            if ((isSearchMode && searchState.isEmpty()) || (!isSearchMode && plazaState.popularApps.isEmpty())) {
+            if (isSearchMode) {
                 Text(
-                    text = "暂无资源",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.align(Alignment.Center)
+                    text = if (isMyResourceMode) "搜索结果（我的资源）" else "搜索结果",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
             } else {
-                AppGrid(
-                    apps = if (isSearchMode) searchState else plazaState.popularApps,
-                    columns = if (isMyResourceMode) 4 else 3,
-                    onItemClick = { app -> navigateToAppDetail(app.id, app.versionId) },
-                    gridState = gridState,
-                    selectedAppStore = selectedAppStore // 传入 selectedAppStore
+                // 修复：使用 PrimaryScrollableTabRow 替代弃用的 ScrollableTabRow
+                PrimaryScrollableTabRow(
+                    selectedTabIndex = clampedSelectedCategoryIndex,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    // 确保categories不为空
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (categories.isEmpty()) {
+                        Text(
+                            text = "暂无分类",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        categories.forEachIndexed { index, category ->
+                            Tab(
+                                selected = clampedSelectedCategoryIndex == index,
+                                onClick = { 
+                                    selectedCategoryIndex = index
+                                    // 立即更新分类，不等待 LaunchedEffect
+                                    viewModel.loadDataByCategory(
+                                        categoryId = category.categoryId,
+                                        subCategoryId = category.subCategoryId,
+                                        userId = userId
+                                    )
+                                },
+                                text = { Text(category.categoryName) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            Box(modifier = Modifier.weight(1f)) {
+                if ((isSearchMode && searchState.isEmpty()) || (!isSearchMode && plazaState.popularApps.isEmpty())) {
+                    Text(
+                        text = "暂无资源",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                } else {
+                    AppGrid(
+                        apps = if (isSearchMode) searchState else plazaState.popularApps,
+                        columns = if (isMyResourceMode) 4 else 3,
+                        onItemClick = { app -> navigateToAppDetail(app.id, app.versionId) },
+                        gridState = gridState,
+                        selectedAppStore = selectedAppStore // 传入 selectedAppStore
+                    )
+                }
+
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
+                var lastVisibleItemIndex by remember { mutableStateOf(gridState.firstVisibleItemIndex) }
+                LaunchedEffect(gridState.firstVisibleItemIndex) {
+                    if (gridState.firstVisibleItemIndex > lastVisibleItemIndex) {
+                        showPagination = false
+                    } else if (gridState.firstVisibleItemIndex < lastVisibleItemIndex) {
+                        showPagination = true
+                    }
+                    lastVisibleItemIndex = gridState.firstVisibleItemIndex
+                }
+
+            }
+
+            AnimatedVisibility(
+                visible = showPagination,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it }),
+            ) {
+                PaginationControls(
+                    currentPage = currentPage,
+                    totalPages = totalPages,
+                    onPrevClick = { if (isSearchMode) viewModel.searchPrevPage(searchQuery) else viewModel.prevPage() },
+                    onNextClick = { if (isSearchMode) viewModel.searchNextPage(searchQuery) else viewModel.nextPage() },
+                    onPageClick = { showPageDialog = true },
+                    isPrevEnabled = currentPage > 1 && !isLoading,
+                    isNextEnabled = if (selectedAppStore == AppStore.SIENE_SHOP) {
+                        // 对于弦应用商店，只要不在加载中，就允许点击下一页
+                        !isLoading
+                    } else {
+                        // 对于小趣空间，需要检查 currentPage < totalPages
+                        currentPage < totalPages && !isLoading
+                    },
+                    // 新增参数：对于弦应用商店，不显示总页数
+                    showTotalPages = selectedAppStore != AppStore.SIENE_SHOP,
+                    extraControls = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "自动翻页",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(end = 4.dp)
+                            )
+                            Switch(
+                                checked = autoScrollMode,
+                                onCheckedChange = { viewModel.setAutoScrollMode(it) }
+                            )
+                        }
+                    }
                 )
             }
-
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
-
-            var lastVisibleItemIndex by remember { mutableStateOf(gridState.firstVisibleItemIndex) }
-            LaunchedEffect(gridState.firstVisibleItemIndex) {
-                if (gridState.firstVisibleItemIndex > lastVisibleItemIndex) {
-                    showPagination = false
-                } else if (gridState.firstVisibleItemIndex < lastVisibleItemIndex) {
-                    showPagination = true
-                }
-                lastVisibleItemIndex = gridState.firstVisibleItemIndex
-            }
-
         }
 
-        AnimatedVisibility(
-            visible = showPagination,
-            enter = slideInVertically(initialOffsetY = { it }),
-            exit = slideOutVertically(targetOffsetY = { it }),
-        ) {
-            PaginationControls(
+        if (showPageDialog) {
+            PageJumpDialog(
                 currentPage = currentPage,
                 totalPages = totalPages,
-                onPrevClick = { if (isSearchMode) viewModel.searchPrevPage(searchQuery) else viewModel.prevPage() },
-                onNextClick = { if (isSearchMode) viewModel.searchNextPage(searchQuery) else viewModel.nextPage() },
-                onPageClick = { showPageDialog = true },
-                isPrevEnabled = currentPage > 1 && !isLoading,
-                isNextEnabled = if (selectedAppStore == AppStore.SIENE_SHOP) {
-                    // 对于弦应用商店，只要不在加载中，就允许点击下一页
-                    !isLoading
-                } else {
-                    // 对于小趣空间，需要检查 currentPage < totalPages
-                    currentPage < totalPages && !isLoading
-                },
-                // 新增参数：对于弦应用商店，不显示总页数
-                showTotalPages = selectedAppStore != AppStore.SIENE_SHOP,
-                extraControls = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "自动翻页",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(end = 4.dp)
-                        )
-                        Switch(
-                            checked = autoScrollMode,
-                            onCheckedChange = { viewModel.setAutoScrollMode(it) }
-                        )
-                    }
+                shape = dialogShape,
+                onDismiss = { showPageDialog = false },
+                onConfirm = { page ->
+                    if (isSearchMode) viewModel.searchGoToPage(page) else viewModel.goToPage(page)
+                    showPageDialog = false
                 }
             )
         }
-    }
-
-    if (showPageDialog) {
-        PageJumpDialog(
-            currentPage = currentPage,
-            totalPages = totalPages,
-            shape = dialogShape,
-            onDismiss = { showPageDialog = false },
-            onConfirm = { page ->
-                if (isSearchMode) viewModel.searchGoToPage(page) else viewModel.goToPage(page)
-                showPageDialog = false
-            }
-        )
     }
 }
 
