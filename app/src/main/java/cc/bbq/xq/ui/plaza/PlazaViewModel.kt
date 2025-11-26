@@ -240,7 +240,17 @@ class PlazaViewModel(
                     _errorMessage.postValue("加载失败或暂无资源")
                     _plazaData.postValue(PlazaData(emptyList()))
                 } else {
-                    _plazaData.postValue(PlazaData(apps.map { convertToUiModel(it) }))
+                    _plazaData.postValue(PlazaData(apps.map { 
+                        // 确保 convertToUiModel 返回的是 AppItem 类型
+                        if (it is KtorClient.AppItem) {
+                            convertToUiModel(it)
+                        } else if (it is SineShopClient.AppTag) {
+                            convertToUiModel(it)
+                        } else {
+                            // 如果类型不匹配，则返回一个默认的 AppItem 或者抛出异常
+                            AppItem("", "未知应用", "", 0) // 或者抛出异常
+                        }
+                     }))
                 }
             } else {
                 _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message}")
