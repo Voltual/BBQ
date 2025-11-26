@@ -154,7 +154,6 @@ fun ResourcePlazaContent(
         }
     }
     
-    
     val totalItems by viewModel.totalItems.observeAsState(0)
 
     // ==================== 自动翻页逻辑 ====================
