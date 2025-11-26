@@ -614,6 +614,7 @@ class PlazaViewModel(
             }
         }
     }
+    
 
     fun cancelSearch() {
         _searchResults.postValue(emptyList())
