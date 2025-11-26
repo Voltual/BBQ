@@ -4,7 +4,7 @@
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
@@ -193,7 +193,7 @@ class PlazaViewModel(
         }
     }
 
-        fun loadData(categoryId: Int? = null, subCategoryId: Int? = null, userId: Long? = null) {
+    fun loadData(categoryId: Int? = null, subCategoryId: Int? = null, userId: Long? = null) {
         if (_isLoading.value == true) return
         _isLoading.value = true
         popularAppsPage = 1
@@ -214,8 +214,16 @@ class PlazaViewModel(
                         subCategoryId = subCategoryId
                     )
                     AppStore.SIENE_SHOP -> {
-                        //TODO
-                        Result.success(Pair(emptyList<KtorClient.AppItem>(),1))
+                        val tagId = categoryId ?: 0 // 默认使用第一个分类
+                        val appList = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
+                        if (appList.isSuccess) {
+                            val apps = appList.getOrThrow()
+                            popularAppsTotalPages = 1 // 弦应用商店没有提供总页数，暂时设置为 1
+                            this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+                            Result.success(Pair(apps.map { convertToUiModel(it) }, popularAppsTotalPages))
+                        } else {
+                            Result.failure(Exception("加载弦应用商店应用列表失败: ${appList.exceptionOrNull()?.message}"))
+                        }
                     }
                     else -> { // 添加 else 分支
                         Result.failure(Exception("不支持的应用商店类型"))
@@ -247,6 +255,22 @@ class PlazaViewModel(
         }
     }
 
+    private fun loadSineShopAppTags() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val result = SineShopClient.getAppTagList()
+                if (result.isSuccess) {
+                    _appTagList.postValue(result.getOrThrow())
+                } else {
+                    _errorMessage.postValue("加载弦应用商店分类失败: ${result.exceptionOrNull()?.message}")
+                    _appTagList.postValue(emptyList()) // 确保即使加载失败，也设置为空列表
+                }
+            } catch (e: Exception) {
+                _errorMessage.postValue("加载弦应用商店分类失败: ${e.localizedMessage}")
+            }
+        }
+    }
+
     fun nextPage(onComplete: (() -> Unit)? = null) {
         if (_isLoading.value == true || popularAppsPage >= popularAppsTotalPages) return
         _isLoading.value = true
@@ -269,7 +293,18 @@ class PlazaViewModel(
                         categoryId = currentCategoryId,
                         subCategoryId = currentSubCategoryId
                     )
-                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
+                    AppStore.SIENE_SHOP -> {
+                         val tagId = currentCategoryId ?: 0 // 默认使用第一个分类
+                        val appList = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
+                        if (appList.isSuccess) {
+                            val apps = appList.getOrThrow()
+                            popularAppsTotalPages = 1 // 弦应用商店没有提供总页数，暂时设置为 1
+                            this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+                            Result.success(Pair(apps.map { convertToUiModel(it) }, popularAppsTotalPages))
+                        } else {
+                            Result.failure(Exception("加载弦应用商店应用列表失败: ${appList.exceptionOrNull()?.message}"))
+                        }
+                    }
                     else -> { // 添加 else 分支
                         Result.failure(Exception("不支持的应用商店类型"))
                     }
@@ -332,7 +367,7 @@ class PlazaViewModel(
                 if (result.isSuccess) {
                     val (newApps, totalPages) = result.getOrThrow()
                     popularAppsTotalPages = totalPages
-                    this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+                    this@PlazaViewModel.totalPages.postValue(totalPages)
                     _plazaData.postValue(PlazaData(popularApps = newApps.map { convertToUiModel(it) }))
                 } else {
                     popularAppsPage++
@@ -348,23 +383,6 @@ class PlazaViewModel(
             }
         }
     }
-    
-    private fun loadSineShopAppTags() {
-    viewModelScope.launch(Dispatchers.IO) {
-        try {
-            val result = SineShopClient.getAppTagList()
-            if (result.isSuccess) {
-                _appTagList.postValue(result.getOrThrow())
-            } else {
-                _errorMessage.postValue("加载弦应用商店分类失败: ${result.exceptionOrNull()?.message}")
-                _appTagList.postValue(emptyList()) // 确保即使加载失败，也设置为空列表
-            }
-        } catch (e: Exception) {
-            _errorMessage.postValue("加载弦应用商店分类失败: ${e.localizedMessage}")
-            _appTagList.postValue(emptyList()) // 确保即使发生异常，也设置为空列表
-        }
-    }
-}
 
     fun searchResources(query: String, isMyResource: Boolean = false) {
         if (_isLoading.value == true) return
@@ -535,6 +553,13 @@ class PlazaViewModel(
         versionId = apiItem.apps_version_id
     )
 
+    private fun convertToUiModel(apiItem: SineShopClient.AppTag): AppItem = AppItem(
+        id = apiItem.id.toString(),
+        name = apiItem.name,
+        iconUrl = apiItem.icon ?: "",
+        versionId = 0 // 弦应用商店没有版本ID，暂时设置为0
+    )
+
     fun goToPage(page: Int) {
         if (page < 1 || page > popularAppsTotalPages) {
             _errorMessage.postValue("页码超出范围")
@@ -560,7 +585,7 @@ class PlazaViewModel(
                         page = page,
                         userId = finalUserId,
                         categoryId = currentCategoryId,
-                        subCategoryId = currentSubCategoryId
+                        subCategoryId = subCategoryId
                     )
                     AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
                     else -> { // 添加 else 分支

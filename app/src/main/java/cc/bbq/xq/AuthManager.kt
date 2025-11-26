@@ -11,7 +11,6 @@ package cc.bbq.xq
 
 import android.content.Context
 import android.util.Base64
-import androidx.datastore.dataStoreFile
 import androidx.security.crypto.EncryptedFile
 import androidx.security.crypto.MasterKey
 import cc.bbq.xq.data.proto.UserCredentials
@@ -22,7 +21,7 @@ import kotlinx.coroutines.flow.map
 import java.io.File
 import java.io.FileNotFoundException
 
-private const val DATA_STORE_FILE_NAME = "auth_preferences.pb"
+private const val ENCRYPTED_FILE_NAME = "user_credentials_encrypted.pb"
 
 object AuthManager {
 
@@ -36,7 +35,8 @@ object AuthManager {
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
 
-        dataStoreFile = context.dataStoreFile(DATA_STORE_FILE_NAME)
+        // 使用新的文件名
+        dataStoreFile = File(context.filesDir, ENCRYPTED_FILE_NAME)
 
         encryptedFile = EncryptedFile.Builder(
             context,
@@ -117,7 +117,7 @@ object AuthManager {
                 return null
             }
             
-            // 修复：检查文件是否存在
+            // 检查文件是否存在
             if (!dataStoreFile.exists()) {
                 return null
             }
@@ -130,6 +130,14 @@ object AuthManager {
             null
         } catch (e: Exception) {
             e.printStackTrace()
+            // 如果读取失败，尝试删除损坏的文件并返回null
+            try {
+                if (dataStoreFile.exists()) {
+                    dataStoreFile.delete()
+                }
+            } catch (deleteException: Exception) {
+                deleteException.printStackTrace()
+            }
             null
         }
     }
@@ -140,8 +148,21 @@ object AuthManager {
             throw IllegalStateException("AuthManager not initialized. Call initialize() first.")
         }
         
-        encryptedFile.openFileOutput().use { outputStream ->
-            UserCredentialsSerializer.writeTo(credentials, outputStream)
+        try {
+            encryptedFile.openFileOutput().use { outputStream ->
+                UserCredentialsSerializer.writeTo(credentials, outputStream)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // 如果写入失败，尝试删除损坏的文件
+            try {
+                if (dataStoreFile.exists()) {
+                    dataStoreFile.delete()
+                }
+            } catch (deleteException: Exception) {
+                deleteException.printStackTrace()
+            }
+            throw e // 重新抛出异常
         }
     }
 
@@ -178,11 +199,34 @@ object AuthManager {
             // 清除 SharedPreferences 中的数据
             sharedPrefs.edit().clear().apply()
             
-            // 删除未加密的旧 DataStore 文件（如果存在）
-            val oldDataStoreFile = context.dataStoreFile(DATA_STORE_FILE_NAME)
+            // 删除旧的未加密 DataStore 文件（如果存在）
+            val oldDataStoreFile = File(context.filesDir.parent, "datastore/${ENCRYPTED_FILE_NAME}")
             if (oldDataStoreFile.exists()) {
                 oldDataStoreFile.delete()
             }
         }
     }
-}
+
+    // --- 新增：检查文件是否损坏 ---
+    suspend fun isFileCorrupted(context: Context): Boolean {
+        return try {
+            val credentials = readCredentials()
+            // 如果文件存在但无法读取有效数据，则认为文件损坏
+            dataStoreFile.exists() && credentials == null
+        } catch (e: Exception) {
+            true
+        }
+    }
+
+    // --- 新增：重置加密文件 ---
+    suspend fun resetEncryptedFile(context: Context) {
+        try {
+            if (dataStoreFile.exists()) {
+                dataStoreFile.delete()
+            }
+            // 重新初始化
+            initialize(context)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
