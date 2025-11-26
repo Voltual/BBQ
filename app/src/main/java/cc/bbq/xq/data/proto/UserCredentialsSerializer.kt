@@ -8,14 +8,13 @@
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.data.proto
 
-import android.content.Context
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.Serializer
 import com.google.protobuf.InvalidProtocolBufferException
 import java.io.InputStream
 import java.io.OutputStream
 
-class UserCredentialsSerializer(val context: Context) : Serializer<UserCredentials> {
+object UserCredentialsSerializer : Serializer<UserCredentials> {
     override val defaultValue: UserCredentials = UserCredentials.getDefaultInstance()
 
     override suspend fun readFrom(input: InputStream): UserCredentials {
@@ -26,10 +25,7 @@ class UserCredentialsSerializer(val context: Context) : Serializer<UserCredentia
         }
     }
 
-    override suspend fun writeTo(
-        t: UserCredentials,
-        output: OutputStream
-    ) {
+    override suspend fun writeTo(t: UserCredentials, output: OutputStream) {
         t.writeTo(output)
     }
 }
