@@ -79,8 +79,8 @@ fun ResourcePlazaContent(
     val plazaState by viewModel.plazaData.observeAsState(PlazaData(emptyList()))
     val searchState by viewModel.searchResults.observeAsState(emptyList<AppItem>())
     val isLoading by viewModel.isLoading.observeAsState(false)
-    val currentPage by viewModel.currentPage.observeAsState(2)
-    val totalPages by viewModel.totalPages.observeAsState(4)
+    val currentPage by viewModel.currentPage.observeAsState(1)
+    val totalPages by viewModel.totalPages.observeAsState(1)
     val autoScrollMode by viewModel.autoScrollMode.observeAsState(false)
     val isSearchMode by remember { derivedStateOf { searchState.isNotEmpty() } }
     var searchQuery by remember { mutableStateOf("") }
