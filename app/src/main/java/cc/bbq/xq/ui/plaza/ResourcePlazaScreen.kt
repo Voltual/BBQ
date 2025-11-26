@@ -154,6 +154,51 @@ fun ResourcePlazaContent(
         }
     }
 
+    // ==================== 自动翻页逻辑 ====================
+    // 借鉴 BaseListScreen 的实现
+    val shouldLoadMore by remember {
+        derivedStateOf {
+            // 检查基本条件：自动滚动模式是否开启、是否正在加载
+            if (!autoScrollMode || isLoading) {
+                false
+            } else {
+                val layoutInfo = gridState.layoutInfo
+                val visibleItemsInfo = layoutInfo.visibleItemsInfo
+                // 如果没有可见项目，则不加载更多
+                if (visibleItemsInfo.isEmpty()) return@derivedStateOf false
+                
+                val lastVisibleItem = visibleItemsInfo.last()
+                val totalItemsCount = layoutInfo.totalItemsCount
+                
+                // 对于弦应用商店，不检查 totalPages
+                val hasMorePages = if (selectedAppStore == AppStore.SIENE_SHOP) {
+                    true // 弦应用商店总是认为有下一页，直到返回空数据
+                } else {
+                    currentPage < totalPages
+                }
+                
+                // 如果总项目数大于0，则检查是否接近底部
+                if (totalItemsCount > 0 && hasMorePages) {
+                    // 当最后一个可见项目接近列表底部时，触发加载更多
+                    // 使用更宽松的条件：最后3个可见项目中的任何一个接近底部都触发
+                    val isNearBottom = lastVisibleItem.index >= totalItemsCount - 3
+                    isNearBottom
+                } else {
+                    // 如果总项目数为0或者没有更多页面，则不加载更多
+                    false
+                }
+            }
+        }
+    }
+
+    // 当 shouldLoadMore 为 true 时，调用 ViewModel 的 loadMore 方法
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore) {
+            viewModel.loadMore(isSearchMode)
+        }
+    }
+    // ==================== 自动翻页逻辑结束 ====================
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -257,43 +302,6 @@ fun ResourcePlazaContent(
                 lastVisibleItemIndex = gridState.firstVisibleItemIndex
             }
 
-            val shouldLoadMore by remember {
-                derivedStateOf {
-                    // 检查基本条件：自动滚动模式是否开启、是否正在加载、是否已达到最后一页
-                    // 对于弦应用商店，不检查 totalPages
-                    if (!autoScrollMode || isLoading || 
-                        (selectedAppStore != AppStore.SIENE_SHOP && currentPage >= totalPages)) {
-                        false
-                    } else {
-                        val layoutInfo = gridState.layoutInfo
-                        val visibleItemsInfo = layoutInfo.visibleItemsInfo
-                        // 如果没有可见项目，则不加载更多
-                        if (visibleItemsInfo.isEmpty()) return@derivedStateOf false
-                        
-                        val lastVisibleItem = visibleItemsInfo.last()
-                        val totalItemsCount = layoutInfo.totalItemsCount
-                        
-                        // 如果总项目数大于0，则检查是否接近底部
-                        if (totalItemsCount > 0) {
-                            // 修改：使用更宽松的条件触发加载更多
-                            // 当可见项目数少于总项目数，或者最后可见项目接近底部时，触发加载更多
-                            val isNearBottom = lastVisibleItem.index >= totalItemsCount - 4
-                            val hasFewItems = totalItemsCount <= 1 // 如果总项目数很少，也触发加载更多
-                            
-                            isNearBottom || hasFewItems
-                        } else {
-                            // 如果总项目数为0，则不加载更多
-                            false
-                        }
-                    }
-                }
-            }
-
-            LaunchedEffect(shouldLoadMore) {
-                if (shouldLoadMore) {
-                    viewModel.loadMore(isSearchMode)
-                }
-            }
         }
 
         AnimatedVisibility(
