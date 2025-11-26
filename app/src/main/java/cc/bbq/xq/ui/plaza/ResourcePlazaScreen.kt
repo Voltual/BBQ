@@ -152,7 +152,39 @@ fun ResourcePlazaContent(
                 userId = userId
             )
         }
+    }   
+
+// 使用 derivedStateOf 计算是否接近底部
+val isNearBottom by remember {
+    derivedStateOf {
+        val layoutInfo = gridState.layoutInfo
+        val visibleItemsInfo = layoutInfo.visibleItemsInfo
+        if (visibleItemsInfo.isEmpty()) return@derivedStateOf false
+        
+        val lastVisibleItem = visibleItemsInfo.last()
+        val totalItemsCount = layoutInfo.totalItemsCount
+        
+        if (totalItemsCount > 0) {
+            lastVisibleItem.index >= totalItemsCount - 3
+        } else {
+            false
+        }
     }
+}
+
+// 使用 LaunchedEffect 监听所有相关状态的变化
+LaunchedEffect(isNearBottom, autoScrollMode, isLoading, currentPage, totalPages, selectedAppStore) {
+    // 检查所有条件
+    val hasMorePages = if (selectedAppStore == AppStore.SIENE_SHOP) {
+        true // 弦应用商店总是认为有下一页，直到返回空数据
+    } else {
+        currentPage < totalPages
+    }
+    
+    if (autoScrollMode && !isLoading && hasMorePages && isNearBottom) {
+        viewModel.loadMore(isSearchMode)
+    }
+}
 
     // ==================== 自动翻页逻辑 ====================
     // 借鉴 BaseListScreen 的实现
