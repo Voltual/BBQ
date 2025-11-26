@@ -281,7 +281,7 @@ class PlazaViewModel(
         }
     }
 
-    fun nextPage(onComplete: (() -> Unit)? = null) {
+        fun nextPage(onComplete: (() -> Unit)? = null) {
     if (_isLoading.value == true || popularAppsPage >= popularAppsTotalPages) return
     _isLoading.value = true
     popularAppsPage++
@@ -300,17 +300,27 @@ class PlazaViewModel(
                     limit = if (currentMode) 12 else 9,
                     page = popularAppsPage,
                     userId = finalUserId,
-                    categoryId = categoryId,
-                    subCategoryId = subCategoryId
+                    categoryId = this@PlazaViewModel.currentCategoryId, // 使用 this@PlazaViewModel 访问成员变量
+                    subCategoryId = this@PlazaViewModel.currentSubCategoryId // 使用 this@PlazaViewModel 访问成员变量
                 )
                 AppStore.SIENE_SHOP -> {
-                    val tagId = categoryId ?: 0 // 默认使用第一个分类
+                    val tagId = this@PlazaViewModel.currentCategoryId ?: 0 // 使用 this@PlazaViewModel 访问成员变量
                     val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
                     if (appListResult.isSuccess) {
                         val apps = appListResult.getOrThrow()
                         popularAppsTotalPages = 1 // 弦应用商店没有提供总页数，暂时设置为 1
                         this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
-                        Result.success(Pair(apps.map { convertToUiModel(it) }, popularAppsTotalPages))
+                        Result.success(Pair(apps.map { 
+                            // 确保 convertToUiModel 返回的是 AppItem 类型
+                            if (it is KtorClient.AppItem) {
+                                convertToUiModel(it)
+                            } else if (it is SineShopClient.AppTag) {
+                                convertToUiModel(it)
+                            } else {
+                                // 如果类型不匹配，则返回一个默认的 AppItem 或者抛出异常
+                                AppItem("", "未知应用", "", 0) // 或者抛出异常
+                            }
+                        }, popularAppsTotalPages))
                     } else {
                         Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
                     }
@@ -327,7 +337,7 @@ class PlazaViewModel(
 
                 if (newApps.isNotEmpty()) {
                     val currentApps = _plazaData.value?.popularApps ?: emptyList()
-                    val updatedApps = currentApps + newApps.map { convertToUiModel(it) }
+                    val updatedApps = currentApps + newApps
                     _plazaData.postValue(PlazaData(popularApps = updatedApps))
                 }
             } else {
@@ -731,43 +741,43 @@ class PlazaRepository(private val context: Context) {
     }
 
     suspend fun searchApps(
-        query: String, 
-        page: Int = 1, 
-        limit: Int = 20, 
-        userId: Long? = null
-    ): Result<Pair<List<KtorClient.AppItem>, Int>> {
-        return try {
-            val result = api.getAppsList(
-                limit = limit,
-                page = page,
-                appName = query,
-                sortOrder = "desc",
-                userId = userId
-            )
-            
-            when {
-                result.isSuccess -> {
-                    val response = result.getOrThrow()
-                    if (response.code == 1) {
-                        val apps = response.data.list
-                        val totalPages = response.data.pagecount.takeIf { it > 0 } ?: 1
-                        Result.success(Pair(apps, totalPages))
-                    } else {
-                        Result.failure(Exception("搜索失败: ${response.msg}"))
-                    }
-                }
-                else -> result.map { 
-                    if (it.code == 1) {
-                        val apps = it.data.list
-                        val totalPages = it.data.pagecount.takeIf { it > 0 } ?: 1
-                        Pair(apps, totalPages)
-                    } else {
-                        throw Exception("搜索失败: ${it.msg}")
-                    }
+    query: String, 
+    page: Int = 1, 
+    limit: Int = 20, 
+    userId: Long? = null
+): Result<Pair<List<KtorClient.AppItem>, Int>> {
+    return try {
+        val result = api.getAppsList(
+            limit = limit,
+            page = page,
+            appName = query,
+            sortOrder = "desc",
+            userId = userId
+            // 移除了 categoryId 和 subCategoryId 参数
+        )
+        
+        when {
+            result.isSuccess -> {
+                val response = result.getOrThrow()
+                if (response.code == 1) {
+                    val apps = response.data.list
+                    val totalPages = response.data.pagecount.takeIf { it > 0 } ?: 1
+                    Result.success(Pair(apps, totalPages))
+                } else {
+                    Result.failure(Exception("搜索失败: ${response.msg}"))
                 }
             }
-        } catch (e: Exception) {
-            Result.failure(e)
+            else -> result.map { 
+                if (it.code == 1) {
+                    val apps = it.data.list
+                    val totalPages = it.data.pagecount.takeIf { it > 0 } ?: 1
+                    Pair(apps, totalPages)
+                } else {
+                    throw Exception("搜索失败: ${it.msg}")
+                }
+            }
         }
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 }
