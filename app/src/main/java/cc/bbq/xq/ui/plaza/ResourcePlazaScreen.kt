@@ -202,7 +202,7 @@ fun ResourcePlazaContent(
 
     // 当 shouldLoadMore 为 true 时，调用 ViewModel 的 loadMore 方法
     LaunchedEffect(shouldLoadMore) {
-        if (shouldLoadMore) {
+        if (shouldLoadMore ==true) {
             viewModel.loadMore(isSearchMode)
         }
     }
