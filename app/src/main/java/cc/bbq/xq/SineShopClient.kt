@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Voltual
+//Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
@@ -148,9 +148,16 @@ object SineShopClient {
         @SerialName("version_count") val version_count: Int
     )
 
-    // 新增：TagListData
+    // 为标签列表定义单独的数据模型，保持与 AppTag 一致
     @Serializable
-    data class TagListData(
+    data class AppTagListData(
+        val total: Int,
+        val list: List<AppTag>
+    )
+    
+    // 为应用列表定义单独的数据模型
+    @Serializable
+    data class AppListData(
         val total: Int,
         val list: List<SineShopApp>
     )
@@ -298,16 +305,15 @@ object SineShopClient {
     // 新增：获取应用分类标签列表方法
     suspend fun getAppTagList(): Result<List<AppTag>> {
         val url = "/tag/list"
-        return safeApiCall<BaseResponse<TagListData>> {
+        return safeApiCall<BaseResponse<AppTagListData>> {
             httpClient.get(url) {
                 val token = getToken()
+                // 即使 token 为空，也发送 User-Agent 头
                 header(HttpHeaders.UserAgent, USER_AGENT + token)
             }
-        }.map { response: BaseResponse<TagListData> ->
+        }.map { response: BaseResponse<AppTagListData> ->
             if (response.code == 0) {
-                // 修改这里，因为TagListData现在包含的是SineShopApp列表
-                // 我们只需要AppTag信息，所以需要从SineShopApp列表中提取
-                response.data?.list?.map { AppTag(it.id, it.app_name, it.app_icon) } ?: emptyList()
+                response.data?.list ?: emptyList()
             } else {
                 throw IOException("Failed to get app tag list: ${response.msg}")
             }
@@ -321,7 +327,7 @@ object SineShopClient {
             append("tag", tag.toString())
             append("page", page.toString())
         }
-        return safeApiCall<BaseResponse<TagListData>> {
+        return safeApiCall<BaseResponse<AppListData>> {
             httpClient.get(url) {
                 parameters.entries().forEach { (key, values) ->
                     values.forEach { value ->
@@ -329,9 +335,10 @@ object SineShopClient {
                     }
                 }
                 val token = getToken()
+                // 即使 token 为空，也发送 User-Agent 头
                 header(HttpHeaders.UserAgent, USER_AGENT + token)
             }
-        }.map { response: BaseResponse<TagListData> ->
+        }.map { response: BaseResponse<AppListData> ->
             if (response.code == 0) {
                 response.data?.list ?: emptyList()
             } else {
