@@ -281,7 +281,7 @@ class PlazaViewModel(
         }
     }
 
-        fun nextPage(onComplete: (() -> Unit)? = null) {
+            fun nextPage(onComplete: (() -> Unit)? = null) {
     if (_isLoading.value == true || popularAppsPage >= popularAppsTotalPages) return
     _isLoading.value = true
     popularAppsPage++
@@ -310,17 +310,11 @@ class PlazaViewModel(
                         val apps = appListResult.getOrThrow()
                         popularAppsTotalPages = 1 // 弦应用商店没有提供总页数，暂时设置为 1
                         this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
-                        Result.success(Pair(apps.map { 
-                            // 确保 convertToUiModel 返回的是 AppItem 类型
-                            if (it is KtorClient.AppItem) {
-                                convertToUiModel(it)
-                            } else if (it is SineShopClient.AppTag) {
-                                convertToUiModel(it)
-                            } else {
-                                // 如果类型不匹配，则返回一个默认的 AppItem 或者抛出异常
-                                AppItem("", "未知应用", "", 0) // 或者抛出异常
-                            }
-                        }, popularAppsTotalPages))
+                        // 明确指定泛型类型为 AppItem
+                        val appItems: List<AppItem> = apps.map { appTag ->
+                            convertToUiModel(appTag)
+                        }
+                        Result.success(Pair(appItems, popularAppsTotalPages))
                     } else {
                         Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
                     }
@@ -581,53 +575,53 @@ class PlazaViewModel(
     )
 
     fun goToPage(page: Int) {
-        if (page < 1 || page > popularAppsTotalPages) {
-            _errorMessage.postValue("页码超出范围")
-            return
-        }
-        if (page == popularAppsPage && _plazaData.value?.popularApps?.isNotEmpty() == true) return
+    if (page < 1 || page > popularAppsTotalPages) {
+        _errorMessage.postValue("页码超出范围")
+        return
+    }
+    if (page == popularAppsPage && _plazaData.value?.popularApps?.isNotEmpty() == true) return
 
-        _isLoading.value = true
-        popularAppsPage = page
-        currentPage.postValue(page)
+    _isLoading.value = true
+    popularAppsPage = page
+    currentPage.postValue(page)
 
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) {
-                    val context = getApplication<Application>().applicationContext
-                    val userCredentialsFlow = AuthManager.getCredentials(context)
-                     val userCredentials = userCredentialsFlow.first()
-                     userCredentials?.userId
-                } else null
-                val result = when (_appStore.value) {
-                    AppStore.XIAOQU_SPACE -> repository.getAppsList(
-                        limit = if (currentMode) 12 else 9,
-                        page = page,
-                        userId = finalUserId,
-                        categoryId = currentCategoryId,
-                        subCategoryId = subCategoryId
-                    )
-                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
-                    else -> { // 添加 else 分支
-                        Result.failure(Exception("不支持的应用商店类型"))
-                    }
+    viewModelScope.launch(Dispatchers.IO) {
+        try {
+            val finalUserId = if (currentUserId != null) currentUserId else if (currentMode) {
+                val context = getApplication<Application>().applicationContext
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                 val userCredentials = userCredentialsFlow.first()
+                 userCredentials?.userId
+            } else null
+            val result = when (_appStore.value) {
+                AppStore.XIAOQU_SPACE -> repository.getAppsList(
+                    limit = if (currentMode) 12 else 9,
+                    page = page,
+                    userId = finalUserId,
+                    categoryId = currentCategoryId,
+                    subCategoryId = this@PlazaViewModel.currentSubCategoryId // 使用 this@PlazaViewModel 访问成员变量
+                )
+                AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
+                else -> { // 添加 else 分支
+                    Result.failure(Exception("不支持的应用商店类型"))
                 }
-                
-                if (result.isSuccess) {
-                    val (newApps, totalPages) = result.getOrThrow()
-                    popularAppsTotalPages = totalPages
-                    this@PlazaViewModel.totalPages.postValue(totalPages)
-                    _plazaData.postValue(PlazaData(popularApps = newApps.map { convertToUiModel(it) }))
-                } else {
-                    _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message}")
-                }
-            } catch (e: Exception) {
-                _errorMessage.postValue("加载失败: ${e.message}")
-            } finally {
-                _isLoading.postValue(false)
             }
+            
+            if (result.isSuccess) {
+                val (newApps, totalPages) = result.getOrThrow()
+                popularAppsTotalPages = totalPages
+                this@PlazaViewModel.totalPages.postValue(totalPages)
+                _plazaData.postValue(PlazaData(popularApps = newApps.map { convertToUiModel(it) }))
+            } else {
+                _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message}")
+            }
+        } catch (e: Exception) {
+            _errorMessage.postValue("加载失败: ${e.message}")
+        } finally {
+            _isLoading.postValue(false)
         }
     }
+}
 
     fun searchGoToPage(page: Int) {
         if (page < 1 || page > searchTotalPages) {
