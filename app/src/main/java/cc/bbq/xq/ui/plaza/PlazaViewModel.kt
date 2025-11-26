@@ -70,9 +70,10 @@ class PlazaViewModel(
     private var currentCategoryId: Int? = null
     private var currentSubCategoryId: Int? = null
     private var currentUserId: Long? = null
-
-    // 新增：弦应用商店应用总数
-    private var sineShopAppTotalCount = 0
+    
+    // 新增：总项目数量
+    private val _totalItems = MutableLiveData(0)
+    val totalItems: LiveData<Int> = _totalItems
 
     // DataStore keys
     private val AUTO_SCROLL_MODE_KEY = booleanPreferencesKey("auto_scroll_mode")
@@ -95,10 +96,6 @@ class PlazaViewModel(
     val isLoading: LiveData<Boolean> = _isLoading
     val appStore: LiveData<AppStore> = _appStore
     val appTagList: LiveData<List<SineShopClient.AppTag>> = _appTagList // 弦应用商店标签
-
-    // 新增：弦应用商店应用总数 LiveData
-    private val _sineShopAppTotalCount = MutableLiveData(0)
-    val sineShopAppTotalCountLiveData: LiveData<Int> = _sineShopAppTotalCount
 
     init {
         Log.d("PlazaViewModel", "初始模式: $currentMode")
@@ -168,8 +165,6 @@ class PlazaViewModel(
         _errorMessage.postValue("")
         popularAppsPage = 1
         currentPage.postValue(1)
-        sineShopAppTotalCount = 0
-        _sineShopAppTotalCount.postValue(0)
     }
 
     private fun loadDataIfNeeded() {
@@ -235,11 +230,12 @@ class PlazaViewModel(
                     val tagId = categoryId ?: 0 // 默认使用第一个分类
                     val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
                     if (appListResult.isSuccess) {
-                        val apps = appListResult.getOrThrow()
-                        // 新增：获取应用总数
-                        val totalCount = getTotalCount(tagId)
-                        sineShopAppTotalCount = totalCount
-                        _sineShopAppTotalCount.postValue(totalCount)
+                        val appListData = appListResult.getOrThrow()
+                        val apps = appListData.list
+                        val total = appListData.total
+
+                        // 更新总项目数量
+                        _totalItems.postValue(total)
 
                         popularAppsTotalPages = 0 // 弦应用商店没有提供总页数，暂时设置为 1
                         this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
@@ -335,7 +331,13 @@ class PlazaViewModel(
                     val tagId = this@PlazaViewModel.currentCategoryId ?: 0 // 使用 this@PlazaViewModel 访问成员变量
                     val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
                     if (appListResult.isSuccess) {
-                        val apps = appListResult.getOrThrow()
+                        val appListData = appListResult.getOrThrow()
+                        val apps = appListData.list
+                        val total = appListData.total
+
+                        // 更新总项目数量
+                        _totalItems.postValue(total)
+
                         // 对于弦应用商店，我们不使用 totalPages，而是通过检查返回的列表是否为空来判断是否还有更多数据
                         // 如果返回的列表为空，则说明没有更多数据了
                         if (apps.isEmpty()) {
@@ -351,6 +353,7 @@ class PlazaViewModel(
                         } else {
                             // 有数据，继续加载
                             // 弦应用商店没有提供总页数，暂时设置为一个较大的值，确保可以继续翻页
+                            // 实际的翻页终止条件是返回空列表
                             popularAppsTotalPages = Int.MAX_VALUE 
                             this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
                             // 明确指定泛型类型为 AppItem
@@ -751,47 +754,16 @@ class PlazaViewModel(
     }
 
     fun loadMore(isSearchMode: Boolean) {
-                if (autoScrollMode.value == true && _isLoading.value != true) {
+        if (autoScrollMode.value == true && _isLoading.value != true) {
             if (isSearchMode) {
                 if (searchPage < searchTotalPages) {
                     searchNextPage(currentQuery)
                 }
             } else {
-                // 修改：根据已加载的应用数量和总数判断是否需要加载更多
-                if (_appStore.value == AppStore.SIENE_SHOP) {
-                    if (_plazaData.value?.popularApps?.size ?: 0 < sineShopAppTotalCount) {
-                        nextPage()
-                    }
-                } else {
-                    if (popularAppsPage < popularAppsTotalPages) {
-                        nextPage()
-                    }
+                if (popularAppsPage < popularAppsTotalPages) {
+                    nextPage()
                 }
             }
-        }
-    }
-
-    // 新增：获取弦应用商店应用总数
-    private suspend fun getTotalCount(tagId: Int): Int {
-        return try {
-            val appListResult = SineShopClient.getAppsList(tag = tagId, page = 1)
-            if (appListResult.isSuccess) {
-                val apps = appListResult.getOrThrow()
-                // 从 AppListData 中获取 total
-                val totalCount = SineShopClient.safeApiCall<SineShopClient.BaseResponse<SineShopClient.AppListData>> {
-                    SineShopClient.httpClient.get("/app/list") {
-                        parameter("tag", tagId.toString())
-                        parameter("page", "1")
-                        val token = SineShopClient.getToken()
-                        header("User-Agent", "Token:$token")
-                    }
-                }.getOrNull()?.data?.total ?: 0
-                totalCount
-            } else {
-                0
-            }
-        } catch (e: Exception) {
-            0
         }
     }
 }

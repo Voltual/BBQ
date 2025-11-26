@@ -93,9 +93,6 @@ fun ResourcePlazaContent(
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 新增：弦应用商店应用总数
-    val sineShopAppTotalCount by viewModel.sineShopAppTotalCountLiveData.observeAsState(0)
-
     val categories = remember(selectedAppStore, appTagList) {
         if (selectedAppStore == AppStore.XIAOQU_SPACE) {
             listOf(
@@ -156,9 +153,10 @@ fun ResourcePlazaContent(
             )
         }
     }
+    
+    val totalItems by viewModel.totalItems.observeAsState(0)
 
     // ==================== 自动翻页逻辑 ====================
-    // 借鉴 BaseListScreen 的实现
     val shouldLoadMore by remember {
         derivedStateOf {
             // 检查基本条件：自动滚动模式是否开启、是否正在加载
@@ -172,22 +170,22 @@ fun ResourcePlazaContent(
                 
                 val lastVisibleItem = visibleItemsInfo.last()
                 val totalItemsCount = layoutInfo.totalItemsCount
-
-                // 修改：根据已加载的应用数量和总数判断是否需要加载更多
-                val hasMore = if (selectedAppStore == AppStore.SIENE_SHOP) {
-                    totalItemsCount < sineShopAppTotalCount
+                
+                // 对于弦应用商店，判断是否还有更多项目
+                val hasMoreItems = if (selectedAppStore == AppStore.SIENE_SHOP) {
+                    totalItemsCount < totalItems // 如果已加载的项目数量小于总项目数量，则认为还有更多项目
                 } else {
                     currentPage < totalPages
                 }
                 
                 // 如果总项目数大于0，则检查是否接近底部
-                if (totalItemsCount > 0 && hasMore) {
+                if (totalItemsCount > 0 && hasMoreItems) {
                     // 当最后一个可见项目接近列表底部时，触发加载更多
                     // 使用更宽松的条件：最后3个可见项目中的任何一个接近底部都触发
                     val isNearBottom = lastVisibleItem.index >= totalItemsCount - 3
                     isNearBottom
                 } else {
-                    // 如果总项目数为0或者没有更多页面，则不加载更多
+                    // 如果总项目数为0或者没有更多项目，则不加载更多
                     false
                 }
             }
@@ -320,8 +318,8 @@ fun ResourcePlazaContent(
                 onPageClick = { showPageDialog = true },
                 isPrevEnabled = currentPage > 1 && !isLoading,
                 isNextEnabled = if (selectedAppStore == AppStore.SIENE_SHOP) {
-                    // 修改：根据已加载的应用数量和总数判断是否可以点击下一页
-                    plazaState.popularApps.size < sineShopAppTotalCount && !isLoading
+                    // 对于弦应用商店，只要不在加载中，就允许点击下一页
+                    !isLoading
                 } else {
                     // 对于小趣空间，需要检查 currentPage < totalPages
                     currentPage < totalPages && !isLoading

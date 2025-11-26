@@ -321,31 +321,34 @@ object SineShopClient {
     }
 
     // 新增：获取指定分类应用列表方法
-    suspend fun getAppsList(tag: Int, page: Int = 1): Result<List<SineShopApp>> {
-        val url = "/app/list"
-        val parameters = sineShopParameters {
-            append("tag", tag.toString())
-            append("page", page.toString())
-        }
-        return safeApiCall<BaseResponse<AppListData>> {
-            httpClient.get(url) {
-                parameters.entries().forEach { (key, values) ->
-                    values.forEach { value ->
-                        parameter(key, value)
-                    }
+    // SineShopClient.kt
+
+// 新增：获取指定分类应用列表方法
+suspend fun getAppsList(tag: Int, page: Int = 1): Result<AppListData> { // 修改返回类型为 AppListData
+    val url = "/app/list"
+    val parameters = sineShopParameters {
+        append("tag", tag.toString())
+        append("page", page.toString())
+    }
+    return safeApiCall<BaseResponse<AppListData>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
                 }
                 val token = getToken()
                 // 即使 token 为空，也发送 User-Agent 头
                 header(HttpHeaders.UserAgent, USER_AGENT + token)
             }
-        }.map { response: BaseResponse<AppListData> ->
-            if (response.code == 0) {
-                response.data?.list ?: emptyList()
-            } else {
-                throw IOException("Failed to get app list: ${response.msg}")
-            }
+        }
+    }.map { response: BaseResponse<AppListData> ->
+        if (response.code == 0) {
+            response.data ?: AppListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 AppListData
+        } else {
+            throw IOException("Failed to get app list: ${response.msg}")
         }
     }
+}
     
     private fun getToken(): String {
         return runBlocking {
