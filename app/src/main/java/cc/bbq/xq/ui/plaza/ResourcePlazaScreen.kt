@@ -291,7 +291,15 @@ fun ResourcePlazaContent(
                 onNextClick = { if (isSearchMode) viewModel.searchNextPage(searchQuery) else viewModel.nextPage() },
                 onPageClick = { showPageDialog = true },
                 isPrevEnabled = currentPage > 1 && !isLoading,
-                isNextEnabled = currentPage < totalPages && !isLoading,
+                isNextEnabled = if (selectedAppStore == AppStore.SIENE_SHOP) {
+                    // 对于弦应用商店，只要不在加载中，就允许点击下一页
+                    !isLoading
+                } else {
+                    // 对于小趣空间，需要检查 currentPage < totalPages
+                    currentPage < totalPages && !isLoading
+                },
+                // 新增参数：对于弦应用商店，不显示总页数
+                showTotalPages = selectedAppStore != AppStore.SIENE_SHOP,
                 extraControls = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(

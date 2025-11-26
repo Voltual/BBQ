@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
  * @param onPageClick 页码文本的点击事件，通常用于弹出页面跳转对话框。
  * @param isPrevEnabled "上一页" 按钮是否可用。
  * @param isNextEnabled "下一页" 按钮是否可用。
+ * @param showTotalPages 是否显示总页数。如果为 false，则只显示当前页码。
  * @param extraControls 一个可选的 Composable lambda，用于在控制栏中添加额外的组件（例如开关）。
  */
 @Composable
@@ -63,6 +64,7 @@ fun PaginationControls(
     onPageClick: () -> Unit,
     isPrevEnabled: Boolean,
     isNextEnabled: Boolean,
+    showTotalPages: Boolean = true, // 新增参数，默认显示总页数
     extraControls: @Composable RowScope.() -> Unit = {}
 ) {
     Row(
@@ -86,8 +88,15 @@ fun PaginationControls(
                 )
             }
 
+            // 根据 showTotalPages 参数决定显示内容
+            val pageText = if (showTotalPages) {
+                "第 $currentPage 页 / 共 $totalPages 页"
+            } else {
+                "第 $currentPage 页"
+            }
+            
             Text(
-                text = "第 $currentPage 页 / 共 $totalPages 页",
+                text = pageText,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier

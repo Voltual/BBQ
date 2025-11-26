@@ -285,7 +285,9 @@ class PlazaViewModel(
     }
 
              fun nextPage(onComplete: (() -> Unit)? = null) {
-    if (_isLoading.value == true || popularAppsPage >= popularAppsTotalPages) return
+    if (_isLoading.value == true) return // 如果已经在加载，则直接返回
+    // 对于弦应用商店，我们不检查 totalPages，而是通过检查返回的列表是否为空来判断是否还有更多数据
+    if (_appStore.value != AppStore.SIENE_SHOP && popularAppsPage >= popularAppsTotalPages) return
     _isLoading.value = true
     popularAppsPage++
     currentPage.postValue(popularAppsPage)
@@ -320,13 +322,29 @@ class PlazaViewModel(
                     val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
                     if (appListResult.isSuccess) {
                         val apps = appListResult.getOrThrow()
-                        popularAppsTotalPages = 1 // 弦应用商店没有提供总页数，暂时设置为 1
-                        this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
-                        // 明确指定泛型类型为 AppItem
-                        val appItems: List<AppItem> = apps.map { app ->
-                            convertToUiModel(app)
+                        // 对于弦应用商店，我们不使用 totalPages，而是通过检查返回的列表是否为空来判断是否还有更多数据
+                        // 如果返回的列表为空，则说明没有更多数据了
+                        if (apps.isEmpty()) {
+                            // 没有更多数据，回退页码
+                            popularAppsPage--
+                            currentPage.postValue(popularAppsPage)
+                            // 不更新 totalPages，保持之前的值
+                            this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+                            // 明确指定泛型类型为 AppItem
+                            val appItems: List<AppItem> = emptyList() // 返回空列表
+                            Result.success(Pair(appItems, popularAppsTotalPages))
+                        } else {
+                            // 有数据，继续加载
+                            // 弦应用商店没有提供总页数，暂时设置为一个较大的值，确保可以继续翻页
+                            // 实际的翻页终止条件是返回空列表
+                            popularAppsTotalPages = Int.MAX_VALUE 
+                            this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+                            // 明确指定泛型类型为 AppItem
+                            val appItems: List<AppItem> = apps.map { app ->
+                                convertToUiModel(app)
+                            }
+                            Result.success(Pair(appItems, popularAppsTotalPages))
                         }
-                        Result.success(Pair(appItems, popularAppsTotalPages))
                     } else {
                         Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
                     }
@@ -338,20 +356,29 @@ class PlazaViewModel(
             
             if (result.isSuccess) {
                 val (newApps, totalPages) = result.getOrThrow() // newApps 的类型现在是 List<AppItem>
-                popularAppsTotalPages = totalPages
-                this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
-
-                if (newApps.isNotEmpty()) {
+                // 只有在小趣空间时才更新 totalPages
+                if (_appStore.value == AppStore.XIAOQU_SPACE) {
+                    popularAppsTotalPages = totalPages
+                    this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+                }
+                
+                // 如果是弦应用商店且返回空列表，则说明没有更多数据了
+                if (_appStore.value == AppStore.SIENE_SHOP && newApps.isEmpty()) {
+                    _errorMessage.postValue("没有更多数据了")
+                    // 不更新 _plazaData
+                } else if (newApps.isNotEmpty()) {
                     val currentApps = _plazaData.value?.popularApps ?: emptyList()
                     val updatedApps = currentApps + newApps
                     _plazaData.postValue(PlazaData(popularApps = updatedApps))
                 }
             } else {
+                // 加载失败，回退页码
                 popularAppsPage--
                 currentPage.postValue(popularAppsPage)
                 _errorMessage.postValue("加载更多失败: ${result.exceptionOrNull()?.message}")
             }
         } catch (e: Exception) {
+            // 发生异常，回退页码
             popularAppsPage--
             currentPage.postValue(popularAppsPage)
             _errorMessage.postValue("加载更多失败: ${e.localizedMessage}")
