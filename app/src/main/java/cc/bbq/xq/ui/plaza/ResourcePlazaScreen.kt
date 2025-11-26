@@ -278,7 +278,7 @@ fun ResourcePlazaContent(
                             // 修改：使用更宽松的条件触发加载更多
                             // 当可见项目数少于总项目数，或者最后可见项目接近底部时，触发加载更多
                             val isNearBottom = lastVisibleItem.index >= totalItemsCount - 4
-                            val hasFewItems = totalItemsCount <= 10 // 如果总项目数很少，也触发加载更多
+                            val hasFewItems = totalItemsCount <= 1 // 如果总项目数很少，也触发加载更多
                             
                             isNearBottom || hasFewItems
                         } else {
