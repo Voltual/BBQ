@@ -146,19 +146,19 @@ fun AppDetailScreen(
                     viewModel.deleteAppComment(commentId)
                 },
                 onUpdateClick = {
-                    if (appDetail is KtorClient.AppDetail) {
+                    (appDetail as? KtorClient.AppDetail)?.let { detail ->
                         // 使用 KtorClient 的 JsonConverter
-                        val appDetailJson = KtorClient.JsonConverter.toJson(appDetail)
+                        val appDetailJson = KtorClient.JsonConverter.toJson(detail)
                         navController.navigate(UpdateAppRelease(appDetailJson).createRoute())
                     }
                 },
                 onRefundClick = {
-                    if (appDetail is KtorClient.AppDetail) {
+                    (appDetail as? KtorClient.AppDetail)?.let { detail ->
                         val destination = CreateRefundPost(
-                            appId = appDetail.id,
-                            versionId = appDetail.apps_version_id,
-                            appName = appDetail.appname,
-                            payMoney = appDetail.pay_money
+                            appId = detail.id,
+                            versionId = detail.apps_version_id,
+                            appName = detail.appname,
+                            payMoney = detail.pay_money
                         )
                         navController.navigate(destination.createRoute())
                     }
@@ -214,7 +214,13 @@ fun AppDetailScreen(
 
     if (showReplyDialog && currentReplyComment != null) {
         CommentDialog(
-            hint = "回复 @${(currentReplyComment as? KtorClient.Comment)?.nickname ?: (currentReplyComment as? SineShopClient.SineShopComment)?.sender?.displayName}",
+            hint = "回复 @${
+                when (currentReplyComment) {
+                    is KtorClient.Comment -> currentReplyComment.nickname
+                    is SineShopClient.SineShopComment -> currentReplyComment.sender.displayName
+                    else -> ""
+                }
+            }",
             onDismiss = { viewModel.closeReplyDialog() },
             context = LocalContext.current,
             onSubmit = { content, imageUrl ->
@@ -511,48 +517,52 @@ fun AppDetailContent(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    if (appDetail is KtorClient.AppDetail) {
-                        Text(
-                            text = "更新时间: ${appDetail.update_time}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "创建时间: ${appDetail.create_time}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "子分类: ${appDetail.sub_category_name}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "应用说明: ${appDetail.app_explain}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else if (appDetail is SineShopClient.SineShopAppDetail) {
-                        Text(
-                            text = "上传时间: ${appDetail.upload_time}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "更新时间: ${appDetail.update_time}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "应用来源: ${appDetail.app_source}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "应用开发者: ${appDetail.app_developer}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    when (appDetail) {
+                        is KtorClient.AppDetail -> {
+                            Text(
+                                text = "更新时间: ${appDetail.update_time}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "创建时间: ${appDetail.create_time}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "子分类: ${appDetail.sub_category_name}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "应用说明: ${appDetail.app_explain}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        is SineShopClient.SineShopAppDetail -> {
+                            Text(
+                                text = "上传时间: ${appDetail.upload_time}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "更新时间: ${appDetail.update_time}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "应用来源: ${appDetail.app_source}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "应用开发者: ${appDetail.app_developer}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        else -> {}
                     }
                 }
             }
@@ -663,7 +673,7 @@ fun AppDetailContent(
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(appDetail.app_previews) { imageUrl ->
                             AsyncImage(
-                                model = imageUrl,
+                                model = imageUrl.cleanUrl(),
                                 contentDescription = "应用截图",
                                 modifier = Modifier
                                     .height(200.dp)
@@ -699,11 +709,11 @@ fun AppDetailContent(
                             username = comment.sender.username,
                             nickname = comment.sender.displayName,
                             usertx = comment.sender.user_avatar ?: "",
-                            hierarchy = 0,
+                            hierarchy = "",
                             parentid = comment.father_reply_id.toLong(),
                             parentnickname = comment.father_reply?.sender?.displayName ?: "",
                             parentcontent = comment.father_reply?.content ?: "",
-                            image_path = null,
+                            image_path = null, // 弦应用商店评论没有图片
                             sub_comments_count = comment.child_count
                         )
                         else -> KtorClient.Comment(0,"","","","","","",0,0,"","","",0)
