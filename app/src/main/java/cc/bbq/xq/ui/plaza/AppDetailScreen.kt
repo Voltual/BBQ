@@ -599,7 +599,7 @@ fun AppDetailContent(
                     AsyncImage(
                         model = when (val detail = appDetail) {
                             is KtorClient.AppDetail -> detail.usertx
-                            is SineShopClient.SineShopAppDetail -> detail.user_avatar
+                            is SineShopClient.SineShopAppDetail -> detail.user.userAvatar
                             else -> ""
                         },
                         contentDescription = "用户头像",
@@ -609,7 +609,7 @@ fun AppDetailContent(
                             .clickable {
                                 val imageUrl = when (val detail = appDetail) {
                                     is KtorClient.AppDetail -> detail.usertx
-                                    is SineShopClient.SineShopAppDetail -> detail.user_avatar ?: ""
+                                    is SineShopClient.SineShopAppDetail -> detail.user.userAvatar ?: ""
                                     else -> ""
                                 }
                                 if (imageUrl.isNotEmpty()) {
@@ -701,26 +701,27 @@ fun AppDetailContent(
 
         if (comments.isNotEmpty()) {
             items(comments) { comment ->
+                val ktorComment = when (comment) {
+                    is KtorClient.Comment -> comment
+                    is SineShopClient.SineShopComment -> KtorClient.Comment(
+                        id = comment.id.toLong(),
+                        content = comment.content,
+                        userid = comment.sender.id.toLong(),
+                        time = comment.send_time.toString(),
+                        username = comment.sender.username,
+                        nickname = comment.sender.displayName,
+                        usertx = comment.sender.userAvatar ?: "", // Use userAvatar here
+                        hierarchy = "0",
+                        parentid = comment.father_reply_id.toLong(),
+                        parentnickname = comment.father_reply?.sender?.displayName ?: "",
+                        parentcontent = comment.father_reply?.content ?: "",
+                        image_path = null, // No image path in SineShopComment
+                        sub_comments_count = comment.child_count
+                    )
+                    else -> KtorClient.Comment(0,"","","","","","",0,0,"","","",0)
+                }
                 CommentItem(
-                    comment = when (comment) {
-                        is KtorClient.Comment -> comment
-                        is SineShopClient.SineShopComment -> KtorClient.Comment(
-                            id = comment.id.toLong(),
-                            content = comment.content,
-                            userid = comment.sender.id.toLong(),
-                            time = comment.send_time.toString(),
-                            username = comment.sender.username,
-                            nickname = comment.sender.displayName,
-                            usertx = comment.sender.user_avatar ?: "",
-                            hierarchy = "0",
-                            parentid = comment.father_reply_id.toLong(),
-                            parentnickname = comment.father_reply?.sender?.displayName ?: "",
-                            parentcontent = comment.father_reply?.content ?: "",
-                            image_path = null,
-                            sub_comments_count = comment.child_count
-                        )
-                        else -> KtorClient.Comment(0,"","","","","","",0,0,"","","",0)
-                    },
+                    comment = ktorComment,
                     navController = navController,
                     onReply = { onCommentReply(comment) },
                     onDelete = {

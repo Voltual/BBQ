@@ -277,7 +277,15 @@ fun ResourcePlazaContent(
                 AppGrid(
                     apps = if (isSearchMode) searchState else plazaState.popularApps,
                     columns = if (isMyResourceMode) 4 else 3,
-                    onItemClick = { app -> navigateToAppDetail(app.id, app.versionId) },
+                    onItemClick = { app -> 
+                        // 修改：根据应用商店传递不同的参数
+                        if (selectedAppStore == AppStore.XIAOQU_SPACE) {
+                            navigateToAppDetail(app.id, app.versionId)
+                        } else {
+                            // 弦应用商店：传递 appId 和默认的 versionId
+                            navigateToAppDetail(app.id, 0L)
+                        }
+                    },
                     gridState = gridState,
                     selectedAppStore = selectedAppStore // 传入 selectedAppStore
                 )

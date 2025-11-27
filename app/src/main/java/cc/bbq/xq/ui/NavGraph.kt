@@ -333,9 +333,7 @@ composable(route = FanList.route) {
         }
 
         // --- 资源广场 ---
-        // 在 NavGraph.kt 中修复 PlazaViewModel 的创建
-        // 修改 ResourcePlazaScreen 调用部分
-composable(route = ResourcePlaza(false).route, arguments = ResourcePlaza.arguments) { backStackEntry ->
+        composable(route = ResourcePlaza(false).route, arguments = ResourcePlaza.arguments) { backStackEntry ->
     val isMyResource = backStackEntry.arguments?.getBoolean(AppDestination.ARG_IS_MY_RESOURCE) ?: false
     val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
 
@@ -347,7 +345,7 @@ composable(route = ResourcePlaza(false).route, arguments = ResourcePlaza.argumen
     ResourcePlazaScreen(
         viewModel = plazaViewModel,
         isMyResourceMode = isMyResource,
-        navigateToAppDetail = { appId, versionId ->
+        navigateToAppDetail = { appId, versionId -> // 这里已经有了 appId 和 versionId
             navController.navigate(AppDetail(appId.toLong(), versionId).createRoute())
         },
         userId = if (userId != -1L) userId else null,
