@@ -2,7 +2,6 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
@@ -701,69 +700,49 @@ fun AppDetailContent(
 
         if (comments.isNotEmpty()) {
             items(comments) { comment ->
-                // 显式声明类型以匹配KtorClient.Comment的构造函数
-                val ktorComment: KtorClient.Comment = when (comment) {
+                // 使用 when 表达式处理不同类型的 comment
+                val commentContent = when (comment) {
                     is KtorClient.Comment -> comment
                     is SineShopClient.SineShopComment -> {
-                        // 确保所有字段类型都匹配
-                        val id: Long = comment.id.toLong()
-                        val userid: Long = comment.sender.id.toLong()
-                        val time: String = comment.send_time.toString()
-                        val parentid: Long? = if (comment.father_reply_id != -1) comment.father_reply_id.toLong() else null
-                        val image_path: List<String>? = null // SineShopComment 没有 image_path 字段
-                        val sub_comments_count: Int = comment.child_count
-
+                        // 将 SineShopComment 转换为 KtorClient.Comment
                         KtorClient.Comment(
-                            id = id,
+                            id = comment.id.toLong(),
                             content = comment.content,
-                            userid = userid,
-                            time = time,
+                            userid = comment.sender.id.toLong(),
+                            time = comment.send_time.toString(),
                             username = comment.sender.username,
                             nickname = comment.sender.displayName,
-                            usertx = comment.sender.userAvatar ?: "", // 修复字段名称
+                            usertx = comment.sender.userAvatar ?: "",
                             hierarchy = "0",
-                            parentid = parentid,
+                            parentid = comment.father_reply_id.toLong(),
                             parentnickname = comment.father_reply?.sender?.displayName ?: "",
                             parentcontent = comment.father_reply?.content ?: "",
-                            image_path = image_path,
-                            sub_comments_count = sub_comments_count
+                            image_path = null, // 弦应用商店评论没有图片路径
+                            sub_comments_count = comment.child_count
                         )
                     }
-                    else -> {
-                        // 提供一个默认的 KtorClient.Comment 实例
-                        KtorClient.Comment(
-                            id = 0L,
-                            content = "",
-                            userid = 0L,
-                            time = "",
-                            username = "",
-                            nickname = "",
-                            usertx = "",
-                            hierarchy = "0",
-                            parentid = null,
-                            parentnickname = "",
-                            parentcontent = "",
-                            image_path = null,
-                            sub_comments_count = 0
-                        )
-                    }
+                    else -> null // 如果有其他类型的 comment，则返回 null
                 }
-                CommentItem(
-                    comment = ktorComment,
-                    navController = navController,
-                    onReply = { onCommentReply(comment) },
-                    onDelete = {
-                        val commentId = when (comment) {
-                            is KtorClient.Comment -> comment.id
-                            is SineShopClient.SineShopComment -> comment.id.toLong()
-                            else -> 0L
-                        }
-                        onCommentDelete(commentId)
-                    },
-                    clipboardManager = clipboardManager,
-                    snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
-                    context = context
-                )
+
+                // 只有当 commentContent 不为 null 时才显示 CommentItem
+                if (commentContent != null) {
+                    CommentItem(
+                        comment = commentContent,
+                        navController = navController,
+                        onReply = { onCommentReply(comment) },
+                        onDelete = {
+                            val commentId = when (comment) {
+                                is KtorClient.Comment -> comment.id
+                                is SineShopClient.SineShopComment -> comment.id.toLong()
+                                else -> 0L
+                            }
+                            onCommentDelete(commentId)
+                        },
+                        clipboardManager = clipboardManager,
+                        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
+                        context = context
+                    )
+                }
             }
         } else {
             item {
@@ -776,4 +755,3 @@ fun AppDetailContent(
             }
         }
     }
-}
