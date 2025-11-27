@@ -40,12 +40,14 @@ import cc.bbq.xq.KtorClient
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-//import cc.bbq.xq.RetrofitClient
 import cc.bbq.xq.ui.*
 import cc.bbq.xq.ui.community.compose.CommentDialog
 import cc.bbq.xq.ui.community.compose.CommentItem
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
+import cc.bbq.xq.AppStore
+import cc.bbq.xq.SineShopClient
+import cc.bbq.xq.util.cleanUrl
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -64,6 +66,7 @@ fun AppDetailScreen(
     val currentReplyComment by viewModel.currentReplyComment.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val appStore by viewModel.appStore.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -72,7 +75,7 @@ fun AppDetailScreen(
 
     // 简化的初始化 - 只调用 ViewModel 的初始化方法
     LaunchedEffect(appId, versionId) {
-        viewModel.initializeData(appId, versionId)
+        viewModel.initializeData(appId, versionId, appStore)
     }
 
     // 下拉刷新状态
@@ -93,7 +96,12 @@ fun AppDetailScreen(
     }
 
     fun shareApp() {
-        val postUrl = appDetail?.posturl
+        val postUrl = when (appDetail) {
+            is KtorClient.AppDetail -> appDetail.posturl
+            is SineShopClient.SineShopAppDetail -> "" // 弦应用商店没有分享链接
+            else -> null
+        }
+
         if (!postUrl.isNullOrBlank()) {
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("应用链接", postUrl)
@@ -118,8 +126,9 @@ fun AppDetailScreen(
         } else if (appDetail != null) {
             AppDetailContent(
                 navController = navController,
-                appDetail = appDetail!!,
+                appDetail = appDetail,
                 comments = comments,
+                appStore = appStore,
                 onCommentReply = { comment ->
                     viewModel.openReplyDialog(comment)
                 },
@@ -137,19 +146,19 @@ fun AppDetailScreen(
                     viewModel.deleteAppComment(commentId)
                 },
                 onUpdateClick = {
-                    appDetail?.let { detail ->
+                    if (appDetail is KtorClient.AppDetail) {
                         // 使用 KtorClient 的 JsonConverter
-                        val appDetailJson = KtorClient.JsonConverter.toJson(detail)
+                        val appDetailJson = KtorClient.JsonConverter.toJson(appDetail)
                         navController.navigate(UpdateAppRelease(appDetailJson).createRoute())
                     }
                 },
                 onRefundClick = {
-                    appDetail?.let { detail ->
+                    if (appDetail is KtorClient.AppDetail) {
                         val destination = CreateRefundPost(
-                            appId = detail.id,
-                            versionId = detail.apps_version_id,
-                            appName = detail.appname,
-                            payMoney = detail.pay_money
+                            appId = appDetail.id,
+                            versionId = appDetail.apps_version_id,
+                            appName = appDetail.appname,
+                            payMoney = appDetail.pay_money
                         )
                         navController.navigate(destination.createRoute())
                     }
@@ -161,12 +170,12 @@ fun AppDetailScreen(
                     shareApp()
                 },
                 onImagePreview = { imageUrl ->
-    navController.navigate(
-        ImagePreview(
-            imageUrl = imageUrl
-        ).createRoute()
-    )
-}
+                    navController.navigate(
+                        ImagePreview(
+                            imageUrl = imageUrl
+                        ).createRoute()
+                    )
+                }
             )
         }
 
@@ -205,7 +214,7 @@ fun AppDetailScreen(
 
     if (showReplyDialog && currentReplyComment != null) {
         CommentDialog(
-            hint = "回复 @${currentReplyComment?.nickname}",
+            hint = "回复 @${(currentReplyComment as? KtorClient.Comment)?.nickname ?: (currentReplyComment as? SineShopClient.SineShopComment)?.sender?.displayName}",
             onDismiss = { viewModel.closeReplyDialog() },
             context = LocalContext.current,
             onSubmit = { content, imageUrl ->
@@ -257,9 +266,10 @@ fun AppDetailScreen(
 @Composable
 fun AppDetailContent(
     navController: NavController,
-    appDetail: KtorClient.AppDetail, // 改为 KtorClient 模型
-    comments: List<KtorClient.Comment>, // 改为 KtorClient 模型
-    onCommentReply: (KtorClient.Comment) -> Unit, // 改为 KtorClient 模型
+    appDetail: Any?, // 使用 Any? 类型
+    comments: List<Any>, // 使用 Any 类型
+    appStore: AppStore,
+    onCommentReply: (Any) -> Unit, // 使用 Any 类型
     onDownload: (String) -> Unit,
     onCommentDelete: (Long) -> Unit,
     onUpdateClick: () -> Unit,
@@ -299,14 +309,23 @@ fun AppDetailContent(
                         modifier = Modifier.padding(bottom = 16.dp)
                     ) {
                         AsyncImage(
-                            model = appDetail.app_icon,
+                            model = when (appDetail) {
+                                is KtorClient.AppDetail -> appDetail.app_icon
+                                is SineShopClient.SineShopAppDetail -> appDetail.app_icon
+                                else -> ""
+                            },
                             contentDescription = "应用图标",
                             modifier = Modifier
                                 .size(64.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable {
-                                    if (appDetail.app_icon.isNotEmpty()) {
-                                        onImagePreview(appDetail.app_icon)
+                                    val imageUrl = when (appDetail) {
+                                        is KtorClient.AppDetail -> appDetail.app_icon
+                                        is SineShopClient.SineShopAppDetail -> appDetail.app_icon
+                                        else -> ""
+                                    }
+                                    if (imageUrl.isNotEmpty()) {
+                                        onImagePreview(imageUrl)
                                     }
                                 },
                             contentScale = ContentScale.Crop
@@ -314,17 +333,33 @@ fun AppDetailContent(
                         Spacer(Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = appDetail.appname,
+                                text = when (appDetail) {
+                                    is KtorClient.AppDetail -> appDetail.appname
+                                    is SineShopClient.SineShopAppDetail -> appDetail.app_name
+                                    else -> "应用名称"
+                                },
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "版本: ${appDetail.version}",
+                                text = "版本: ${
+                                    when (appDetail) {
+                                        is KtorClient.AppDetail -> appDetail.version
+                                        is SineShopClient.SineShopAppDetail -> appDetail.version_name
+                                        else -> ""
+                                    }
+                                }",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "大小: ${appDetail.app_size}MB",
+                                text = "大小: ${
+                                    when (appDetail) {
+                                        is KtorClient.AppDetail -> appDetail.app_size
+                                        is SineShopClient.SineShopAppDetail -> appDetail.download_size
+                                        else -> ""
+                                    }
+                                }MB",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -343,29 +378,31 @@ fun AppDetailContent(
                                 expanded = showMoreMenu,
                                 onDismissRequest = { showMoreMenu = false }
                             ) {
-                                DropdownMenuItem(
-                                    text = { Text("更新") },
-                                    onClick = {
-                                        showMoreMenu = false
-                                        onUpdateClick()
-                                    }
-                                )
-                                if (appDetail.is_pay == 1) {
+                                if (appDetail is KtorClient.AppDetail) {
                                     DropdownMenuItem(
-                                        text = { Text("退币") },
+                                        text = { Text("更新") },
                                         onClick = {
                                             showMoreMenu = false
-                                            onRefundClick()
+                                            onUpdateClick()
+                                        }
+                                    )
+                                    if (appDetail.is_pay == 1) {
+                                        DropdownMenuItem(
+                                            text = { Text("退币") },
+                                            onClick = {
+                                                showMoreMenu = false
+                                                onRefundClick()
+                                            }
+                                        )
+                                    }
+                                    DropdownMenuItem(
+                                        text = { Text("删除") },
+                                        onClick = {
+                                            showMoreMenu = false
+                                            onDeleteClick()
                                         }
                                     )
                                 }
-                                DropdownMenuItem(
-                                    text = { Text("删除") },
-                                    onClick = {
-                                        showMoreMenu = false
-                                        onDeleteClick()
-                                    }
-                                )
                                 DropdownMenuItem(
                                     text = { Text("分享") },
                                     onClick = {
@@ -379,38 +416,52 @@ fun AppDetailContent(
 
                     Button(
                         onClick = {
-                            if (appDetail.is_pay == 0 || appDetail.is_user_pay) {
-                                val downloadUrl = appDetail.download
-                                if (!downloadUrl.isNullOrBlank()) {
-                                    onDownload(downloadUrl)
+                            val downloadUrl = when (appDetail) {
+                                is KtorClient.AppDetail -> {
+                                    if (appDetail.is_pay == 0 || appDetail.is_user_pay) {
+                                        appDetail.download
+                                    } else null
+                                }
+                                is SineShopClient.SineShopAppDetail -> {
+                                    // 弦应用商店没有直接下载链接，这里可以显示一个提示或者跳转到应用详情页
+                                    ""
+                                }
+                                else -> null
+                            }
+
+                            if (!downloadUrl.isNullOrBlank()) {
+                                onDownload(downloadUrl)
+                            } else {
+                                if (appDetail is KtorClient.AppDetail && appDetail.is_pay == 1 && !appDetail.is_user_pay) {
+                                    val destination = PaymentForApp(
+                                        appId = appDetail.id,
+                                        appName = appDetail.appname,
+                                        versionId = appDetail.apps_version_id,
+                                        price = appDetail.pay_money,
+                                        iconUrl = appDetail.app_icon,
+                                        previewContent = appDetail.app_introduce?.take(30) ?: ""
+                                    )
+                                    navController.navigate(destination.createRoute())
                                 } else {
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar("下载链接无效")
                                     }
                                 }
-                            } else if (appDetail.is_pay == 1 && !appDetail.is_user_pay) {
-                                val destination = PaymentForApp(
-                                    appId = appDetail.id,
-                                    appName = appDetail.appname,
-                                    versionId = appDetail.apps_version_id,
-                                    price = appDetail.pay_money,
-                                    iconUrl = appDetail.app_icon,
-                                    previewContent = appDetail.app_introduce?.take(30) ?: ""
-                                )
-                                navController.navigate(destination.createRoute())
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        enabled = appStore == AppStore.XIAOQU_SPACE || appDetail is SineShopClient.SineShopAppDetail
                     ) {
                         Icon(Icons.Filled.Download, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text(
                             when {
-                                appDetail.is_pay == 0 || appDetail.is_user_pay -> "下载应用"
-                                appDetail.is_pay == 1 && appDetail.pay_money > 0 ->
-                                    "购买应用 (${appDetail.pay_money}硬币)"
-                                else -> "购买应用"
+                                appDetail is KtorClient.AppDetail && (appDetail.is_pay == 0 || appDetail.is_user_pay) -> "下载应用"
+                                appDetail is KtorClient.AppDetail && appDetail.is_pay == 1 && !appDetail.is_user_pay ->
+                                    "购买应用 (${(appDetail as KtorClient.AppDetail).pay_money}硬币)"
+                                appDetail is SineShopClient.SineShopAppDetail -> "查看详情"
+                                else -> "下载应用"
                             }
                         )
                     }
@@ -434,7 +485,11 @@ fun AppDetailContent(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Text(
-                        text = appDetail.app_introduce?.replace("<br>", "\n") ?: "暂无介绍",
+                        text = when (appDetail) {
+                            is KtorClient.AppDetail -> appDetail.app_introduce?.replace("<br>", "\n") ?: "暂无介绍"
+                            is SineShopClient.SineShopAppDetail -> appDetail.app_describe ?: "暂无介绍"
+                            else -> "暂无介绍"
+                        },
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -456,26 +511,49 @@ fun AppDetailContent(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    Text(
-                        text = "更新时间: ${appDetail.update_time}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "创建时间: ${appDetail.create_time}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "子分类: ${appDetail.sub_category_name}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "应用说明: ${appDetail.app_explain}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (appDetail is KtorClient.AppDetail) {
+                        Text(
+                            text = "更新时间: ${appDetail.update_time}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "创建时间: ${appDetail.create_time}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "子分类: ${appDetail.sub_category_name}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "应用说明: ${appDetail.app_explain}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else if (appDetail is SineShopClient.SineShopAppDetail) {
+                        Text(
+                            text = "上传时间: ${appDetail.upload_time}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "更新时间: ${appDetail.update_time}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "应用来源: ${appDetail.app_source}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "应用开发者: ${appDetail.app_developer}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -493,20 +571,36 @@ fun AppDetailContent(
                         .fillMaxWidth()
                         .padding(16.dp)
                         .clickable {
+                            val userId = when (appDetail) {
+                                is KtorClient.AppDetail -> appDetail.userid
+                                is SineShopClient.SineShopAppDetail -> appDetail.user.id.toLong()
+                                else -> -1L
+                            }
                             // 修复：点击作者头像跳转到用户详情页
-                            navController.navigate(UserDetail(appDetail.userid).createRoute())
+                            if (userId != -1L) {
+                                navController.navigate(UserDetail(userId).createRoute())
+                            }
                         },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AsyncImage(
-                        model = appDetail.usertx,
+                        model = when (appDetail) {
+                            is KtorClient.AppDetail -> appDetail.usertx
+                            is SineShopClient.SineShopAppDetail -> appDetail.user.user_avatar
+                            else -> ""
+                        },
                         contentDescription = "用户头像",
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
                             .clickable {
-                                if (appDetail.usertx.isNotEmpty()) {
-                                    onImagePreview(appDetail.usertx)
+                                val imageUrl = when (appDetail) {
+                                    is KtorClient.AppDetail -> appDetail.usertx
+                                    is SineShopClient.SineShopAppDetail -> appDetail.user.user_avatar ?: ""
+                                    else -> ""
+                                }
+                                if (imageUrl.isNotEmpty()) {
+                                    onImagePreview(imageUrl)
                                 }
                             },
                         contentScale = ContentScale.Crop
@@ -514,7 +608,11 @@ fun AppDetailContent(
                     Spacer(Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = appDetail.nickname,
+                            text = when (appDetail) {
+                                is KtorClient.AppDetail -> appDetail.nickname
+                                is SineShopClient.SineShopAppDetail -> appDetail.user.displayName
+                                else -> "用户名"
+                            },
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -528,7 +626,7 @@ fun AppDetailContent(
             }
         }
 
-        if (!appDetail.app_introduction_image_array.isNullOrEmpty()) {
+        if (appDetail is KtorClient.AppDetail && !appDetail.app_introduction_image_array.isNullOrEmpty()) {
             item {
                 Column {
                     Text(
@@ -553,11 +651,36 @@ fun AppDetailContent(
                     }
                 }
             }
+        } else if (appDetail is SineShopClient.SineShopAppDetail && !appDetail.app_previews.isNullOrEmpty()) {
+            item {
+                Column {
+                    Text(
+                        text = "应用截图",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(appDetail.app_previews) { imageUrl ->
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = "应用截图",
+                                modifier = Modifier
+                                    .height(200.dp)
+                                    .width(300.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { onImagePreview(imageUrl) },
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         item {
             Text(
-                text = "用户评论 (${appDetail.comment_count})",
+                text = "用户评论 (${comments.size})",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -566,10 +689,35 @@ fun AppDetailContent(
         if (comments.isNotEmpty()) {
             items(comments) { comment ->
                 CommentItem(
-                    comment = comment,
+                    comment = when (comment) {
+                        is KtorClient.Comment -> comment
+                        is SineShopClient.SineShopComment -> KtorClient.Comment(
+                            id = comment.id.toLong(),
+                            content = comment.content,
+                            userid = comment.sender.id.toLong(),
+                            time = comment.send_time.toString(),
+                            username = comment.sender.username,
+                            nickname = comment.sender.displayName,
+                            usertx = comment.sender.user_avatar ?: "",
+                            hierarchy = 0,
+                            parentid = comment.father_reply_id.toLong(),
+                            parentnickname = comment.father_reply?.sender?.displayName ?: "",
+                            parentcontent = comment.father_reply?.content ?: "",
+                            image_path = null,
+                            sub_comments_count = comment.child_count
+                        )
+                        else -> KtorClient.Comment(0,"","","","","","",0,0,"","","",0)
+                    },
                     navController = navController,
                     onReply = { onCommentReply(comment) },
-                    onDelete = { onCommentDelete(comment.id) },
+                    onDelete = {
+                        val commentId = when (comment) {
+                            is KtorClient.Comment -> comment.id
+                            is SineShopClient.SineShopComment -> comment.id.toLong()
+                            else -> 0L
+                        }
+                        onCommentDelete(commentId)
+                    },
                     clipboardManager = clipboardManager,
                     snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
                     context = context

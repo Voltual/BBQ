@@ -2,16 +2,19 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
+// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
+import cc.bbq.xq.SineShopClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,11 +24,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 
 class AppDetailComposeViewModel(application: Application) : AndroidViewModel(application) {
-    private val _appDetail = MutableStateFlow<KtorClient.AppDetail?>(null)
-    val appDetail: StateFlow<KtorClient.AppDetail?> = _appDetail.asStateFlow()
+    private val _appDetail = MutableStateFlow<Any?>(null) // 使用 Any? 类型
+    val appDetail: StateFlow<Any?> = _appDetail.asStateFlow()
 
-    private val _comments = MutableStateFlow<List<KtorClient.Comment>>(emptyList())
-    val comments: StateFlow<List<KtorClient.Comment>> = _comments.asStateFlow()
+    private val _comments = MutableStateFlow<List<Any>>(emptyList()) // 使用 Any 类型
+    val comments: StateFlow<List<Any>> = _comments.asStateFlow()
 
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
@@ -36,11 +39,14 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
     private val _showReplyDialog = MutableStateFlow(false)
     val showReplyDialog: StateFlow<Boolean> = _showReplyDialog.asStateFlow()
 
-    private val _currentReplyComment = MutableStateFlow<KtorClient.Comment?>(null)
-    val currentReplyComment: StateFlow<KtorClient.Comment?> = _currentReplyComment.asStateFlow()
+    private val _currentReplyComment = MutableStateFlow<Any?>(null) // 使用 Any? 类型
+    val currentReplyComment: StateFlow<Any?> = _currentReplyComment.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _appStore = MutableStateFlow(AppStore.XIAOQU_SPACE) // 默认商店
+    val appStore: StateFlow<AppStore> = _appStore.asStateFlow()
 
     // 状态跟踪 - 防止重复加载
     private var _currentAppId: Long = -1L
@@ -48,13 +54,13 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
     private var _isInitialized = false
 
     // 核心初始化方法 - 类似其他ViewModel的模式
-    fun initializeData(appId: Long, versionId: Long) {
-        if (this._currentAppId != appId || this._currentVersionId != versionId) {
+    fun initializeData(appId: Long, versionId: Long, appStore: AppStore = AppStore.XIAOQU_SPACE) {
+        if (this._currentAppId != appId || this._currentVersionId != versionId || this._appStore.value != appStore) {
             this._currentAppId = appId
             this._currentVersionId = versionId
             this._isInitialized = false
+            _appStore.value = appStore
             resetState()
-            // 直接调用加载而不是通过条件检查
             loadAppDetail()
             loadComments()
         }
@@ -87,26 +93,38 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                 val context = getApplication<Application>().applicationContext
-                val userCredentialsFlow = AuthManager.getCredentials(context)
-                val userCredentials = userCredentialsFlow.first()
-                val token = userCredentials?.token ?: ""
+                when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> {
+                        val context = getApplication<Application>().applicationContext
+                        val userCredentialsFlow = AuthManager.getCredentials(context)
+                        val userCredentials = userCredentialsFlow.first()
+                        val token = userCredentials?.token ?: ""
 
-                val result = KtorClient.ApiServiceImpl.getAppsInformation(
-                    token = token,
-                    appsId = _currentAppId,
-                    appsVersionId = _currentVersionId
-                )
+                        val result = KtorClient.ApiServiceImpl.getAppsInformation(
+                            token = token,
+                            appsId = _currentAppId,
+                            appsVersionId = _currentVersionId
+                        )
 
-                if (result.isSuccess) {
-                    val response = result.getOrThrow()
-                    if (response.code == 1) {
-                        _appDetail.value = response.data
-                    } else {
-                        _errorMessage.value = "加载失败: ${response.msg}"
+                        if (result.isSuccess) {
+                            val response = result.getOrThrow()
+                            if (response.code == 1) {
+                                _appDetail.value = response.data
+                            } else {
+                                _errorMessage.value = "加载失败: ${response.msg}"
+                            }
+                        } else {
+                            _errorMessage.value = "加载失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
+                        }
                     }
-                } else {
-                    _errorMessage.value = "加载失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
+                    AppStore.SIENE_SHOP -> {
+                        val result = SineShopClient.getSineShopAppInfo(_currentAppId.toInt())
+                        if (result.isSuccess) {
+                            _appDetail.value = result.getOrThrow()
+                        } else {
+                            _errorMessage.value = "加载失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
@@ -119,40 +137,63 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
     private fun loadComments(page: Int = 1) {
         viewModelScope.launch {
             try {
-                val result = KtorClient.ApiServiceImpl.getAppsCommentList(
-                    appsId = _currentAppId,
-                    appsVersionId = _currentVersionId,
-                    limit = 20,
-                    page = page,
-                    sortOrder = "desc"
-                )
+                when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> {
+                        val result = KtorClient.ApiServiceImpl.getAppsCommentList(
+                            appsId = _currentAppId,
+                            appsVersionId = _currentVersionId,
+                            limit = 20,
+                            page = page,
+                            sortOrder = "desc"
+                        )
 
-                if (result.isSuccess) {
-                    val response = result.getOrThrow()
-                    if (response.code == 1) {
-                        val appComments = response.data.list
-                        _comments.value = appComments.map { appComment ->
-                            KtorClient.Comment(
-                                id = appComment.id,
-                                content = appComment.content,
-                                userid = appComment.userid,
-                                time = appComment.time,
-                                username = appComment.username,
-                                nickname = appComment.nickname,
-                                usertx = appComment.usertx,
-                                hierarchy = appComment.hierarchy,
-                                parentid = appComment.parentid,
-                                parentnickname = appComment.parentnickname,
-                                parentcontent = appComment.parentcontent,
-                                image_path = appComment.image_path,
-                                sub_comments_count = 0
-                            )
+                        if (result.isSuccess) {
+                            val response = result.getOrThrow()
+                            if (response.code == 1) {
+                                val appComments = response.data.list
+                                _comments.value = appComments.map { appComment ->
+                                    KtorClient.Comment(
+                                        id = appComment.id,
+                                        content = appComment.content,
+                                        userid = appComment.userid,
+                                        time = appComment.time,
+                                        username = appComment.username,
+                                        nickname = appComment.nickname,
+                                        usertx = appComment.usertx,
+                                        hierarchy = appComment.hierarchy,
+                                        parentid = appComment.parentid,
+                                        parentnickname = appComment.parentnickname,
+                                        parentcontent = appComment.parentcontent,
+                                        image_path = appComment.image_path,
+                                        sub_comments_count = 0
+                                    )
+                                }
+                            } else {
+                                _errorMessage.value = "加载评论失败: ${response.msg}"
+                            }
+                        } else {
+                            _errorMessage.value = "加载评论失败: ${result.exceptionOrNull()?.message}"
                         }
-                    } else {
-                        _errorMessage.value = "加载评论失败: ${response.msg}"
                     }
-                } else {
-                    _errorMessage.value = "加载评论失败: ${result.exceptionOrNull()?.message}"
+                    AppStore.SIENE_SHOP -> {
+                        val result = SineShopClient.getSineShopAppComments(_currentAppId.toInt(), page = page)
+                        if (result.isSuccess) {
+                            val sineShopComments = result.getOrThrow().list
+                            _comments.value = sineShopComments.map { sineShopComment ->
+                                SineShopClient.SineShopComment(
+                                    id = sineShopComment.id,
+                                    content = sineShopComment.content,
+                                    send_time = sineShopComment.send_time,
+                                    father_reply_id = sineShopComment.father_reply_id,
+                                    sender = sineShopComment.sender,
+                                    child_count = sineShopComment.child_count,
+                                    father_reply = sineShopComment.father_reply
+                                )
+                            }
+                        } else {
+                            _errorMessage.value = "加载评论失败: ${result.exceptionOrNull()?.message}"
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "加载评论出错: ${e.message}"
@@ -162,38 +203,61 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
 
     fun openCommentDialog() { _showCommentDialog.value = true; _currentReplyComment.value = null }
     fun closeCommentDialog() { _showCommentDialog.value = false }
-    fun openReplyDialog(comment: KtorClient.Comment) { _currentReplyComment.value = comment; _showReplyDialog.value = true }
+    fun openReplyDialog(comment: Any) { _currentReplyComment.value = comment; _showReplyDialog.value = true }
     fun closeReplyDialog() { _showReplyDialog.value = false; _currentReplyComment.value = null }
 
     fun submitAppComment(content: String, imageUrl: String? = null) {
         viewModelScope.launch {
             try {
-                val context = getApplication<Application>().applicationContext
-                val userCredentialsFlow = AuthManager.getCredentials(context)
-                val userCredentials = userCredentialsFlow.first()
-                val token = userCredentials?.token?:""
-                val appDetail = _appDetail.value ?: return@launch
-                val parentId = _currentReplyComment.value?.id ?: 0L // 确保 parentId 不为空
+                when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> {
+                        val context = getApplication<Application>().applicationContext
+                        val userCredentialsFlow = AuthManager.getCredentials(context)
+                        val userCredentials = userCredentialsFlow.first()
+                        val token = userCredentials?.token ?: ""
+                        val appDetail = _appDetail.value as? KtorClient.AppDetail ?: return@launch
+                        val parentId = (_currentReplyComment.value as? KtorClient.Comment)?.id ?: 0L // 确保 parentId 不为空
 
-                val result = KtorClient.ApiServiceImpl.postAppComment(
-                    token = token,
-                    content = content,
-                    appsId = appDetail.id,
-                    appsVersionId = appDetail.apps_version_id,
-                    parentId = parentId, // 这里确保传递了 parentId
-                    imageUrl = imageUrl
-                )
+                        val result = KtorClient.ApiServiceImpl.postAppComment(
+                            token = token,
+                            content = content,
+                            appsId = appDetail.id,
+                            appsVersionId = appDetail.apps_version_id,
+                            parentId = parentId, // 这里确保传递了 parentId
+                            imageUrl = imageUrl
+                        )
 
-                if (result.isSuccess) {
-                    val response = result.getOrThrow()
-                    if (response.code == 1) {
-                        loadComments()
-                        if (parentId == 0L) closeCommentDialog() else closeReplyDialog()
-                    } else {
-                        _errorMessage.value = response.msg
+                        if (result.isSuccess) {
+                            val response = result.getOrThrow()
+                            if (response.code == 1) {
+                                loadComments()
+                                if (parentId == 0L) closeCommentDialog() else closeReplyDialog()
+                            } else {
+                                _errorMessage.value = response.msg
+                            }
+                        } else {
+                            _errorMessage.value = "提交失败: ${result.exceptionOrNull()?.message}"
+                        }
                     }
-                } else {
-                    _errorMessage.value = "提交失败: ${result.exceptionOrNull()?.message}"
+                    AppStore.SIENE_SHOP -> {
+                        val appDetail = _appDetail.value as? SineShopClient.SineShopAppDetail ?: return@launch
+                        val parentComment = _currentReplyComment.value as? SineShopClient.SineShopComment
+                        val parentId = parentComment?.id ?: 0
+                        val result: Result<Int> = if (parentId == 0) {
+                            // 发送根评论
+                            SineShopClient.postSineShopAppRootComment(appId = appDetail.id, content = content)
+                        } else {
+                            // 发送回复评论
+                            SineShopClient.postSineShopAppReplyComment(commentId = parentId, content = content)
+                        }
+
+                        if (result.isSuccess) {
+                            loadComments()
+                            if (parentId == 0) closeCommentDialog() else closeReplyDialog()
+                        } else {
+                            _errorMessage.value = "提交评论失败: ${result.exceptionOrNull()?.message}"
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "提交失败: ${e.message}"
@@ -204,24 +268,36 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
     fun deleteAppComment(commentId: Long) {
         viewModelScope.launch {
             try {
-                 val context = getApplication<Application>().applicationContext
-                val userCredentialsFlow = AuthManager.getCredentials(context)
-                val userCredentials = userCredentialsFlow.first()
-                val token = userCredentials?.token?:""
+                when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> {
+                        val context = getApplication<Application>().applicationContext
+                        val userCredentialsFlow = AuthManager.getCredentials(context)
+                        val userCredentials = userCredentialsFlow.first()
+                        val token = userCredentials?.token ?: ""
 
-                val result = KtorClient.ApiServiceImpl.deleteAppComment(token = token, commentId = commentId)
-                if (result.isSuccess) {
-                    val response = result.getOrThrow()
-                    if (response.code == 1) {
-                        val appDetail = _appDetail.value
-                        if (appDetail != null) {
-                            loadComments()
+                        val result = KtorClient.ApiServiceImpl.deleteAppComment(token = token, commentId = commentId)
+                        if (result.isSuccess) {
+                            val response = result.getOrThrow()
+                            if (response.code == 1) {
+                                val appDetail = _appDetail.value
+                                if (appDetail != null) {
+                                    loadComments()
+                                }
+                            } else {
+                                _errorMessage.value = response.msg
+                            }
+                        } else {
+                            _errorMessage.value = "删除失败: ${result.exceptionOrNull()?.message}"
                         }
-                    } else {
-                        _errorMessage.value = response.msg
                     }
-                } else {
-                    _errorMessage.value = "删除失败: ${result.exceptionOrNull()?.message}"
+                    AppStore.SIENE_SHOP -> {
+                        val result = SineShopClient.deleteSineShopComment(commentId.toInt())
+                        if (result.isSuccess) {
+                            loadComments()
+                        } else {
+                            _errorMessage.value = "删除评论失败: ${result.exceptionOrNull()?.message}"
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "删除失败: ${e.message}"
@@ -233,9 +309,9 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
         viewModelScope.launch {
             val app = _appDetail.value ?: return@launch
             val context = getApplication<Application>().applicationContext
-                  val userCredentialsFlow = AuthManager.getCredentials(context)
-                val userCredentials = userCredentialsFlow.first()
-                val token = userCredentials?.token ?: ""
+            val userCredentialsFlow = AuthManager.getCredentials(context)
+            val userCredentials = userCredentialsFlow.first()
+            val token = userCredentials?.token ?: ""
 
             if (token.isEmpty()) {
                 _errorMessage.value = "未登录"
@@ -243,26 +319,39 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
             }
 
             try {
-                val result = KtorClient.ApiServiceImpl.deleteApp(
-                    usertoken = token,
-                    apps_id = app.id,
-                    app_version_id = app.apps_version_id
-                )
-                
-                if (result.isSuccess) {
-                    val response = result.getOrThrow()
-                    if (response.code == 1) {
-                        _errorMessage.value = response.msg
-                        withContext(Dispatchers.Main) { onSuccess() }
-                    } else {
-                        _errorMessage.value = response.msg
+                when (_appStore.value) {
+                    AppStore.XIAOQU_SPACE -> {
+                        val appDetail = app as? KtorClient.AppDetail ?: return@launch
+                        val result = KtorClient.ApiServiceImpl.deleteApp(
+                            usertoken = token,
+                            apps_id = appDetail.id,
+                            app_version_id = appDetail.apps_version_id
+                        )
+
+                        if (result.isSuccess) {
+                            val response = result.getOrThrow()
+                            if (response.code == 1) {
+                                _errorMessage.value = response.msg
+                                withContext(Dispatchers.Main) { onSuccess() }
+                            } else {
+                                _errorMessage.value = response.msg
+                            }
+                        } else {
+                            _errorMessage.value = "删除失败: ${result.exceptionOrNull()?.message}"
+                        }
                     }
-                } else {
-                    _errorMessage.value = "删除失败: ${result.exceptionOrNull()?.message}"
+                    AppStore.SIENE_SHOP -> {
+                        // 弦应用商店没有删除应用的API，这里可以显示一个提示或者不执行任何操作
+                        _errorMessage.value = "弦应用商店不支持删除应用"
+                    }
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
             }
         }
+    }
+
+    fun clearErrorMessage() {
+        _errorMessage.value = ""
     }
 }
