@@ -487,7 +487,8 @@ class PlazaViewModel(
                         _errorMessage.postValue("未找到相关资源")
                         _searchResults.postValue(emptyList())
                     } else {
-                        _searchResults.postValue(results)
+                        // 修复：明确指定类型为 List<AppItem>
+                        _searchResults.postValue(results as List<AppItem>)
                     }
                 } else {
                     _errorMessage.postValue("搜索失败: ${result.exceptionOrNull()?.message}")
@@ -552,7 +553,8 @@ class PlazaViewModel(
 
                     if (newResults.isNotEmpty()) {
                         val currentResults = _searchResults.value ?: emptyList()
-                        val updatedResults = currentResults + newResults
+                        // 修复：明确指定类型为 List<AppItem>
+                        val updatedResults: List<AppItem> = currentResults + newResults
                         _searchResults.postValue(updatedResults)
                     }
                 } else {
