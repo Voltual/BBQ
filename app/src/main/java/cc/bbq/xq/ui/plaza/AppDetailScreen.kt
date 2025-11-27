@@ -327,9 +327,9 @@ fun AppDetailContent(
                                 .size(64.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable {
-                                    val imageUrl = when (appDetail) {
-                                        is KtorClient.AppDetail -> (appDetail as KtorClient.AppDetail).app_icon
-                                        is SineShopClient.SineShopAppDetail -> (appDetail as SineShopClient.SineShopAppDetail).app_icon
+                                    val imageUrl = when (val detail = appDetail) {
+                                        is KtorClient.AppDetail -> detail.app_icon
+                                        is SineShopClient.SineShopAppDetail -> detail.app_icon
                                         else -> ""
                                     }
                                     if (imageUrl.isNotEmpty()) {
@@ -426,11 +426,7 @@ fun AppDetailContent(
                     Button(
                         onClick = {
                             val downloadUrl = when (val detail = appDetail) {
-                                is KtorClient.AppDetail -> {
-                                    if (detail.is_pay == 0 || detail.is_user_pay) {
-                                        detail.download
-                                    } else null
-                                }
+                                is KtorClient.AppDetail ->  if (detail.is_pay == 0 || detail.is_user_pay) detail.download else null
                                 is SineShopClient.SineShopAppDetail -> {
                                     // 弦应用商店没有直接下载链接，这里可以显示一个提示或者跳转到应用详情页
                                     ""
@@ -441,19 +437,25 @@ fun AppDetailContent(
                             if (!downloadUrl.isNullOrBlank()) {
                                 onDownload(downloadUrl)
                             } else {
-                                val detail = appDetail
-                                if (detail is KtorClient.AppDetail && detail.is_pay == 1 && !detail.is_user_pay) {
-                                    val destination = PaymentForApp(
-                                        appId = detail.id,
-                                        appName = detail.appname,
-                                        versionId = detail.apps_version_id,
-                                        price = detail.pay_money,
-                                        iconUrl = detail.app_icon,
-                                        previewContent = detail.app_introduce?.take(30) ?: ""
-                                    )
-                                    navController.navigate(destination.createRoute())
-                                } else {
-                                    coroutineScope.launch {
+                                when (val detail = appDetail) {
+                                    is KtorClient.AppDetail -> {
+                                        if (detail.is_pay == 1 && !detail.is_user_pay) {
+                                            val destination = PaymentForApp(
+                                                appId = detail.id,
+                                                appName = detail.appname,
+                                                versionId = detail.apps_version_id,
+                                                price = detail.pay_money,
+                                                iconUrl = detail.app_icon,
+                                                previewContent = detail.app_introduce?.take(30) ?: ""
+                                            )
+                                            navController.navigate(destination.createRoute())
+                                        } else {
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar("下载链接无效")
+                                            }
+                                        }
+                                    }
+                                    else ->  coroutineScope.launch {
                                         snackbarHostState.showSnackbar("下载链接无效")
                                     }
                                 }
@@ -463,16 +465,16 @@ fun AppDetailContent(
                         shape = RoundedCornerShape(8.dp),
                         enabled = appStore == AppStore.XIAOQU_SPACE || appDetail is SineShopClient.SineShopAppDetail
                     ) {
-                        Icon(Icons.Filled.Download, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = when (val detail = appDetail) {
-                                is KtorClient.AppDetail -> if (detail.is_pay == 0 || detail.is_user_pay) "下载应用" else "购买应用 (${detail.pay_money}硬币)"
-                                is SineShopClient.SineShopAppDetail -> "查看详情"
-                                else -> "下载应用"
-                            }
-                        )
-                    }
+    Icon(Icons.Filled.Download, contentDescription = null)
+    Spacer(Modifier.width(8.dp))
+    Text(
+        text = when (val detail = appDetail) {
+            is KtorClient.AppDetail -> if (detail.is_pay == 0 || detail.is_user_pay) "下载应用" else "购买应用 (${detail.pay_money}硬币)"
+            is SineShopClient.SineShopAppDetail -> "查看详情"
+            else -> "下载应用"
+        }
+    )
+}
                 }
             }
         }
