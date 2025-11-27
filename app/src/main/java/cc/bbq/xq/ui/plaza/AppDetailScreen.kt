@@ -465,15 +465,21 @@ fun AppDetailContent(
                     ) {
                         Icon(Icons.Filled.Download, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text(
-                            when (val detail = appDetail) {
-                                is KtorClient.AppDetail && (detail.is_pay == 0 || detail.is_user_pay) -> "下载应用"
-                                is KtorClient.AppDetail && detail.is_pay == 1 && !detail.is_user_pay ->
-                                    "购买应用 (${detail.pay_money}硬币)"
-                                is SineShopClient.SineShopAppDetail -> "查看详情"
-                                else -> "下载应用"
+                        when (val detail = appDetail) {
+                            is KtorClient.AppDetail -> {
+                                if (detail.is_pay == 0 || detail.is_user_pay) {
+                                    Text("下载应用")
+                                } else {
+                                    Text("购买应用 (${detail.pay_money}硬币)")
+                                }
                             }
-                        )
+                            is SineShopClient.SineShopAppDetail -> {
+                                Text("查看详情")
+                            }
+                            else -> {
+                                Text("下载应用")
+                            }
+                        }
                     }
                 }
             }
@@ -630,9 +636,8 @@ fun AppDetailContent(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "查看用户详情",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
+                            text = "查看用户详情                           .typ,
+ MaterialTheme.colorScheme.primary
                         )
                     }
                 }
