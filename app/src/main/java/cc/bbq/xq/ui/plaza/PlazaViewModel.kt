@@ -374,6 +374,7 @@ class PlazaViewModel(
         }
     }
 }
+
     fun prevPage() {
         if (_isLoading.value == true || popularAppsPage <= 1) return
         _isLoading.value = true
@@ -405,7 +406,26 @@ class PlazaViewModel(
                             Pair(appItems, totalPages)
                         }
                     }
-                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App List Loading")
+                    AppStore.SIENE_SHOP -> {
+                        val tagId = currentCategoryId ?: 0 // 默认使用第一个分类
+                        val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
+                        if (appListResult.isSuccess) {
+                            val appListData = appListResult.getOrThrow()
+                            val apps = appListData.list
+                            val total = appListData.total
+
+                            // 计算总页数
+                            popularAppsTotalPages = calculateTotalPages(total)
+                            this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
+
+                            val appItems: List<AppItem> = apps.map { app ->
+                                convertToUiModel(app)
+                            }
+                            Result.success(Pair(appItems, popularAppsTotalPages))
+                        } else {
+                            Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
+                        }
+                    }
                     else -> { // 添加 else 分支
                         Result.failure(Exception("不支持的应用商店类型"))
                     }
