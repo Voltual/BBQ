@@ -554,7 +554,8 @@ class PlazaViewModel(
                     if (newResults.isNotEmpty()) {
                         val currentResults = _searchResults.value ?: emptyList()
                         // 修复：明确指定类型为 List<AppItem>
-                        val updatedResults: List<AppItem> = currentResults + newResults
+                        // 修复：使用 plus 操作符并明确指定泛型类型
+                        val updatedResults: List<AppItem> = currentResults.plus(newResults as List<AppItem>)
                         _searchResults.postValue(updatedResults)
                     }
                 } else {
