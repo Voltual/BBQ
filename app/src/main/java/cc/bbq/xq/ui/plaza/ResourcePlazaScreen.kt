@@ -282,7 +282,7 @@ fun ResourcePlazaContent(
                         if (selectedAppStore == AppStore.XIAOQU_SPACE) {
                             navigateToAppDetail(app.id, app.versionId)
                         } else {
-                            // 弦应用商店：传递 appId 和默认的 versionId
+                            // 弦应用商店：传递 appId (app.id) 和默认的 versionId (0L)
                             navigateToAppDetail(app.id, 0L)
                         }
                     },
