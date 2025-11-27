@@ -277,12 +277,12 @@ fun ResourcePlazaContent(
                 AppGrid(
                     apps = if (isSearchMode) searchState else plazaState.popularApps,
                     columns = if (isMyResourceMode) 4 else 3,
-                    onItemClick = { app -> 
+                    onItemClick = { app ->
                         // 修改：根据应用商店传递不同的参数
                         if (selectedAppStore == AppStore.XIAOQU_SPACE) {
                             navigateToAppDetail(app.id, app.versionId)
                         } else {
-                            // 弦应用商店：传递 appId (app.id) 和默认的 versionId (0L)
+                            // 弦应用商店：传递 appId 和默认的版本Id
                             navigateToAppDetail(app.id, 0L)
                         }
                     },
@@ -394,10 +394,8 @@ fun AppGridItem(
             if (selectedAppStore == AppStore.XIAOQU_SPACE) {
                 onClick(app)
             } else {
-                // TODO: Implement SineShop App Detail Navigation
-                scope.launch {
-                    snackbarHostState.showSnackbar("弦应用商店应用详情功能暂未实现")
-                }
+                // 弦应用商店：传递 appId 和默认的版本Id
+                onClick(app)
             }
         },
         modifier = Modifier
