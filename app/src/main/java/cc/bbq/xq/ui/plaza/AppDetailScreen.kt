@@ -599,7 +599,7 @@ fun AppDetailContent(
                     AsyncImage(
                         model = when (val detail = appDetail) {
                             is KtorClient.AppDetail -> detail.usertx
-                            is SineShopClient.SineShopAppDetail -> detail.user.user_avatar
+                            is SineShopClient.SineShopAppDetail -> detail.user_avatar
                             else -> ""
                         },
                         contentDescription = "用户头像",
@@ -609,7 +609,7 @@ fun AppDetailContent(
                             .clickable {
                                 val imageUrl = when (val detail = appDetail) {
                                     is KtorClient.AppDetail -> detail.usertx
-                                    is SineShopClient.SineShopAppDetail -> detail.user.user_avatar ?: ""
+                                    is SineShopClient.SineShopAppDetail -> detail.user_avatar ?: ""
                                     else -> ""
                                 }
                                 if (imageUrl.isNotEmpty()) {
