@@ -431,7 +431,7 @@ class PlazaViewModel(
         }
     }
 
-        fun searchResources(query: String, isMyResource: Boolean = false) {
+    fun searchResources(query: String, isMyResource: Boolean = false) {
         if (_isLoading.value == true) return
         _isLoading.postValue(true)
         searchPage = 1
@@ -458,13 +458,17 @@ class PlazaViewModel(
                 val result = when (_appStore.value) {
                     AppStore.XIAOQU_SPACE -> repository.searchApps(query = query, page = searchPage, userId = finalUserId)
                     AppStore.SIENE_SHOP -> {
-                        val appListResult = SineShopClient.getAppsList(tag = null, page = searchPage, keyword = query)
+                        val appListResult: Result<SineShopClient.AppListData> = SineShopClient.getAppsList(tag = null, page = searchPage, keyword = query)
                         if (appListResult.isSuccess) {
                             val appListData = appListResult.getOrThrow()
                             val apps = appListData.list
-                            popularAppsTotalPages = calculateTotalPages(appListData.total)
-                            this@PlazaViewModel.totalPages.postValue(popularAppsTotalPages)
-                            Result.success(Pair(apps.map { convertToUiModel(it) }, popularAppsTotalPages))
+                            searchTotalPages = calculateTotalPages(appListData.total)
+                            this@PlazaViewModel.totalPages.postValue(searchTotalPages)
+                            // 明确指定泛型类型为 AppItem
+                            val appItems: List<AppItem> = apps.map { app ->
+                                convertToUiModel(app)
+                            }
+                            Result.success(Pair(appItems, searchTotalPages))
                         } else {
                             Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
                         }
@@ -483,7 +487,7 @@ class PlazaViewModel(
                         _errorMessage.postValue("未找到相关资源")
                         _searchResults.postValue(emptyList())
                     } else {
-                        _searchResults.postValue(results.map { convertToUiModel(it) })
+                        _searchResults.postValue(results)
                     }
                 } else {
                     _errorMessage.postValue("搜索失败: ${result.exceptionOrNull()?.message}")
@@ -521,17 +525,19 @@ class PlazaViewModel(
                 val result = when (_appStore.value) {
                     AppStore.XIAOQU_SPACE -> repository.searchApps(query = query, page = searchPage, userId = finalUserId)
                     AppStore.SIENE_SHOP -> {
-                        val appListResult = SineShopClient.getAppsList(tag = null, page = searchPage, keyword = query)
+                        val appListResult: Result<SineShopClient.AppListData> = SineShopClient.getAppsList(tag = null, page = searchPage, keyword = query)
                         if (appListResult.isSuccess) {
                             val appListData = appListResult.getOrThrow()
                             val apps = appListData.list
                             searchTotalPages = calculateTotalPages(appListData.total)
                             this@PlazaViewModel.totalPages.postValue(searchTotalPages)
-
-                            _searchResults.postValue(apps.map { convertToUiModel(it) })
+                            // 明确指定泛型类型为 AppItem
+                            val appItems: List<AppItem> = apps.map { app ->
+                                convertToUiModel(app)
+                            }
+                            Result.success(Pair(appItems, searchTotalPages))
                         } else {
-                            _errorMessage.postValue("搜索失败: ${appListResult.exceptionOrNull()?.message}")
-                            _searchResults.postValue(emptyList())
+                            Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
                         }
                     }
                     else -> { // 添加 else 分支
@@ -546,7 +552,7 @@ class PlazaViewModel(
 
                     if (newResults.isNotEmpty()) {
                         val currentResults = _searchResults.value ?: emptyList()
-                        val updatedResults = currentResults + newResults.map { convertToUiModel(it) }
+                        val updatedResults = currentResults + newResults
                         _searchResults.postValue(updatedResults)
                     }
                 } else {
