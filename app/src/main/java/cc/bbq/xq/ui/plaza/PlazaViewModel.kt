@@ -224,8 +224,16 @@ class PlazaViewModel(
                     }
                 }
                 AppStore.SIENE_SHOP -> {
-                    val tagId = categoryId ?: 0 // 默认使用第一个分类
-                    val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
+                    // 处理弦应用商店的特殊分类
+                    val appListResult = when (categoryId) {
+                        -1 -> SineShopClient.getLatestAppsList(page = popularAppsPage) // 最新上传
+                        -2 -> SineShopClient.getMostDownloadedAppsList(page = popularAppsPage) // 最多下载
+                        else -> {
+                            val tagId = categoryId ?: 0 // 默认使用第一个分类
+                            SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
+                        }
+                    }
+                    
                     if (appListResult.isSuccess) {
                         val appListData = appListResult.getOrThrow()
                         val apps = appListData.list
@@ -319,8 +327,16 @@ class PlazaViewModel(
                     }
                 }
                 AppStore.SIENE_SHOP -> {
-                    val tagId = this@PlazaViewModel.currentCategoryId ?: 0 // 使用 this@PlazaViewModel 访问成员变量
-                    val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
+                    // 处理弦应用商店的特殊分类
+                    val appListResult = when (this@PlazaViewModel.currentCategoryId) {
+                        -1 -> SineShopClient.getLatestAppsList(page = popularAppsPage) // 最新上传
+                        -2 -> SineShopClient.getMostDownloadedAppsList(page = popularAppsPage) // 最多下载
+                        else -> {
+                            val tagId = this@PlazaViewModel.currentCategoryId ?: 0 // 默认使用第一个分类
+                            SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
+                        }
+                    }
+                    
                     if (appListResult.isSuccess) {
                         val appListData = appListResult.getOrThrow()
                         val apps = appListData.list
@@ -407,8 +423,16 @@ class PlazaViewModel(
                         }
                     }
                     AppStore.SIENE_SHOP -> {
-                        val tagId = currentCategoryId ?: 0 // 默认使用第一个分类
-                        val appListResult = SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
+                        // 处理弦应用商店的特殊分类
+                        val appListResult = when (currentCategoryId) {
+                            -1 -> SineShopClient.getLatestAppsList(page = popularAppsPage) // 最新上传
+                            -2 -> SineShopClient.getMostDownloadedAppsList(page = popularAppsPage) // 最多下载
+                            else -> {
+                                val tagId = currentCategoryId ?: 0 // 默认使用第一个分类
+                                SineShopClient.getAppsList(tag = tagId, page = popularAppsPage)
+                            }
+                        }
+                        
                         if (appListResult.isSuccess) {
                             val appListData = appListResult.getOrThrow()
                             val apps = appListData.list
@@ -722,8 +746,16 @@ class PlazaViewModel(
                     }
                 }
                 AppStore.SIENE_SHOP -> {
-                    val tagId = currentCategoryId ?: 0 // 默认使用第一个分类
-                    val appListResult = SineShopClient.getAppsList(tag = tagId, page = page)
+                    // 处理弦应用商店的特殊分类
+                    val appListResult = when (currentCategoryId) {
+                        -1 -> SineShopClient.getLatestAppsList(page = page) // 最新上传
+                        -2 -> SineShopClient.getMostDownloadedAppsList(page = page) // 最多下载
+                        else -> {
+                            val tagId = currentCategoryId ?: 0 // 默认使用第一个分类
+                            SineShopClient.getAppsList(tag = tagId, page = page)
+                        }
+                    }
+                    
                     if (appListResult.isSuccess) {
                         val appListData = appListResult.getOrThrow()
                         val apps = appListData.list

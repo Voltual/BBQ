@@ -347,6 +347,59 @@ suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null
         }
     }
 }
+
+    // 新增：获取最新上传的应用列表方法
+    suspend fun getLatestAppsList(page: Int = 1): Result<AppListData> {
+        val url = "/app/list"
+        val parameters = sineShopParameters {
+            append("time", "") // 添加 time 参数以获取最新上传的应用
+            append("page", page.toString())
+        }
+        return safeApiCall<BaseResponse<AppListData>> {
+            httpClient.get(url) {
+                parameters.entries().forEach { (key, values) ->
+                    values.forEach { value ->
+                        parameter(key, value)
+                    }
+                    val token = getToken()
+                    // 即使 token 为空，也发送 User-Agent 头
+                    header(HttpHeaders.UserAgent, USER_AGENT + token)
+                }
+            }
+        }.map { response: BaseResponse<AppListData> ->
+            if (response.code == 0) {
+                response.data ?: AppListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 AppListData
+            } else {
+                throw IOException("Failed to get latest app list: ${response.msg}")
+            }
+        }
+    }
+
+    // 新增：获取最多下载的应用列表方法
+    suspend fun getMostDownloadedAppsList(page: Int = 1): Result<AppListData> {
+        val url = "/leaderboard/app_download"
+        val parameters = sineShopParameters {
+            append("page", page.toString())
+        }
+        return safeApiCall<BaseResponse<AppListData>> {
+            httpClient.get(url) {
+                parameters.entries().forEach { (key, values) ->
+                    values.forEach { value ->
+                        parameter(key, value)
+                    }
+                    val token = getToken()
+                    // 即使 token 为空，也发送 User-Agent 头
+                    header(HttpHeaders.UserAgent, USER_AGENT + token)
+                }
+            }
+        }.map { response: BaseResponse<AppListData> ->
+            if (response.code == 0) {
+                response.data ?: AppListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 AppListData
+            } else {
+                throw IOException("Failed to get most downloaded app list: ${response.msg}")
+            }
+        }
+    }
     
     private fun getToken(): String {
         return runBlocking {
