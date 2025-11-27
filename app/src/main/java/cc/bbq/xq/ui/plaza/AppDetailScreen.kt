@@ -146,19 +146,19 @@ fun AppDetailScreen(
                     viewModel.deleteAppComment(commentId)
                 },
                 onUpdateClick = {
-                    (appDetail as? KtorClient.AppDetail)?.let { detail ->
+                    if (appDetail is KtorClient.AppDetail) {
                         // 使用 KtorClient 的 JsonConverter
-                        val appDetailJson = KtorClient.JsonConverter.toJson(detail)
+                        val appDetailJson = KtorClient.JsonConverter.toJson(appDetail)
                         navController.navigate(UpdateAppRelease(appDetailJson).createRoute())
                     }
                 },
                 onRefundClick = {
-                    (appDetail as? KtorClient.AppDetail)?.let { detail ->
+                    if (appDetail is KtorClient.AppDetail) {
                         val destination = CreateRefundPost(
-                            appId = detail.id,
-                            versionId = detail.apps_version_id,
-                            appName = detail.appname,
-                            payMoney = detail.pay_money
+                            appId = appDetail.id,
+                            versionId = appDetail.apps_version_id,
+                            appName = appDetail.appname,
+                            payMoney = appDetail.pay_money
                         )
                         navController.navigate(destination.createRoute())
                     }
@@ -562,7 +562,6 @@ fun AppDetailContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        else -> {}
                     }
                 }
             }
@@ -709,11 +708,11 @@ fun AppDetailContent(
                             username = comment.sender.username,
                             nickname = comment.sender.displayName,
                             usertx = comment.sender.user_avatar ?: "",
-                            hierarchy = "",
+                            hierarchy = "0",
                             parentid = comment.father_reply_id.toLong(),
                             parentnickname = comment.father_reply?.sender?.displayName ?: "",
                             parentcontent = comment.father_reply?.content ?: "",
-                            image_path = null, // 弦应用商店评论没有图片
+                            image_path = null,
                             sub_comments_count = comment.child_count
                         )
                         else -> KtorClient.Comment(0,"","","","","","",0,0,"","","",0)
