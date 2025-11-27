@@ -6,7 +6,6 @@
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
-
 package cc.bbq.xq.ui.plaza
 
 import android.content.ClipData
@@ -317,58 +316,53 @@ fun AppDetailContent(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(bottom = 16.dp)
                     ) {
+                        val iconUrl = when (val detail = appDetail) {
+                            is KtorClient.AppDetail -> detail.app_icon
+                            is SineShopClient.SineShopAppDetail -> detail.app_icon
+                            else -> ""
+                        }
                         AsyncImage(
-                            model = when (val detail = appDetail) {
-                                is KtorClient.AppDetail -> detail.app_icon
-                                is SineShopClient.SineShopAppDetail -> detail.app_icon
-                                else -> ""
-                            },
+                            model = iconUrl,
                             contentDescription = "应用图标",
                             modifier = Modifier
                                 .size(64.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable {
-                                    val imageUrl = when (val d = appDetail) {
-                                        is KtorClient.AppDetail -> d.app_icon
-                                        is SineShopClient.SineShopAppDetail -> d.app_icon
-                                        else -> ""
-                                    }
-                                    if (imageUrl.isNotEmpty()) {
-                                        onImagePreview(imageUrl)
+                                    if (iconUrl.isNotEmpty()) {
+                                        onImagePreview(iconUrl)
                                     }
                                 },
                             contentScale = ContentScale.Crop
                         )
                         Spacer(Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
+                            val appName = when (val detail = appDetail) {
+                                is KtorClient.AppDetail -> detail.appname
+                                is SineShopClient.SineShopAppDetail -> detail.app_name
+                                else -> "应用名称"
+                            }
                             Text(
-                                text = when (val detail = appDetail) {
-                                    is KtorClient.AppDetail -> detail.appname
-                                    is SineShopClient.SineShopAppDetail -> detail.app_name
-                                    else -> "应用名称"
-                                },
+                                text = appName,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
+                            val versionName = when (val detail = appDetail) {
+                                is KtorClient.AppDetail -> detail.version
+                                is SineShopClient.SineShopAppDetail -> detail.version_name
+                                else -> ""
+                            }
                             Text(
-                                text = "版本: ${
-                                    when (val detail = appDetail) {
-                                        is KtorClient.AppDetail -> detail.version
-                                        is SineShopClient.SineShopAppDetail -> detail.version_name
-                                        else -> ""
-                                    }
-                                }",
+                                text = "版本: $versionName",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            val appSize = when (val detail = appDetail) {
+                                is KtorClient.AppDetail -> detail.app_size
+                                is SineShopClient.SineShopAppDetail -> detail.download_size
+                                else -> ""
+                            }
                             Text(
-                                text = "大小: ${
-                                    when (val detail = appDetail) {
-                                        is KtorClient.AppDetail -> detail.app_size
-                                        is SineShopClient.SineShopAppDetail -> detail.download_size
-                                        else -> ""
-                                    }
-                                }MB",
+                                text = "大小: $appSize MB",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -466,16 +460,15 @@ fun AppDetailContent(
                     ) {
                         Icon(Icons.Filled.Download, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text(
-                            when {
-                                val detail = appDetail
-                                detail is KtorClient.AppDetail && (detail.is_pay == 0 || detail.is_user_pay) -> "下载应用"
-                                detail is KtorClient.AppDetail && detail.is_pay == 1 && !detail.is_user_pay ->
-                                    "购买应用 (${detail.pay_money}硬币)"
-                                appDetail is SineShopClient.SineShopAppDetail -> "查看详情"
-                                else -> "下载应用"
-                            }
-                        )
+                        val buttonText = when {
+                            val detail = appDetail
+                            detail is KtorClient.AppDetail && (detail.is_pay == 0 || detail.is_user_pay) -> "下载应用"
+                            detail is KtorClient.AppDetail && detail.is_pay == 1 && !detail.is_user_pay ->
+                                "购买应用 (${detail.pay_money}硬币)"
+                            appDetail is SineShopClient.SineShopAppDetail -> "查看详情"
+                            else -> "下载应用"
+                        }
+                        Text(buttonText)
                     }
                 }
             }
@@ -496,12 +489,13 @@ fun AppDetailContent(
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
+                    val appIntro = when (val detail = appDetail) {
+                        is KtorClient.AppDetail -> detail.app_introduce?.replace("<br>", "\n") ?: "暂无介绍"
+                        is SineShopClient.SineShopAppDetail -> detail.app_describe ?: "暂无介绍"
+                        else -> "暂无介绍"
+                    }
                     Text(
-                        text = when (val detail = appDetail) {
-                            is KtorClient.AppDetail -> detail.app_introduce?.replace("<br>", "\n") ?: "暂无介绍"
-                            is SineShopClient.SineShopAppDetail -> detail.app_describe ?: "暂无介绍"
-                            else -> "暂无介绍"
-                        },
+                        text = appIntro,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -598,36 +592,33 @@ fun AppDetailContent(
                         },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val userAvatar = when (val detail = appDetail) {
+                        is KtorClient.AppDetail -> detail.usertx
+                        is SineShopClient.SineShopAppDetail -> detail.user.user_avatar
+                        else -> ""
+                    }
                     AsyncImage(
-                        model = when (val detail = appDetail) {
-                            is KtorClient.AppDetail -> detail.usertx
-                            is SineShopClient.SineShopAppDetail -> detail.user.user_avatar
-                            else -> ""
-                        },
+                        model = userAvatar,
                         contentDescription = "用户头像",
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
                             .clickable {
-                                val imageUrl = when (val d = appDetail) {
-                                    is KtorClient.AppDetail -> d.usertx
-                                    is SineShopClient.SineShopAppDetail -> d.user.user_avatar ?: ""
-                                    else -> ""
-                                }
-                                if (imageUrl.isNotEmpty()) {
-                                    onImagePreview(imageUrl)
+                                if (userAvatar.isNotEmpty()) {
+                                    onImagePreview(userAvatar)
                                 }
                             },
                         contentScale = ContentScale.Crop
                     )
                     Spacer(Modifier.width(8.dp))
                     Column {
+                        val userNickname = when (val detail = appDetail) {
+                            is KtorClient.AppDetail -> detail.nickname
+                            is SineShopClient.SineShopAppDetail -> detail.user.displayName
+                            else -> "用户名"
+                        }
                         Text(
-                            text = when (val detail = appDetail) {
-                                is KtorClient.AppDetail -> detail.nickname
-                                is SineShopClient.SineShopAppDetail -> detail.user.displayName
-                                else -> "用户名"
-                            },
+                            text = userNickname,
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold
                         )
