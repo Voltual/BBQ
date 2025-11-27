@@ -92,6 +92,127 @@ object SineShopClient {
         val isSuccess: Boolean get() = code == 0
     }
 
+    // 新增：用户信息模型
+    @Serializable
+    data class SineShopUserInfo(
+        val id: Int,
+        val username: String,
+        @SerialName("display_name") val displayName: String,
+        @SerialName("user_describe") val userDescribe: String?,
+        @SerialName("user_official") val userOfficial: String?,
+        @SerialName("user_avatar") val userAvatar: String?,
+        @SerialName("user_badge") val userBadge: String?,
+        @SerialName("user_status") val userStatus: Int,
+        @SerialName("user_status_reason") val userStatusReason: String?,
+        @SerialName("ban_time") val banTime: Int,
+        @SerialName("join_time") val joinTime: Long,
+        @SerialName("user_permission") val userPermission: Int,
+        @SerialName("bind_qq") val bindQq: Long?,
+        @SerialName("bind_email") val bindEmail: String?,
+        @SerialName("bind_bilibili") val bindBilibili: Int?,
+        @SerialName("verify_email") val verifyEmail: Int,
+        @SerialName("last_login_device") val lastLoginDevice: String?,
+        @SerialName("last_online_time") val lastOnlineTime: Long,
+        @SerialName("pub_favourite") val pubFavourite: JsonObjectWrapper?,
+        @SerialName("upload_count") val uploadCount: Int,
+        @SerialName("reply_count") val replyCount: Int
+    )
+
+    @Serializable
+    data class JsonObjectWrapper(
+        @SerialName("Int64") val int64: Long?,
+        @SerialName("Valid") val valid: Boolean?
+    )
+
+    // 新增：应用分类标签模型
+    @Serializable
+    data class AppTag(
+        val id: Int,
+        val name: String,
+        val icon: String?
+    )
+
+    // 新增：应用数据模型
+    @Serializable
+    data class SineShopApp(
+        val id: Int,
+        @SerialName("package_name") val package_name: String,
+        @SerialName("app_icon") val app_icon: String,
+        @SerialName("app_name") val app_name: String,
+        @SerialName("version_code") val version_code: Int,
+        @SerialName("version_name") val version_name: String,
+        @SerialName("app_type") val app_type: String,
+        @SerialName("app_version_type") val app_version_type: String,
+        @SerialName("app_abi") val app_abi: Int,
+        @SerialName("app_sdk_min") val app_sdk_min: Int,
+        @SerialName("version_count") val version_count: Int
+    )
+
+    // 为标签列表定义单独的数据模型，保持与 AppTag 一致
+    @Serializable
+    data class AppTagListData(
+        val total: Int,
+        val list: List<AppTag>
+    )
+    
+    // 为应用列表定义单独的数据模型
+    @Serializable
+    data class AppListData(
+        val total: Int,
+        val list: List<SineShopApp>
+    )
+    
+    // 新增：应用详情数据模型
+@Serializable
+data class SineShopAppDetail(
+    val id: Int,
+    @SerialName("package_name") val package_name: String,
+    @SerialName("app_name") val app_name: String,
+    @SerialName("version_code") val version_code: Int,
+    @SerialName("version_name") val version_name: String,
+    @SerialName("app_icon") val app_icon: String,
+    @SerialName("app_type") val app_type: String,
+    @SerialName("user_avatar") val userAvatar: String?,
+    @SerialName("app_version_type") val app_version_type: String,
+    @SerialName("app_abi") val app_abi: Int,
+    @SerialName("app_sdk_min") val app_sdk_min: Int,
+    @SerialName("app_previews") val app_previews: List<String>?,
+    @SerialName("app_describe") val app_describe: String?,
+    @SerialName("app_update_log") val app_update_log: String?,
+    @SerialName("app_developer") val app_developer: String?,
+    @SerialName("app_source") val app_source: String?,
+    @SerialName("upload_message") val upload_message: String?,
+    @SerialName("download_size") val download_size: String?,
+    @SerialName("upload_time") val upload_time: Long,
+    @SerialName("update_time") val update_time: Long,
+    @SerialName("user") val user: SineShopUserInfo,
+    @SerialName("tags") val tags: List<AppTag>?,
+    @SerialName("download_count") val download_count: Int,
+    @SerialName("is_favourite") val is_favourite: Int,
+    @SerialName("favourite_count") val favourite_count: Int,
+    @SerialName("review_count") val review_count: Int
+    // 注意：这里没有评论列表，需要单独获取
+)
+
+// 新增：评论数据模型
+@Serializable
+data class SineShopComment(
+    val id: Int,
+    val content: String,
+    @SerialName("send_time") val send_time: Long,
+    @SerialName("father_reply_id") val father_reply_id: Int,
+    @SerialName("sender") val sender: SineShopUserInfo,
+    @SerialName("child_count") val child_count: Int,
+    @SerialName("father_reply") val father_reply: SineShopComment? // 可能为 null
+)
+
+// 为评论列表定义单独的数据模型
+@Serializable
+data class SineShopCommentListData(
+    val total: Int,
+    val list: List<SineShopComment>
+)
+
     /**
      * 安全地执行 Ktor 请求，并处理异常和重试
      */
@@ -218,7 +339,12 @@ object SineShopClient {
     // 新增：获取用户信息方法
     suspend fun getUserInfo(): Result<SineShopUserInfo> {
         val url = "/user/info"
-        return get<BaseResponse<SineShopUserInfo>>(url).map { response ->
+        return safeApiCall<BaseResponse<SineShopUserInfo>> {
+            httpClient.get(url) {
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }.map { response: BaseResponse<SineShopUserInfo> ->
             if (response.code == 0) {
                 response.data ?: throw IOException("Failed to get user info: Data is null")
             } else {
@@ -230,7 +356,13 @@ object SineShopClient {
     // 新增：获取应用分类标签列表方法
     suspend fun getAppTagList(): Result<List<AppTag>> {
         val url = "/tag/list"
-        return get<BaseResponse<AppTagListData>>(url).map { response ->
+        return safeApiCall<BaseResponse<AppTagListData>> {
+            httpClient.get(url) {
+                val token = getToken()
+                // 即使 token 为空，也发送 User-Agent 头
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }.map { response: BaseResponse<AppTagListData> ->
             if (response.code == 0) {
                 response.data?.list ?: emptyList()
             } else {
@@ -247,7 +379,18 @@ suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null
         keyword?.let { append("keyword", it) }
         append("page", page.toString())
     }
-    return get<BaseResponse<AppListData>>(url).map { response ->
+    return safeApiCall<BaseResponse<AppListData>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+                val token = getToken()
+                // 即使 token 为空，也发送 User-Agent 头
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }
+    }.map { response: BaseResponse<AppListData> ->
         if (response.code == 0) {
             response.data ?: AppListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 AppListData
         } else {
@@ -263,7 +406,18 @@ suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null
             append("time", "") // 添加 time 参数以获取最新上传的应用
             append("page", page.toString())
         }
-        return get<BaseResponse<AppListData>>(url).map { response ->
+        return safeApiCall<BaseResponse<AppListData>> {
+            httpClient.get(url) {
+                parameters.entries().forEach { (key, values) ->
+                    values.forEach { value ->
+                        parameter(key, value)
+                    }
+                    val token = getToken()
+                    // 即使 token 为空，也发送 User-Agent 头
+                    header(HttpHeaders.UserAgent, USER_AGENT + token)
+                }
+            }
+        }.map { response: BaseResponse<AppListData> ->
             if (response.code == 0) {
                 response.data ?: AppListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 AppListData
             } else {
@@ -278,7 +432,18 @@ suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null
         val parameters = sineShopParameters {
             append("page", page.toString())
         }
-        return get<BaseResponse<AppListData>>(url).map { response ->
+        return safeApiCall<BaseResponse<AppListData>> {
+            httpClient.get(url) {
+                parameters.entries().forEach { (key, values) ->
+                    values.forEach { value ->
+                        parameter(key, value)
+                    }
+                    val token = getToken()
+                    // 即使 token 为空，也发送 User-Agent 头
+                    header(HttpHeaders.UserAgent, USER_AGENT + token)
+                }
+            }
+        }.map { response: BaseResponse<AppListData> ->
             if (response.code == 0) {
                 response.data ?: AppListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 AppListData
             } else {
@@ -293,7 +458,17 @@ suspend fun getSineShopAppInfo(appId: Int): Result<SineShopAppDetail> {
     val parameters = sineShopParameters {
         append("appid", appId.toString())
     }
-    return get<BaseResponse<SineShopAppDetail>>(url).map { response ->
+    return safeApiCall<BaseResponse<SineShopAppDetail>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }
+    }.map { response: BaseResponse<SineShopAppDetail> ->
         if (response.code == 0) {
             response.data ?: throw IOException("Failed to get app info: Data is null")
         } else {
@@ -309,7 +484,17 @@ suspend fun getSineShopAppComments(appId: Int, page: Int = 1): Result<SineShopCo
         append("appid", appId.toString())
         append("page", page.toString())
     }
-    return get<BaseResponse<SineShopCommentListData>>(url).map { response ->
+    return safeApiCall<BaseResponse<SineShopCommentListData>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }
+    }.map { response: BaseResponse<SineShopCommentListData> ->
         if (response.code == 0) {
             response.data ?: SineShopCommentListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 SineShopCommentListData
         } else {
@@ -326,7 +511,14 @@ suspend fun postSineShopAppRootComment(appId: Int, content: String): Result<Int>
         append("content", content)
         append("father", "-1") // -1 表示根评论
     }
-    return postForm<BaseResponse<Int>>(url, parameters).map { response ->
+    return safeApiCall<BaseResponse<Int>> {
+        httpClient.post(url) {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(FormDataContent(parameters))
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response: BaseResponse<Int> ->
         if (response.code == 0) {
             response.data ?: throw IOException("Failed to post root comment: Data is null")
         } else {
@@ -343,7 +535,14 @@ suspend fun postSineShopAppReplyComment(commentId: Int, content: String): Result
         append("content", content)
         append("father", commentId.toString()) // father 是要回复的评论ID
     }
-    return postForm<BaseResponse<Int>>(url, parameters).map { response ->
+    return safeApiCall<BaseResponse<Int>> {
+        httpClient.post(url) {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(FormDataContent(parameters))
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response: BaseResponse<Int> ->
         if (response.code == 0) {
             response.data ?: throw IOException("Failed to post reply comment: Data is null")
         } else {
@@ -361,7 +560,14 @@ suspend fun postSineShopAppReplyCommentWithMention(commentId: Int, content: Stri
         append("father", commentId.toString()) // father 是要回复的评论ID
         append("mention", mentionUserId.toString()) // mention 是要@的用户ID
     }
-    return postForm<BaseResponse<Int>>(url, parameters).map { response ->
+    return safeApiCall<BaseResponse<Int>> {
+        httpClient.post(url) {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(FormDataContent(parameters))
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response: BaseResponse<Int> ->
         if (response.code == 0) {
             response.data ?: throw IOException("Failed to post reply comment with mention: Data is null")
         } else {
@@ -376,7 +582,17 @@ suspend fun deleteSineShopComment(commentId: Int): Result<Unit> {
     val parameters = sineShopParameters {
         append("id", commentId.toString())
     }
-    return get<BaseResponse<Unit?>>(url).map { response ->
+    return safeApiCall<BaseResponse<Unit?>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }
+    }.map { response: BaseResponse<Unit?> ->
         if (response.code == 0) {
             // 删除成功，返回 Unit
         } else {
