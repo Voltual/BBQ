@@ -172,6 +172,7 @@ data class SineShopAppDetail(
     @SerialName("version_name") val version_name: String,
     @SerialName("app_icon") val app_icon: String,
     @SerialName("app_type") val app_type: String,
+    @SerialName("user_avatar") val userAvatar: String?,
     @SerialName("app_version_type") val app_version_type: String,
     @SerialName("app_abi") val app_abi: Int,
     @SerialName("app_sdk_min") val app_sdk_min: Int,
