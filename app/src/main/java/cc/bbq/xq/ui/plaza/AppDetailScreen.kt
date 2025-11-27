@@ -327,9 +327,9 @@ fun AppDetailContent(
                                 .size(64.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .clickable {
-                                    val imageUrl = when (val d = appDetail) {
-                                        is KtorClient.AppDetail -> d.app_icon
-                                        is SineShopClient.SineShopAppDetail -> d.app_icon
+                                    val imageUrl = when (appDetail) {
+                                        is KtorClient.AppDetail -> (appDetail as KtorClient.AppDetail).app_icon
+                                        is SineShopClient.SineShopAppDetail -> (appDetail as SineShopClient.SineShopAppDetail).app_icon
                                         else -> ""
                                     }
                                     if (imageUrl.isNotEmpty()) {
@@ -465,21 +465,13 @@ fun AppDetailContent(
                     ) {
                         Icon(Icons.Filled.Download, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        when (val detail = appDetail) {
-                            is KtorClient.AppDetail -> {
-                                if (detail.is_pay == 0 || detail.is_user_pay) {
-                                    Text("下载应用")
-                                } else {
-                                    Text("购买应用 (${detail.pay_money}硬币)")
-                                }
+                        Text(
+                            text = when (val detail = appDetail) {
+                                is KtorClient.AppDetail -> if (detail.is_pay == 0 || detail.is_user_pay) "下载应用" else "购买应用 (${detail.pay_money}硬币)"
+                                is SineShopClient.SineShopAppDetail -> "查看详情"
+                                else -> "下载应用"
                             }
-                            is SineShopClient.SineShopAppDetail -> {
-                                Text("查看详情")
-                            }
-                            else -> {
-                                Text("下载应用")
-                            }
-                        }
+                        )
                     }
                 }
             }
@@ -613,9 +605,9 @@ fun AppDetailContent(
                             .size(40.dp)
                             .clip(CircleShape)
                             .clickable {
-                                val imageUrl = when (val d = appDetail) {
-                                    is KtorClient.AppDetail -> d.usertx
-                                    is SineShopClient.SineShopAppDetail -> d.user.user_avatar ?: ""
+                                val imageUrl = when (val detail = appDetail) {
+                                    is KtorClient.AppDetail -> detail.usertx
+                                    is SineShopClient.SineShopAppDetail -> detail.user.user_avatar ?: ""
                                     else -> ""
                                 }
                                 if (imageUrl.isNotEmpty()) {
@@ -636,8 +628,9 @@ fun AppDetailContent(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "查看用户详情                           .typ,
- MaterialTheme.colorScheme.primary
+                            text = "查看用户详情",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
