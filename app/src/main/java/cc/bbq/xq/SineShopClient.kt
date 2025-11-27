@@ -161,6 +161,56 @@ object SineShopClient {
         val total: Int,
         val list: List<SineShopApp>
     )
+    
+    // 新增：应用详情数据模型
+@Serializable
+data class SineShopAppDetail(
+    val id: Int,
+    @SerialName("package_name") val package_name: String,
+    @SerialName("app_name") val app_name: String,
+    @SerialName("version_code") val version_code: Int,
+    @SerialName("version_name") val version_name: String,
+    @SerialName("app_icon") val app_icon: String,
+    @SerialName("app_type") val app_type: String,
+    @SerialName("app_version_type") val app_version_type: String,
+    @SerialName("app_abi") val app_abi: Int,
+    @SerialName("app_sdk_min") val app_sdk_min: Int,
+    @SerialName("app_previews") val app_previews: List<String>?,
+    @SerialName("app_describe") val app_describe: String?,
+    @SerialName("app_update_log") val app_update_log: String?,
+    @SerialName("app_developer") val app_developer: String?,
+    @SerialName("app_source") val app_source: String?,
+    @SerialName("upload_message") val upload_message: String?,
+    @SerialName("download_size") val download_size: String?,
+    @SerialName("upload_time") val upload_time: Long,
+    @SerialName("update_time") val update_time: Long,
+    @SerialName("user") val user: SineShopUserInfo,
+    @SerialName("tags") val tags: List<AppTag>?,
+    @SerialName("download_count") val download_count: Int,
+    @SerialName("is_favourite") val is_favourite: Int,
+    @SerialName("favourite_count") val favourite_count: Int,
+    @SerialName("review_count") val review_count: Int
+    // 注意：这里没有评论列表，需要单独获取
+)
+
+// 新增：评论数据模型
+@Serializable
+data class SineShopComment(
+    val id: Int,
+    val content: String,
+    @SerialName("send_time") val send_time: Long,
+    @SerialName("father_reply_id") val father_reply_id: Int,
+    @SerialName("sender") val sender: SineShopUserInfo,
+    @SerialName("child_count") val child_count: Int,
+    @SerialName("father_reply") val father_reply: SineShopComment? // 可能为 null
+)
+
+// 为评论列表定义单独的数据模型
+@Serializable
+data class SineShopCommentListData(
+    val total: Int,
+    val list: List<SineShopComment>
+)
 
     /**
      * 安全地执行 Ktor 请求，并处理异常和重试
@@ -400,6 +450,155 @@ suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null
             }
         }
     }
+    
+    // 新增：获取弦应用商店应用详情方法
+suspend fun getSineShopAppInfo(appId: Int): Result<SineShopAppDetail> {
+    val url = "/app/info"
+    val parameters = sineShopParameters {
+        append("appid", appId.toString())
+    }
+    return safeApiCall<BaseResponse<SineShopAppDetail>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }
+    }.map { response: BaseResponse<SineShopAppDetail> ->
+        if (response.code == 0) {
+            response.data ?: throw IOException("Failed to get app info: Data is null")
+        } else {
+            throw IOException("Failed to get app info: ${response.msg}")
+        }
+    }
+}
+
+// 新增：获取弦应用商店应用评论列表方法
+suspend fun getSineShopAppComments(appId: Int, page: Int = 1): Result<SineShopCommentListData> {
+    val url = "/reply/list"
+    val parameters = sineShopParameters {
+        append("appid", appId.toString())
+        append("page", page.toString())
+    }
+    return safeApiCall<BaseResponse<SineShopCommentListData>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }
+    }.map { response: BaseResponse<SineShopCommentListData> ->
+        if (response.code == 0) {
+            response.data ?: SineShopCommentListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 SineShopCommentListData
+        } else {
+            throw IOException("Failed to get app comments: ${response.msg}")
+        }
+    }
+}
+
+// 新增：向弦应用商店应用发送根评论方法
+suspend fun postSineShopAppRootComment(appId: Int, content: String): Result<Int> { // 返回评论ID
+    val url = "/reply/send"
+    val parameters = sineShopParameters {
+        append("appid", appId.toString())
+        append("content", content)
+        append("father", "-1") // -1 表示根评论
+    }
+    return safeApiCall<BaseResponse<Int>> {
+        httpClient.post(url) {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(FormDataContent(parameters))
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response: BaseResponse<Int> ->
+        if (response.code == 0) {
+            response.data ?: throw IOException("Failed to post root comment: Data is null")
+        } else {
+            throw IOException("Failed to post root comment: ${response.msg}")
+        }
+    }
+}
+
+// 新增：向弦应用商店指定评论发送回复方法 (不@用户)
+suspend fun postSineShopAppReplyComment(commentId: Int, content: String): Result<Int> { // 返回评论ID
+    val url = "/reply/send"
+    val parameters = sineShopParameters {
+        append("appid", "-1") // 回复评论时 appid 固定为 -1
+        append("content", content)
+        append("father", commentId.toString()) // father 是要回复的评论ID
+    }
+    return safeApiCall<BaseResponse<Int>> {
+        httpClient.post(url) {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(FormDataContent(parameters))
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response: BaseResponse<Int> ->
+        if (response.code == 0) {
+            response.data ?: throw IOException("Failed to post reply comment: Data is null")
+        } else {
+            throw IOException("Failed to post reply comment: ${response.msg}")
+        }
+    }
+}
+
+// 新增：向弦应用商店指定评论发送回复方法 (并@用户)
+suspend fun postSineShopAppReplyCommentWithMention(commentId: Int, content: String, mentionUserId: Int): Result<Int> { // 返回评论ID
+    val url = "/reply/send"
+    val parameters = sineShopParameters {
+        append("appid", "-1") // 回复评论时 appid 固定为 -1
+        append("content", content)
+        append("father", commentId.toString()) // father 是要回复的评论ID
+        append("mention", mentionUserId.toString()) // mention 是要@的用户ID
+    }
+    return safeApiCall<BaseResponse<Int>> {
+        httpClient.post(url) {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(FormDataContent(parameters))
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response: BaseResponse<Int> ->
+        if (response.code == 0) {
+            response.data ?: throw IOException("Failed to post reply comment with mention: Data is null")
+        } else {
+            throw IOException("Failed to post reply comment with mention: ${response.msg}")
+        }
+    }
+}
+
+// 新增：删除弦应用商店评论方法
+suspend fun deleteSineShopComment(commentId: Int): Result<Unit> {
+    val url = "/reply/delete"
+    val parameters = sineShopParameters {
+        append("id", commentId.toString())
+    }
+    return safeApiCall<BaseResponse<Unit?>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }
+    }.map { response: BaseResponse<Unit?> ->
+        if (response.code == 0) {
+            // 删除成功，返回 Unit
+        } else {
+            throw IOException("Failed to delete comment: ${response.msg}")
+        }
+    }
+}
     
     private fun getToken(): String {
         return runBlocking {
