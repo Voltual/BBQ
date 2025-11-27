@@ -161,57 +161,65 @@ object SineShopClient {
         val total: Int,
         val list: List<SineShopApp>
     )
-    
-    // 新增：应用详情数据模型
-@Serializable
-data class SineShopAppDetail(
-    val id: Int,
-    @SerialName("package_name") val package_name: String,
-    @SerialName("app_name") val app_name: String,
-    @SerialName("version_code") val version_code: Int,
-    @SerialName("version_name") val version_name: String,
-    @SerialName("app_icon") val app_icon: String,
-    @SerialName("app_type") val app_type: String,
-    @SerialName("user_avatar") val userAvatar: String?,
-    @SerialName("app_version_type") val app_version_type: String,
-    @SerialName("app_abi") val app_abi: Int,
-    @SerialName("app_sdk_min") val app_sdk_min: Int,
-    @SerialName("app_previews") val app_previews: List<String>?,
-    @SerialName("app_describe") val app_describe: String?,
-    @SerialName("app_update_log") val app_update_log: String?,
-    @SerialName("app_developer") val app_developer: String?,
-    @SerialName("app_source") val app_source: String?,
-    @SerialName("upload_message") val upload_message: String?,
-    @SerialName("download_size") val download_size: String?,
-    @SerialName("upload_time") val upload_time: Long,
-    @SerialName("update_time") val update_time: Long,
-    @SerialName("user") val user: SineShopUserInfo,
-    @SerialName("tags") val tags: List<AppTag>?,
-    @SerialName("download_count") val download_count: Int,
-    @SerialName("is_favourite") val is_favourite: Int,
-    @SerialName("favourite_count") val favourite_count: Int,
-    @SerialName("review_count") val review_count: Int
-    // 注意：这里没有评论列表，需要单独获取
-)
 
-// 新增：评论数据模型
-@Serializable
-data class SineShopComment(
-    val id: Int,
-    val content: String,
-    @SerialName("send_time") val send_time: Long,
-    @SerialName("father_reply_id") val father_reply_id: Int,
-    @SerialName("sender") val sender: SineShopUserInfo,
-    @SerialName("child_count") val child_count: Int,
-    @SerialName("father_reply") val father_reply: SineShopComment? // 可能为 null
-)
+    // 新增：弦应用商店专用用户信息模型
+    @Serializable
+    data class SineShopUserInfoLite(
+        val id: Int,
+        val username: String,
+        @SerialName("display_name") val displayName: String,
+        @SerialName("user_avatar") val userAvatar: String?
+    )
 
-// 为评论列表定义单独的数据模型
-@Serializable
-data class SineShopCommentListData(
-    val total: Int,
-    val list: List<SineShopComment>
-)
+    // 新增：弦应用商店专用应用详情模型
+    @Serializable
+    data class SineShopAppDetail(
+        val id: Int,
+        @SerialName("package_name") val package_name: String,
+        @SerialName("app_name") val app_name: String,
+        @SerialName("version_code") val version_code: Int,
+        @SerialName("version_name") val version_name: String,
+        @SerialName("app_icon") val app_icon: String,
+        @SerialName("app_type") val app_type: String,
+        @SerialName("app_version_type") val app_version_type: String,
+        @SerialName("app_abi") val app_abi: Int,
+        @SerialName("app_sdk_min") val app_sdk_min: Int,
+        @SerialName("app_previews") val app_previews: List<String>?,
+        @SerialName("app_describe") val app_describe: String?,
+        @SerialName("app_update_log") val app_update_log: String?,
+        @SerialName("app_developer") val app_developer: String?,
+        @SerialName("app_source") val app_source: String?,
+        @SerialName("upload_message") val upload_message: String?,
+        @SerialName("download_size") val download_size: String?,
+        @SerialName("upload_time") val upload_time: Long,
+        @SerialName("update_time") val update_time: Long,
+        @SerialName("user") val user: SineShopUserInfoLite, // 使用 SineShopUserInfoLite
+        @SerialName("tags") val tags: List<AppTag>?,
+        @SerialName("download_count") val download_count: Int,
+        @SerialName("is_favourite") val is_favourite: Int,
+        @SerialName("favourite_count") val favourite_count: Int,
+        @SerialName("review_count") val review_count: Int
+        // 注意：这里没有评论列表，需要单独获取
+    )
+
+    // 新增：弦应用商店专用评论模型
+    @Serializable
+    data class SineShopComment(
+        val id: Int,
+        val content: String,
+        @SerialName("send_time") val send_time: Long,
+        @SerialName("father_reply_id") val father_reply_id: Int,
+        @SerialName("sender") val sender: SineShopUserInfoLite, // 使用 SineShopUserInfoLite
+        @SerialName("child_count") val child_count: Int,
+        @SerialName("father_reply") val father_reply: SineShopComment? // 可能为 null
+    )
+
+    // 为评论列表定义单独的数据模型
+    @Serializable
+    data class SineShopCommentListData(
+        val total: Int,
+        val list: List<SineShopComment>
+    )
 
     /**
      * 安全地执行 Ktor 请求，并处理异常和重试
