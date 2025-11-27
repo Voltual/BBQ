@@ -773,7 +773,23 @@ class PlazaViewModel(
                 
                 val result = when (_appStore.value) {
                     AppStore.XIAOQU_SPACE -> repository.searchApps(currentQuery, page = page, userId = finalUserId)
-                    AppStore.SIENE_SHOP -> TODO("Implement SineShop App Search GoToPage")
+                    AppStore.SIENE_SHOP -> {
+                        // 实现弦应用商店的搜索跳页逻辑
+                        val appListResult: Result<SineShopClient.AppListData> = SineShopClient.getAppsList(tag = null, page = page, keyword = currentQuery)
+                        if (appListResult.isSuccess) {
+                            val appListData = appListResult.getOrThrow()
+                            val apps = appListData.list
+                            searchTotalPages = calculateTotalPages(appListData.total)
+                            this@PlazaViewModel.totalPages.postValue(searchTotalPages)
+                            // 明确指定泛型类型为 AppItem
+                            val appItems: List<AppItem> = apps.map { app ->
+                                convertToUiModel(app)
+                            }
+                            Result.success(Pair(appItems, searchTotalPages))
+                        } else {
+                            Result.failure(Exception("加载弦应用商店应用列表失败: ${appListResult.exceptionOrNull()?.message}"))
+                        }
+                    }
                     else -> { // 添加 else 分支
                         Result.failure(Exception("不支持的应用商店类型"))
                     }
@@ -783,7 +799,8 @@ class PlazaViewModel(
                     val (newResults, totalPages) = result.getOrThrow()
                     searchTotalPages = totalPages
                     this@PlazaViewModel.totalPages.postValue(totalPages)
-                    _searchResults.postValue(newResults.map { convertToUiModel(it) })
+                    // 修复：明确指定类型为 List<AppItem>
+                    _searchResults.postValue(newResults as List<AppItem>)
                 } else {
                     _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message}")
                 }
