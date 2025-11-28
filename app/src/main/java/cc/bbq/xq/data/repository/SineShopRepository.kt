@@ -66,8 +66,9 @@ class SineShopRepository : IAppStoreRepository {
         }
     }
 
-    override suspend fun getAppComments(appId: String, page: Int): Result<Pair<List<UnifiedComment>, Int>> {
+    override suspend fun getAppComments(appId: String, versionId: Long, page: Int): Result<Pair<List<UnifiedComment>, Int>> {
         return try {
+            // 弦应用商店忽略 versionId
             val result = SineShopClient.getSineShopAppComments(appId = appId.toInt(), page = page)
             result.map { commentData ->
                 val unifiedComments = commentData.list.map { it.toUnifiedComment() }
