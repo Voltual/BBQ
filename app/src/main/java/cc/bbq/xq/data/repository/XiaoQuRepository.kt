@@ -1,10 +1,22 @@
 // /app/src/main/java/cc/bbq/xq/data/repository/XiaoQuRepository.kt
 package cc.bbq.xq.data.repository
 
+import cc.bbq.xq.AuthManager
+import cc.bbq.xq.BBQApplication
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.unified.*
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
+/**
+ * 小趣空间数据仓库实现。
+ */
 class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStoreRepository {
+
+    // 辅助方法：获取 Token
+    private suspend fun getToken(): String {
+        return AuthManager.getCredentials(BBQApplication.instance).first()?.token ?: ""
+    }
 
     override suspend fun getCategories(): Result<List<UnifiedCategory>> {
         val categories = listOf(
@@ -84,8 +96,9 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
 
     override suspend fun getAppDetail(appId: String, versionId: Long): Result<UnifiedAppDetail> {
         return try {
+            val token = getToken()
             val result = apiClient.getAppsInformation(
-                token = "", 
+                token = token, 
                 appsId = appId.toLong(),
                 appsVersionId = versionId
             )
@@ -105,7 +118,7 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
         return try {
             val result = apiClient.getAppsCommentList(
                 appsId = appId.toLong(),
-                appsVersionId = versionId, // 使用传入的 versionId
+                appsVersionId = versionId, 
                 limit = 20,
                 page = page,
                 sortOrder = "desc"
@@ -126,11 +139,12 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
 
     override suspend fun postComment(appId: String, content: String, parentCommentId: String?, mentionUserId: String?): Result<Unit> {
         return try {
+            val token = getToken()
             val result = apiClient.postAppComment(
-                token = "", 
+                token = token, 
                 content = content,
                 appsId = appId.toLong(),
-                appsVersionId = 0, 
+                appsVersionId = 0, // 小趣评论接口似乎不需要具体的版本ID，或者这里应该传入
                 parentId = parentCommentId?.toLongOrNull(),
                 imageUrl = null
             )
@@ -148,7 +162,8 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
 
     override suspend fun deleteComment(commentId: String): Result<Unit> {
         return try {
-            val result = apiClient.deleteAppComment(token = "", commentId = commentId.toLong())
+            val token = getToken()
+            val result = apiClient.deleteAppComment(token = token, commentId = commentId.toLong())
              result.map { response ->
                 if (response.code == 1) {
                     Unit
@@ -160,17 +175,6 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
             Result.failure(e)
         }
     }
-    
-    override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> {
-        // 小趣空间通常只有一个下载源，包含在详情中
-        return getAppDetail(appId, versionId).map { detail ->
-            if (detail.downloadUrl != null) {
-                listOf(UnifiedDownloadSource(name = "默认下载", url = detail.downloadUrl, isOfficial = true))
-            } else {
-                emptyList()
-            }
-        }
-    }
 
     override suspend fun toggleFavorite(appId: String, isCurrentlyFavorite: Boolean): Result<Boolean> {
         return Result.failure(Exception("Not supported"))
@@ -178,8 +182,12 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
 
     override suspend fun deleteApp(appId: String, versionId: Long): Result<Unit> {
         return try {
+            val token = getToken()
+            if (token.isEmpty()) {
+                throw Exception("未登录")
+            }
             val result = apiClient.deleteApp(
-                usertoken = "", // Token will be injected by AuthManager interceptor or needs to be handled
+                usertoken = token,
                 apps_id = appId.toLong(),
                 app_version_id = versionId
             )
@@ -188,6 +196,17 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> {
+        // 小趣空间通常只有一个下载源，包含在详情中
+        return getAppDetail(appId, versionId).map { detail ->
+            if (detail.downloadUrl != null) {
+                listOf(UnifiedDownloadSource(name = "默认下载", url = detail.downloadUrl, isOfficial = true))
+            } else {
+                emptyList()
+            }
         }
     }
 }
