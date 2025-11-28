@@ -21,7 +21,7 @@ data class UnifiedComment(
     val sendTime: Long,
     val sender: UnifiedUser,
     val childCount: Int,
-    val childComments: List<UnifiedComment> = emptyList(), // 修正：支持子评论列表
+    val childComments: List<UnifiedComment> = emptyList(),
     val fatherReply: UnifiedComment? = null,
     val raw: Any
 )
@@ -50,7 +50,7 @@ data class UnifiedAppDetail(
     val isFavorite: Boolean,
     val favoriteCount: Int,
     val reviewCount: Int,
-    val downloadUrl: String?, // [新增] 下载链接
+    val downloadUrl: String?,
     val raw: Any
 )
 
@@ -82,34 +82,5 @@ data class UnifiedCategory(
 data class UnifiedDownloadSource(
     val name: String,
     val url: String,
-    val isOfficial: Boolean // 对应 is_extra, 虽然含义可能不同，这里暂且区分是否为额外源
-)
-
-/**
- * 统一的应用详情模型
- */
-data class UnifiedAppDetail(
-    val id: String,
-    val store: AppStore,
-    val packageName: String,
-    val name: String,
-    val versionCode: Long,
-    val versionName: String,
-    val iconUrl: String,
-    val type: String,
-    val previews: List<String>?,
-    val description: String?,
-    val updateLog: String?,
-    val developer: String?,
-    val size: String?,
-    val uploadTime: Long,
-    val user: UnifiedUser,
-    val tags: List<String>?,
-    val downloadCount: Int,
-    val isFavorite: Boolean,
-    val favoriteCount: Int,
-    val reviewCount: Int,
-    // 修改：downloadUrl 仍然保留作为默认/首选下载链接，但不再是唯一的
-    val downloadUrl: String?, 
-    val raw: Any
+    val isOfficial: Boolean
 )

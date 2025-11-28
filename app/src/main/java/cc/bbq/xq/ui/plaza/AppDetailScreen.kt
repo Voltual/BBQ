@@ -36,8 +36,9 @@ import cc.bbq.xq.ui.UserDetail
 import cc.bbq.xq.ui.community.compose.CommentDialog
 import cc.bbq.xq.ui.community.compose.CommentItem
 import cc.bbq.xq.ui.theme.BBQSnackbarHost
-import cc.bbq.xq.ui.theme.DownloadSourceDrawer // 导入新组件
+import cc.bbq.xq.ui.theme.DownloadSourceDrawer
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -60,7 +61,6 @@ fun AppDetailScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     
-    // 新增：下载相关的状态
     val showDownloadDrawer by viewModel.showDownloadDrawer.collectAsState()
     val downloadSources by viewModel.downloadSources.collectAsState()
 
@@ -70,6 +70,18 @@ fun AppDetailScreen(
 
     LaunchedEffect(appId, versionId, storeName) {
         viewModel.initializeData(appId, versionId, storeName)
+    }
+    
+    // 监听打开 URL 事件
+    LaunchedEffect(Unit) {
+        viewModel.openUrlEvent.collectLatest { url ->
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar("无法打开链接: $url")
+            }
+        }
     }
 
     var refreshing by remember { mutableStateOf(false) }
@@ -94,8 +106,7 @@ fun AppDetailScreen(
                 appDetail = appDetail!!,
                 comments = comments,
                 onCommentReply = { viewModel.openReplyDialog(it) },
-                // 修改：点击下载时调用 ViewModel 处理逻辑
-                onDownloadClick = { viewModel.handleDownloadClick(context) },
+                onDownloadClick = { viewModel.handleDownloadClick() }, // 不再需要 Context
                 onCommentDelete = { viewModel.deleteComment(it) },
                 onDeleteClick = { showDeleteConfirmDialog = true },
                 onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) }
@@ -115,7 +126,6 @@ fun AppDetailScreen(
         BBQSnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
     }
 
-    // 下载源抽屉
     DownloadSourceDrawer(
         show = showDownloadDrawer,
         onDismissRequest = { viewModel.closeDownloadDrawer() },
@@ -170,7 +180,7 @@ fun AppDetailContent(
     appDetail: UnifiedAppDetail,
     comments: List<UnifiedComment>,
     onCommentReply: (UnifiedComment) -> Unit,
-    onDownloadClick: () -> Unit, // 修改参数名，不再直接传 URL
+    onDownloadClick: () -> Unit,
     onCommentDelete: (String) -> Unit,
     onDeleteClick: () -> Unit,
     onImagePreview: (String) -> Unit
@@ -179,7 +189,6 @@ fun AppDetailContent(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // --- 应用头部信息 ---
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -203,19 +212,17 @@ fun AppDetailContent(
                     }
                     Spacer(Modifier.height(16.dp))
                     Button(
-                        onClick = onDownloadClick, // 点击触发 ViewModel 逻辑
+                        onClick = onDownloadClick,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Filled.Download, null)
                         Spacer(Modifier.width(8.dp))
-                        // 即使 downloadUrl 为空，我们也允许点击尝试获取（针对弦应用商店）
-                        Text("下载应用") 
+                        Text("下载应用")
                     }
                 }
             }
         }
 
-        // --- 应用介绍 ---
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -226,7 +233,6 @@ fun AppDetailContent(
             }
         }
 
-        // --- 应用截图 ---
         if (!appDetail.previews.isNullOrEmpty()) {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
@@ -251,7 +257,6 @@ fun AppDetailContent(
             }
         }
 
-        // --- 作者信息 ---
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -278,7 +283,6 @@ fun AppDetailContent(
             }
         }
 
-        // --- 评论列表 ---
         item {
             Text("评论 (${appDetail.reviewCount})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }

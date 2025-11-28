@@ -5,13 +5,14 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AppStore
-import cc.bbq.xq.AuthManager
 import cc.bbq.xq.data.repository.IAppStoreRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import cc.bbq.xq.data.unified.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class AppDetailComposeViewModel(
@@ -50,6 +51,10 @@ class AppDetailComposeViewModel(
     private val _showDownloadDrawer = MutableStateFlow(false)
     val showDownloadDrawer: StateFlow<Boolean> = _showDownloadDrawer.asStateFlow()
 
+    // 新增：用于发送一次性事件（如打开浏览器）
+    private val _openUrlEvent = MutableSharedFlow<String>()
+    val openUrlEvent: SharedFlow<String> = _openUrlEvent.asSharedFlow()
+
     private val repository: IAppStoreRepository
         get() = repositories[currentStore] ?: throw IllegalStateException("Repository not found")
 
@@ -75,7 +80,7 @@ class AppDetailComposeViewModel(
         loadData()
     }
     
-    fun handleDownloadClick(context: Context) { // 传入 Context 用于跳转
+    fun handleDownloadClick() {
         viewModelScope.launch {
             _isLoading.value = true
             val result = repository.getAppDownloadSources(currentAppId, currentVersionId)
@@ -86,8 +91,8 @@ class AppDetailComposeViewModel(
                 if (sources.isEmpty()) {
                     _errorMessage.value = "未找到下载源"
                 } else if (sources.size == 1) {
-                    // 只有一个源，直接下载
-                    openUrl(context, sources.first().url)
+                    // 只有一个源，直接触发打开URL事件
+                    _openUrlEvent.emit(sources.first().url)
                 } else {
                     // 多个源，显示抽屉
                     _downloadSources.value = sources
@@ -96,17 +101,6 @@ class AppDetailComposeViewModel(
             } else {
                 _errorMessage.value = "获取下载链接失败: ${result.exceptionOrNull()?.message}"
             }
-        }
-    }
-    
-    // 辅助方法：打开URL
-    private fun openUrl(context: Context, url: String) {
-        try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            _errorMessage.value = "无法打开链接: $url"
         }
     }
 

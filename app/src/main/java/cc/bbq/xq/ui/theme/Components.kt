@@ -1,3 +1,4 @@
+// /app/src/main/java/cc/bbq/xq/ui/theme/Components.kt
 //Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
@@ -12,7 +13,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,24 +25,25 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType // 关键导入
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,12 +55,10 @@ import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarData
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,11 +76,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.data.unified.UnifiedDownloadSource
-import coil3.compose.AsyncImagePainter
 import coil3.compose.SubcomposeAsyncImage
-import coil3.compose.SubcomposeAsyncImageContent
 import coil3.compose.rememberAsyncImagePainter
-import coil3.request.ImageRequest
 import kotlinx.coroutines.launch
 
 // 基础按钮组件
@@ -450,10 +446,8 @@ fun AppStoreDropdownMenu(
         OutlinedTextField(
             modifier = modifier
                 .fillMaxWidth()
-                .menuAnchor(
-                    type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                    enabled = enabled
-                ),
+                // 使用强类型的 menuAnchor
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled),
             readOnly = true,
             value = selectedStore.displayName,
             onValueChange = {},
@@ -490,95 +484,6 @@ fun AppStoreDropdownMenu(
     }
 }
 
-/**
- * 带有图标的商店切换下拉菜单
- * 在紧凑空间中使用
- */
- /*
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CompactAppStoreDropdownMenu(
-    selectedStore: AppStore,
-    onStoreChange: (AppStore) -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
-    var expanded by remember { mutableStateOf(false) }
-    
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it }
-    ) {
-        // 使用图标按钮作为触发器
-        Box(
-            modifier = modifier
-                .menuAnchor(
-                    type = ExposedDropdownMenuAnchorType.Icon,
-                    enabled = enabled
-                )
-        ) {
-            IconButton(
-                onClick = { expanded = true },
-                enabled = enabled
-            ) {
-                Icon(
-                    // 这里可以使用商店相关的图标，暂时使用默认图标
-                    imageVector = Icons.Default.Store,
-                    contentDescription = "切换商店",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-        
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.exposedDropdownSize(matchAnchorWidth = false)
-        ) {
-            // 显示当前选中的商店
-            DropdownMenuItem(
-                text = { 
-                    Text(
-                        "当前: ${selectedStore.displayName}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    ) 
-                },
-                onClick = { expanded = false },
-                enabled = false
-            )
-            
-            Divider(
-                modifier = Modifier.padding(horizontal = 8.dp),
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-            )
-            
-            // 商店选项
-            AppStore.entries.forEach { store ->
-                DropdownMenuItem(
-                    text = { 
-                        Text(
-                            store.displayName,
-                            style = MaterialTheme.typography.bodyMedium
-                        ) 
-                    },
-                    onClick = {
-                        onStoreChange(store)
-                        expanded = false
-                    },
-                    colors = MenuDefaults.itemColors(
-                        textColor = if (store == selectedStore) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        }
-                    )
-                )
-            }
-        }
-    }
-}
-*/
 /**
  * 商店切换卡片组件
  * 包含标签和下拉菜单的完整卡片形式
@@ -635,6 +540,10 @@ fun AppStoreSelectorCard(
         }
     }
 }
+
+// 该组件ModelList.kt的原始版本来源自 https://github.com/rikkahub/rikkahub
+// 本版本仅作简化修改适应项目实际用途
+// License: AGPLv3 (Compatible with GPLv3)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
