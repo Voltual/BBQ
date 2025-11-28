@@ -197,14 +197,15 @@ data class ResourcePlaza(val isMyResource: Boolean, val userId: Long = -1L) : Ap
     }
 }
 
-data class AppDetail(val appId: Long, val versionId: Long) : AppDestination {
-    override val route = "app_detail/{${AppDestination.ARG_APP_ID}}/{${AppDestination.ARG_VERSION_ID}}"
-    fun createRoute() = "app_detail/$appId/$versionId"
+data class AppDetail(val appId: String, val versionId: Long, val storeName: String) : AppDestination {
+    override val route = "app_detail/{${AppDestination.ARG_APP_ID}}/{${AppDestination.ARG_VERSION_ID}}/{storeName}"
+    fun createRoute() = "app_detail/${Uri.encode(appId)}/$versionId/$storeName"
 
     companion object {
         val arguments = listOf(
-            navArgument(AppDestination.ARG_APP_ID) { type = NavType.LongType },
-            navArgument(AppDestination.ARG_VERSION_ID) { type = NavType.LongType }
+            navArgument(AppDestination.ARG_APP_ID) { type = NavType.StringType },
+            navArgument(AppDestination.ARG_VERSION_ID) { type = NavType.LongType },
+            navArgument("storeName") { type = NavType.StringType }
         )
     }
 }

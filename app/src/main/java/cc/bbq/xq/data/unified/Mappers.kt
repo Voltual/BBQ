@@ -19,7 +19,6 @@ fun KtorClient.AppItem.toUnifiedAppItem(): UnifiedAppItem {
     )
 }
 
-// 辅助函数：构建 UnifiedUser
 fun createUnifiedUserFromKtor(id: Long, name: String, avatar: String): UnifiedUser {
     return UnifiedUser(
         id = id.toString(),
@@ -28,7 +27,6 @@ fun createUnifiedUserFromKtor(id: Long, name: String, avatar: String): UnifiedUs
     )
 }
 
-// 帖子评论转换
 fun KtorClient.Comment.toUnifiedComment(): UnifiedComment {
     return UnifiedComment(
         id = this.id.toString(),
@@ -36,19 +34,18 @@ fun KtorClient.Comment.toUnifiedComment(): UnifiedComment {
         sendTime = this.time.toLongOrNull() ?: 0L,
         sender = createUnifiedUserFromKtor(this.userid, this.nickname, this.usertx),
         childCount = this.sub_comments_count,
+        childComments = this.son?.map { it.toUnifiedComment() } ?: emptyList(),
         fatherReply = null,
         raw = this
     )
 }
 
-// [新增] 应用评论转换 (修复编译错误的关键)
 fun KtorClient.AppComment.toUnifiedComment(): UnifiedComment {
-    // 尝试构建父评论对象（如果有）
     val father = if (this.parentid != null && this.parentid != 0L) {
         UnifiedComment(
             id = this.parentid.toString(),
             content = this.parentcontent ?: "",
-            sendTime = 0L, // 父评论时间未知
+            sendTime = 0L,
             sender = createUnifiedUserFromKtor(0L, this.parentnickname ?: "未知用户", ""),
             childCount = 0,
             fatherReply = null,
@@ -61,18 +58,17 @@ fun KtorClient.AppComment.toUnifiedComment(): UnifiedComment {
         content = this.content,
         sendTime = this.time.toLongOrNull() ?: 0L,
         sender = createUnifiedUserFromKtor(this.userid, this.nickname, this.usertx),
-        childCount = 0, // AppComment 模型中没有子评论数量字段
+        childCount = 0,
         fatherReply = father,
         raw = this
     )
 }
 
-// 应用详情转换
 fun KtorClient.AppDetail.toUnifiedAppDetail(): UnifiedAppDetail {
     return UnifiedAppDetail(
         id = this.id.toString(),
         store = AppStore.XIAOQU_SPACE,
-        packageName = "", // API 未直接返回包名
+        packageName = "", 
         name = this.appname,
         versionCode = 0L,
         versionName = this.version,
@@ -90,6 +86,7 @@ fun KtorClient.AppDetail.toUnifiedAppDetail(): UnifiedAppDetail {
         isFavorite = false,
         favoriteCount = 0,
         reviewCount = this.comment_count,
+        downloadUrl = if (this.is_pay == 0 || this.is_user_pay) this.download else null, // 映射下载链接
         raw = this
     )
 }
@@ -150,6 +147,7 @@ fun SineShopClient.SineShopAppDetail.toUnifiedAppDetail(): UnifiedAppDetail {
         isFavorite = this.is_favourite == 1,
         favoriteCount = this.favourite_count,
         reviewCount = this.review_count,
+        downloadUrl = null, // 弦应用商店详情接口未直接返回下载链接
         raw = this
     )
 }

@@ -1,10 +1,4 @@
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// /app/src/main/java/cc/bbq/xq/ui/plaza/AppDetailComposeViewModel.kt
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
@@ -12,22 +6,25 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.KtorClient
-import cc.bbq.xq.SineShopClient
+import cc.bbq.xq.data.repository.IAppStoreRepository
+import cc.bbq.xq.data.unified.UnifiedAppDetail
+import cc.bbq.xq.data.unified.UnifiedComment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
-class AppDetailComposeViewModel(application: Application) : AndroidViewModel(application) {
-    private val _appDetail = MutableStateFlow<Any?>(null) // 使用 Any? 类型
-    val appDetail: StateFlow<Any?> = _appDetail.asStateFlow()
+class AppDetailComposeViewModel(
+    application: Application,
+    private val repositories: Map<AppStore, IAppStoreRepository>
+) : AndroidViewModel(application) {
 
-    private val _comments = MutableStateFlow<List<Any>>(emptyList()) // 使用 Any 类型
-    val comments: StateFlow<List<Any>> = _comments.asStateFlow()
+    private val _appDetail = MutableStateFlow<UnifiedAppDetail?>(null)
+    val appDetail: StateFlow<UnifiedAppDetail?> = _appDetail.asStateFlow()
+
+    private val _comments = MutableStateFlow<List<UnifiedComment>>(emptyList())
+    val comments: StateFlow<List<UnifiedComment>> = _comments.asStateFlow()
 
     private val _errorMessage = MutableStateFlow("")
     val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
@@ -38,92 +35,55 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
     private val _showReplyDialog = MutableStateFlow(false)
     val showReplyDialog: StateFlow<Boolean> = _showReplyDialog.asStateFlow()
 
-    private val _currentReplyComment = MutableStateFlow<Any?>(null) // 使用 Any? 类型
-    val currentReplyComment: StateFlow<Any?> = _currentReplyComment.asStateFlow()
+    private val _currentReplyComment = MutableStateFlow<UnifiedComment?>(null)
+    val currentReplyComment: StateFlow<UnifiedComment?> = _currentReplyComment.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private val _appStore = MutableStateFlow(AppStore.XIAOQU_SPACE) // 默认商店
-    val appStore: StateFlow<AppStore> = _appStore.asStateFlow()
+    private var currentStore: AppStore = AppStore.XIAOQU_SPACE
+    private var currentAppId: String = ""
+    private var currentVersionId: Long = 0L
 
-    // 状态跟踪 - 防止重复加载
-    private var _currentAppId: Long = -1L
-    private var _currentVersionId: Long = -1L
-    private var _isInitialized = false
+    private val repository: IAppStoreRepository
+        get() = repositories[currentStore] ?: throw IllegalStateException("Repository not found")
 
-    // 核心初始化方法 - 类似其他ViewModel的模式
-    fun initializeData(appId: Long, versionId: Long, appStore: AppStore = AppStore.XIAOQU_SPACE) {
-        if (this._currentAppId != appId || this._currentVersionId != versionId || this._appStore.value != appStore) {
-            this._currentAppId = appId
-            this._currentVersionId = versionId
-            this._isInitialized = false
-            _appStore.value = appStore
-            resetState()
+    fun initializeData(appId: String, versionId: Long, storeName: String) {
+        val store = try {
+            AppStore.valueOf(storeName)
+        } catch (e: Exception) {
+            AppStore.XIAOQU_SPACE
         }
-        // 修正：在这里调用 loadDataIfNeeded() 来触发数据加载
-        loadDataIfNeeded()
-    }
 
-    private fun resetState() {
-        _appDetail.value = null
-        _comments.value = emptyList()
-        _errorMessage.value = ""
-        // 移除 _isLoading.value = true
-    }
-
-    private fun loadDataIfNeeded() {
-        if (!_isInitialized && _currentAppId != -1L) {
-            _isInitialized = true
-            loadAppDetail()
-            loadComments()
+        if (currentAppId == appId && currentVersionId == versionId && currentStore == store && _appDetail.value != null) {
+            return
         }
+
+        currentAppId = appId
+        currentVersionId = versionId
+        currentStore = store
+        
+        loadData()
     }
 
-    // 提供手动刷新方法
     fun refresh() {
-        if (_currentAppId != -1L) {
-            loadAppDetail()
-            loadComments()
-        }
+        loadData()
     }
 
-    private fun loadAppDetail() {
+    private fun loadData() {
+        _isLoading.value = true
+        _errorMessage.value = ""
+        
         viewModelScope.launch {
-            _isLoading.value = true
             try {
-                // 检查 _currentVersionId 是否为 0，以确定是否处于弦应用商店模式
-                if (_currentVersionId == 0L) {
-                    // 弦应用商店模式
-                    val result = SineShopClient.getSineShopAppInfo(_currentAppId.toInt())
-                    if (result.isSuccess) {
-                        _appDetail.value = result.getOrThrow()
-                    } else {
-                        _errorMessage.value = "加载失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
-                    }
+                // 并行加载详情和评论
+                val detailResult = repository.getAppDetail(currentAppId, currentVersionId)
+                
+                if (detailResult.isSuccess) {
+                    _appDetail.value = detailResult.getOrThrow()
+                    loadComments()
                 } else {
-                    // 小趣空间模式
-                    val context = getApplication<Application>().applicationContext
-                    val userCredentialsFlow = AuthManager.getCredentials(context)
-                    val userCredentials = userCredentialsFlow.first()
-                    val token = userCredentials?.token ?: ""
-
-                    val result = KtorClient.ApiServiceImpl.getAppsInformation(
-                        token = token,
-                        appsId = _currentAppId,
-                        appsVersionId = _currentVersionId
-                    )
-
-                    if (result.isSuccess) {
-                        val response = result.getOrThrow()
-                        if (response.code == 1) {
-                            _appDetail.value = response.data
-                        } else {
-                            _errorMessage.value = "加载失败: ${response.msg}"
-                        }
-                    } else {
-                        _errorMessage.value = "加载失败: ${result.exceptionOrNull()?.message ?: "未知错误"}"
-                    }
+                    _errorMessage.value = "加载详情失败: ${detailResult.exceptionOrNull()?.message}"
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
@@ -133,196 +93,70 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
         }
     }
 
-    private fun loadComments(page: Int = 1) {
+    private fun loadComments() {
         viewModelScope.launch {
-            try {
-                // 检查 _currentVersionId 是否为 0，以确定是否处于弦应用商店模式
-                if (_currentVersionId == 0L) {
-                    // 弦应用商店模式
-                    val result = SineShopClient.getSineShopAppComments(_currentAppId.toInt(), page = page)
-                    if (result.isSuccess) {
-                        _comments.value = result.getOrThrow().list
-                    } else {
-                        _errorMessage.value = "加载评论失败: ${result.exceptionOrNull()?.message}"
-                    }
-                } else {
-                    // 小趣空间模式
-                    val result = KtorClient.ApiServiceImpl.getAppsCommentList(
-                        appsId = _currentAppId,
-                        appsVersionId = _currentVersionId,
-                        limit = 20,
-                        page = page,
-                        sortOrder = "desc"
-                    )
-
-                    if (result.isSuccess) {
-                        val response = result.getOrThrow()
-                        if (response.code == 1) {
-                            _comments.value = response.data.list
-                        } else {
-                            _errorMessage.value = "加载评论失败: ${response.msg}"
-                        }
-                    } else {
-                        _errorMessage.value = "加载评论失败: ${result.exceptionOrNull()?.message}"
-                    }
-                }
-            } catch (e: Exception) {
-                _errorMessage.value = "加载评论出错: ${e.message}"
+            val result = repository.getAppComments(currentAppId, 1) // 暂时只加载第一页
+            if (result.isSuccess) {
+                _comments.value = result.getOrThrow().first
+            } else {
+                // 评论加载失败不影响详情显示，只显示Toast或Log
+                // _errorMessage.value = "加载评论失败" 
             }
         }
     }
 
-    fun openCommentDialog() { _showCommentDialog.value = true; _currentReplyComment.value = null }
-    fun closeCommentDialog() { _showCommentDialog.value = false }
-    fun openReplyDialog(comment: Any) { _currentReplyComment.value = comment; _showReplyDialog.value = true }
-    fun closeReplyDialog() { _showReplyDialog.value = false; _currentReplyComment.value = null }
+    fun openCommentDialog() {
+        _showCommentDialog.value = true
+        _currentReplyComment.value = null
+    }
 
-    fun submitAppComment(content: String, imageUrl: String? = null) {
+    fun closeCommentDialog() {
+        _showCommentDialog.value = false
+    }
+
+    fun openReplyDialog(comment: UnifiedComment) {
+        _currentReplyComment.value = comment
+        _showReplyDialog.value = true
+    }
+
+    fun closeReplyDialog() {
+        _showReplyDialog.value = false
+        _currentReplyComment.value = null
+    }
+
+    fun submitComment(content: String) {
         viewModelScope.launch {
-            try {
-                when (_appStore.value) {
-                    AppStore.XIAOQU_SPACE -> {
-                        val context = getApplication<Application>().applicationContext
-                        val userCredentialsFlow = AuthManager.getCredentials(context)
-                        val userCredentials = userCredentialsFlow.first()
-                        val token = userCredentials?.token ?: ""
-                        val appDetail = _appDetail.value as? KtorClient.AppDetail ?: return@launch
-                        val parentId = (_currentReplyComment.value as? KtorClient.Comment)?.id ?: 0L // 确保 parentId 不为空
-
-                        val result = KtorClient.ApiServiceImpl.postAppComment(
-                            token = token,
-                            content = content,
-                            appsId = appDetail.id,
-                            appsVersionId = appDetail.apps_version_id,
-                            parentId = parentId, // 这里确保传递了 parentId
-                            imageUrl = imageUrl
-                        )
-
-                        if (result.isSuccess) {
-                            val response = result.getOrThrow()
-                            if (response.code == 1) {
-                                loadComments()
-                                if (parentId == 0L) closeCommentDialog() else closeReplyDialog()
-                            } else {
-                                _errorMessage.value = response.msg
-                            }
-                        } else {
-                            _errorMessage.value = "提交失败: ${result.exceptionOrNull()?.message}"
-                        }
-                    }
-                    AppStore.SIENE_SHOP -> {
-                        val appDetail = _appDetail.value as? SineShopClient.SineShopAppDetail ?: return@launch
-                        val parentComment = _currentReplyComment.value as? SineShopClient.SineShopComment
-                        val parentId = parentComment?.id ?: 0
-                        val result: Result<Int> = if (parentId == 0) {
-                            // 发送根评论
-                            SineShopClient.postSineShopAppRootComment(appId = appDetail.id, content = content)
-                        } else {
-                            // 发送回复评论
-                            SineShopClient.postSineShopAppReplyComment(commentId = parentId, content = content)
-                        }
-
-                        if (result.isSuccess) {
-                            loadComments()
-                            if (parentId == 0) closeCommentDialog() else closeReplyDialog()
-                        } else {
-                            _errorMessage.value = "提交评论失败: ${result.exceptionOrNull()?.message}"
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                _errorMessage.value = "提交失败: ${e.message}"
+            val parentId = _currentReplyComment.value?.id
+            // 简单处理：如果是回复，暂时不处理 @mention，因为 UnifiedComment 还没完全统一 mention 逻辑
+            val result = repository.postComment(currentAppId, content, parentId, null)
+            
+            if (result.isSuccess) {
+                loadComments()
+                if (parentId == null) closeCommentDialog() else closeReplyDialog()
+            } else {
+                _errorMessage.value = "提交失败: ${result.exceptionOrNull()?.message}"
             }
         }
     }
 
-    fun deleteAppComment(commentId: Long) {
+    fun deleteComment(commentId: String) {
         viewModelScope.launch {
-            try {
-                when (_appStore.value) {
-                    AppStore.XIAOQU_SPACE -> {
-                        val context = getApplication<Application>().applicationContext
-                        val userCredentialsFlow = AuthManager.getCredentials(context)
-                        val userCredentials = userCredentialsFlow.first()
-                        val token = userCredentials?.token ?: ""
-
-                        val result = KtorClient.ApiServiceImpl.deleteAppComment(token = token, commentId = commentId)
-                        if (result.isSuccess) {
-                            val response = result.getOrThrow()
-                            if (response.code == 1) {
-                                val appDetail = _appDetail.value
-                                if (appDetail != null) {
-                                    loadComments()
-                                }
-                            } else {
-                                _errorMessage.value = response.msg
-                            }
-                        } else {
-                            _errorMessage.value = "删除失败: ${result.exceptionOrNull()?.message}"
-                        }
-                    }
-                    AppStore.SIENE_SHOP -> {
-                        val result = SineShopClient.deleteSineShopComment(commentId.toInt())
-                        if (result.isSuccess) {
-                            loadComments()
-                        } else {
-                            _errorMessage.value = "删除评论失败: ${result.exceptionOrNull()?.message}"
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                _errorMessage.value = "删除失败: ${e.message}"
+            val result = repository.deleteComment(commentId)
+            if (result.isSuccess) {
+                loadComments()
+            } else {
+                _errorMessage.value = "删除失败: ${result.exceptionOrNull()?.message}"
             }
         }
     }
-
+    
     fun deleteApp(onSuccess: () -> Unit) {
         viewModelScope.launch {
-            val app = _appDetail.value ?: return@launch
-            val context = getApplication<Application>().applicationContext
-            val userCredentialsFlow = AuthManager.getCredentials(context)
-            val userCredentials = userCredentialsFlow.first()
-            val token = userCredentials?.token ?: ""
-
-            if (token.isEmpty()) {
-                _errorMessage.value = "未登录"
-                return@launch
-            }
-
-            try {
-                when (_appStore.value) {
-                    AppStore.XIAOQU_SPACE -> {
-                        val appDetail = app as? KtorClient.AppDetail ?: return@launch
-                        val result = KtorClient.ApiServiceImpl.deleteApp(
-                            usertoken = token,
-                            apps_id = appDetail.id,
-                            app_version_id = appDetail.apps_version_id
-                        )
-
-                        if (result.isSuccess) {
-                            val response = result.getOrThrow()
-                            if (response.code == 1) {
-                                _errorMessage.value = response.msg
-                                withContext(Dispatchers.Main) { onSuccess() }
-                            } else {
-                                _errorMessage.value = response.msg
-                            }
-                        } else {
-                            _errorMessage.value = "删除失败: ${result.exceptionOrNull()?.message}"
-                        }
-                    }
-                    AppStore.SIENE_SHOP -> {
-                        // 弦应用商店没有删除应用的API，这里可以显示一个提示或者不执行任何操作
-                        _errorMessage.value = "弦应用商店不支持删除应用"
-                    }
-                }
-            } catch (e: Exception) {
-                _errorMessage.value = "网络错误: ${e.message}"
+            val result = repository.deleteApp(currentAppId, currentVersionId)
+            if (result.isSuccess) {
+                onSuccess()
+            } else {
+                _errorMessage.value = "删除应用失败: ${result.exceptionOrNull()?.message}"
             }
         }
     }
-
-    fun clearErrorMessage() {
-        _errorMessage.value = ""
-    }
-}

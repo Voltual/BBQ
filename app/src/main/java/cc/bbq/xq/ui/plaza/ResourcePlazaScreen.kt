@@ -39,6 +39,7 @@ import org.koin.androidx.compose.koinViewModel
 fun ResourcePlazaScreen(
     isMyResourceMode: Boolean,
     navigateToAppDetail: (String, Long) -> Unit,
+    navigateToAppDetail: (String, Long, String) -> Unit, 
     userId: String? = null,
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel = koinViewModel()
@@ -168,7 +169,7 @@ fun ResourcePlazaContent(
                     AppGrid(
                         apps = itemsToShow,
                         columns = if (isMyResourceMode) 4 else 3,
-                        onItemClick = { app -> navigateToAppDetail(app.navigationId, app.navigationVersionId) },
+                        onItemClick = { app -> navigateToAppDetail(app.navigationId, app.navigationVersionId, app.store.name) },
                         gridState = gridState
                     )
                 }

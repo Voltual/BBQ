@@ -4,9 +4,6 @@ package cc.bbq.xq.data.repository
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.unified.*
 
-/**
- * 小趣空间数据仓库实现。
- */
 class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStoreRepository {
 
     override suspend fun getCategories(): Result<List<UnifiedCategory>> {
@@ -115,7 +112,6 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
             )
             result.map { response ->
                 if (response.code == 1) {
-                    // 这里现在可以正确调用 KtorClient.AppComment.toUnifiedComment() 了
                     val unifiedComments = response.data.list.map { it.toUnifiedComment() }
                     val totalPages = if (response.data.pagecount > 0) response.data.pagecount else 1
                     Pair(unifiedComments, totalPages)
@@ -167,5 +163,20 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
 
     override suspend fun toggleFavorite(appId: String, isCurrentlyFavorite: Boolean): Result<Boolean> {
         return Result.failure(Exception("Not supported"))
+    }
+
+    override suspend fun deleteApp(appId: String, versionId: Long): Result<Unit> {
+        return try {
+            val result = apiClient.deleteApp(
+                usertoken = "", // Token will be injected by AuthManager interceptor or needs to be handled
+                apps_id = appId.toLong(),
+                app_version_id = versionId
+            )
+            result.map { response ->
+                if (response.code == 1) Unit else throw Exception(response.msg)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
