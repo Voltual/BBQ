@@ -107,13 +107,16 @@ fun ResourcePlazaContent(
             .fillMaxSize()
             .padding(horizontal = 8.dp)
     ) {
-        AppStoreDropdownMenu(
-            selectedStore = selectedAppStore,
-            onStoreChange = { viewModel.setAppStore(it) },
-            modifier = Modifier.fillMaxWidth()
-        )
+        // 修正：仅在非“我的资源”模式下显示商店切换菜单
+        if (!isMyResourceMode) {
+            AppStoreDropdownMenu(
+                selectedStore = selectedAppStore,
+                onStoreChange = { viewModel.setAppStore(it) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
-        // 恢复旧逻辑：只有在非“我的资源”模式下才显示搜索框
+        // 修正：仅在非“我的资源”模式下显示搜索框
         if (!isMyResourceMode) {
             OutlinedTextField(
                 value = searchQuery,
@@ -141,8 +144,7 @@ fun ResourcePlazaContent(
             )
         }
 
-        // 分类标签 (在我的资源模式下也显示，但通常只有一个默认分类或用于切换)
-        // 如果是搜索模式，显示“搜索结果”标题
+        // 分类标签
         if (isSearchMode) {
              Text(
                 text = "搜索结果",
@@ -158,11 +160,9 @@ fun ResourcePlazaContent(
         }
 
         Box(modifier = Modifier.weight(1f)) {
-            // 1. 显示列表内容
             if (itemsToShow.isNotEmpty()) {
                 AppGrid(
                     apps = itemsToShow,
-                    // 恢复旧逻辑：我的资源模式下显示 4 列，否则显示 3 列
                     columns = if (isMyResourceMode) 4 else 3,
                     onItemClick = { app -> 
                         navigateToAppDetail(app.navigationId, app.navigationVersionId, app.store.name) 
@@ -170,7 +170,6 @@ fun ResourcePlazaContent(
                     gridState = gridState
                 )
             } else if (!isLoading) {
-                // 2. 显示空状态或错误
                 if (errorMessage != null) {
                     Text(
                         text = errorMessage!!,
@@ -187,7 +186,6 @@ fun ResourcePlazaContent(
                 }
             }
 
-            // 3. 显示加载指示器 (覆盖层)
             if (isLoading) {
                 if (itemsToShow.isNotEmpty()) {
                     Box(
