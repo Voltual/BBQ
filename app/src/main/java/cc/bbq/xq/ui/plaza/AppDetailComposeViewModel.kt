@@ -36,7 +36,7 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
     val showCommentDialog: StateFlow<Boolean> = _showCommentDialog.asStateFlow()
 
     private val _showReplyDialog = MutableStateFlow(false)
-    val showReplyDialog: StateFlow<Boolean> = _showReplyComment.asStateFlow()
+    val showReplyDialog: StateFlow<Boolean> = _showReplyDialog.asStateFlow()
 
     private val _currentReplyComment = MutableStateFlow<Any?>(null) // 使用 Any? 类型
     val currentReplyComment: StateFlow<Any?> = _currentReplyComment.asStateFlow()
