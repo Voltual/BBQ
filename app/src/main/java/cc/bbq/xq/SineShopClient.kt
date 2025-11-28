@@ -220,6 +220,24 @@ object SineShopClient {
         val total: Int,
         val list: List<SineShopComment>
     )
+    
+    // 新增：下载源模型
+    @Serializable
+    data class SineShopDownloadSource(
+        val id: Int,
+        @SerialName("app_id") val appId: Int,
+        val name: String,
+        val url: String,
+        @SerialName("is_extra") val isExtra: Int
+    )
+
+    @Serializable
+    data class DownloadSourceResponse(
+        val actions: List<String>, // 通常为空
+        val code: Int,
+        val data: List<SineShopDownloadSource>?,
+        val msg: String
+    )
 
     /**
      * 安全地执行 Ktor 请求，并处理异常和重试
@@ -608,6 +626,31 @@ suspend fun deleteSineShopComment(commentId: Int): Result<Unit> {
         }
     }
 }
+
+// 新增：获取应用下载源列表方法
+    suspend fun getAppDownloadSources(appId: Int): Result<List<SineShopDownloadSource>> {
+        val url = "/download/app"
+        val parameters = sineShopParameters {
+            append("appid", appId.toString())
+        }
+        return safeApiCall<DownloadSourceResponse> {
+            httpClient.get(url) {
+                parameters.entries().forEach { (key, values) ->
+                    values.forEach { value ->
+                        parameter(key, value)
+                    }
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }.map { response ->
+            if (response.code == 0) {
+                response.data ?: emptyList()
+            } else {
+                throw IOException("Failed to get download sources: ${response.msg}")
+            }
+        }
+    }
     
     private fun getToken(): String {
         return runBlocking {

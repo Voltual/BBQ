@@ -160,3 +160,11 @@ fun SineShopClient.AppTag.toUnifiedCategory(): UnifiedCategory {
         icon = this.icon
     )
 }
+
+fun SineShopClient.SineShopDownloadSource.toUnifiedDownloadSource(): UnifiedDownloadSource {
+    return UnifiedDownloadSource(
+        name = this.name,
+        url = this.url,
+        isOfficial = this.isExtra == 1 // 假设 1 代表官方/主要线路
+    )
+}

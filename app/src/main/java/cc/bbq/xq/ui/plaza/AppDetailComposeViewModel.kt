@@ -7,10 +7,9 @@ import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.data.repository.IAppStoreRepository
-import cc.bbq.xq.data.unified.UnifiedAppDetail
-import cc.bbq.xq.data.unified.UnifiedComment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import cc.bbq.xq.data.unified.*
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -44,6 +43,12 @@ class AppDetailComposeViewModel(
     private var currentStore: AppStore = AppStore.XIAOQU_SPACE
     private var currentAppId: String = ""
     private var currentVersionId: Long = 0L
+    
+    private val _downloadSources = MutableStateFlow<List<UnifiedDownloadSource>>(emptyList())
+    val downloadSources: StateFlow<List<UnifiedDownloadSource>> = _downloadSources.asStateFlow()
+
+    private val _showDownloadDrawer = MutableStateFlow(false)
+    val showDownloadDrawer: StateFlow<Boolean> = _showDownloadDrawer.asStateFlow()
 
     private val repository: IAppStoreRepository
         get() = repositories[currentStore] ?: throw IllegalStateException("Repository not found")
@@ -68,6 +73,45 @@ class AppDetailComposeViewModel(
 
     fun refresh() {
         loadData()
+    }
+    
+    fun handleDownloadClick(context: Context) { // 传入 Context 用于跳转
+        viewModelScope.launch {
+            _isLoading.value = true
+            val result = repository.getAppDownloadSources(currentAppId, currentVersionId)
+            _isLoading.value = false
+
+            if (result.isSuccess) {
+                val sources = result.getOrThrow()
+                if (sources.isEmpty()) {
+                    _errorMessage.value = "未找到下载源"
+                } else if (sources.size == 1) {
+                    // 只有一个源，直接下载
+                    openUrl(context, sources.first().url)
+                } else {
+                    // 多个源，显示抽屉
+                    _downloadSources.value = sources
+                    _showDownloadDrawer.value = true
+                }
+            } else {
+                _errorMessage.value = "获取下载链接失败: ${result.exceptionOrNull()?.message}"
+            }
+        }
+    }
+    
+    // 辅助方法：打开URL
+    private fun openUrl(context: Context, url: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            _errorMessage.value = "无法打开链接: $url"
+        }
+    }
+
+    fun closeDownloadDrawer() {
+        _showDownloadDrawer.value = false
     }
 
     private fun loadData() {

@@ -75,3 +75,41 @@ data class UnifiedCategory(
     val name: String,
     val icon: String? = null
 )
+
+/**
+ * 统一的下载源模型
+ */
+data class UnifiedDownloadSource(
+    val name: String,
+    val url: String,
+    val isOfficial: Boolean // 对应 is_extra, 虽然含义可能不同，这里暂且区分是否为额外源
+)
+
+/**
+ * 统一的应用详情模型
+ */
+data class UnifiedAppDetail(
+    val id: String,
+    val store: AppStore,
+    val packageName: String,
+    val name: String,
+    val versionCode: Long,
+    val versionName: String,
+    val iconUrl: String,
+    val type: String,
+    val previews: List<String>?,
+    val description: String?,
+    val updateLog: String?,
+    val developer: String?,
+    val size: String?,
+    val uploadTime: Long,
+    val user: UnifiedUser,
+    val tags: List<String>?,
+    val downloadCount: Int,
+    val isFavorite: Boolean,
+    val favoriteCount: Int,
+    val reviewCount: Int,
+    // 修改：downloadUrl 仍然保留作为默认/首选下载链接，但不再是唯一的
+    val downloadUrl: String?, 
+    val raw: Any
+)

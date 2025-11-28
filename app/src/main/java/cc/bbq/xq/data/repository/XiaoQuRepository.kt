@@ -160,6 +160,17 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
             Result.failure(e)
         }
     }
+    
+    override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> {
+        // 小趣空间通常只有一个下载源，包含在详情中
+        return getAppDetail(appId, versionId).map { detail ->
+            if (detail.downloadUrl != null) {
+                listOf(UnifiedDownloadSource(name = "默认下载", url = detail.downloadUrl, isOfficial = true))
+            } else {
+                emptyList()
+            }
+        }
+    }
 
     override suspend fun toggleFavorite(appId: String, isCurrentlyFavorite: Boolean): Result<Boolean> {
         return Result.failure(Exception("Not supported"))

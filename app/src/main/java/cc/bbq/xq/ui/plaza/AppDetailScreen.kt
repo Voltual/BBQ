@@ -1,8 +1,6 @@
 // /app/src/main/java/cc/bbq/xq/ui/plaza/AppDetailScreen.kt
 package cc.bbq.xq.ui.plaza
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -38,6 +36,7 @@ import cc.bbq.xq.ui.UserDetail
 import cc.bbq.xq.ui.community.compose.CommentDialog
 import cc.bbq.xq.ui.community.compose.CommentItem
 import cc.bbq.xq.ui.theme.BBQSnackbarHost
+import cc.bbq.xq.ui.theme.DownloadSourceDrawer // 导入新组件
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
@@ -60,6 +59,10 @@ fun AppDetailScreen(
     val currentReplyComment by viewModel.currentReplyComment.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    
+    // 新增：下载相关的状态
+    val showDownloadDrawer by viewModel.showDownloadDrawer.collectAsState()
+    val downloadSources by viewModel.downloadSources.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -91,25 +94,19 @@ fun AppDetailScreen(
                 appDetail = appDetail!!,
                 comments = comments,
                 onCommentReply = { viewModel.openReplyDialog(it) },
-                onDownload = { url ->
-                    try {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                    } catch (e: Exception) {
-                        coroutineScope.launch { snackbarHostState.showSnackbar("无法打开链接") }
-                    }
-                },
+                // 修改：点击下载时调用 ViewModel 处理逻辑
+                onDownloadClick = { viewModel.handleDownloadClick(context) },
                 onCommentDelete = { viewModel.deleteComment(it) },
                 onDeleteClick = { showDeleteConfirmDialog = true },
                 onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) }
             )
         }
 
-        // 修正 FAB 颜色
         FloatingActionButton(
             onClick = { viewModel.openCommentDialog() },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-            containerColor = MaterialTheme.colorScheme.primary, // 显式设置背景色
-            contentColor = MaterialTheme.colorScheme.onPrimary   // 显式设置图标色
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
         ) {
             Icon(Icons.AutoMirrored.Filled.Comment, "评论")
         }
@@ -117,6 +114,21 @@ fun AppDetailScreen(
         PullRefreshIndicator(refreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
         BBQSnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
     }
+
+    // 下载源抽屉
+    DownloadSourceDrawer(
+        show = showDownloadDrawer,
+        onDismissRequest = { viewModel.closeDownloadDrawer() },
+        sources = downloadSources,
+        onSourceSelected = { source ->
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(source.url))
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                coroutineScope.launch { snackbarHostState.showSnackbar("无法打开链接") }
+            }
+        }
+    )
 
     if (showCommentDialog) {
         CommentDialog(
@@ -158,16 +170,11 @@ fun AppDetailContent(
     appDetail: UnifiedAppDetail,
     comments: List<UnifiedComment>,
     onCommentReply: (UnifiedComment) -> Unit,
-    onDownload: (String) -> Unit,
+    onDownloadClick: () -> Unit, // 修改参数名，不再直接传 URL
     onCommentDelete: (String) -> Unit,
     onDeleteClick: () -> Unit,
     onImagePreview: (String) -> Unit
 ) {
-    val clipboardManager = LocalContext.current.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -196,13 +203,13 @@ fun AppDetailContent(
                     }
                     Spacer(Modifier.height(16.dp))
                     Button(
-                        onClick = { appDetail.downloadUrl?.let { onDownload(it) } },
-                        enabled = !appDetail.downloadUrl.isNullOrBlank(),
+                        onClick = onDownloadClick, // 点击触发 ViewModel 逻辑
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Filled.Download, null)
                         Spacer(Modifier.width(8.dp))
-                        Text(if (appDetail.downloadUrl != null) "下载应用" else "暂无下载")
+                        // 即使 downloadUrl 为空，我们也允许点击尝试获取（针对弦应用商店）
+                        Text("下载应用") 
                     }
                 }
             }

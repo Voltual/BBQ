@@ -112,6 +112,17 @@ class SineShopRepository : IAppStoreRepository {
             Result.failure(e)
         }
     }
+    
+    override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> {
+        return try {
+            val result = SineShopClient.getAppDownloadSources(appId.toInt())
+            result.map { sources ->
+                sources.map { it.toUnifiedDownloadSource() }
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
     override suspend fun toggleFavorite(appId: String, isCurrentlyFavorite: Boolean): Result<Boolean> {
         return Result.failure(UnsupportedOperationException("弦应用商店不支持收藏功能。"))
