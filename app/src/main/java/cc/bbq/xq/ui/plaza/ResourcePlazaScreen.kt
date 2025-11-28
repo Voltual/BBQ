@@ -2,6 +2,7 @@
 package cc.bbq.xq.ui.plaza
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -21,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -38,7 +40,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun ResourcePlazaScreen(
     isMyResourceMode: Boolean,
-    navigateToAppDetail: (String, Long, String) -> Unit, // 统一使用三个参数：ID, VersionID, StoreName
+    navigateToAppDetail: (String, Long, String) -> Unit,
     userId: String? = null,
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel = koinViewModel()
@@ -146,36 +148,46 @@ fun ResourcePlazaContent(
         )
 
         Box(modifier = Modifier.weight(1f)) {
-            val showEmptyState = itemsToShow.isEmpty() && !isLoading && errorMessage == null
-            when {
-                showEmptyState -> {
+            // 1. 显示列表内容
+            if (itemsToShow.isNotEmpty()) {
+                AppGrid(
+                    apps = itemsToShow,
+                    columns = if (isMyResourceMode) 4 else 3,
+                    onItemClick = { app -> 
+                        navigateToAppDetail(app.navigationId, app.navigationVersionId, app.store.name) 
+                    },
+                    gridState = gridState
+                )
+            } else if (!isLoading) {
+                // 2. 显示空状态或错误 (只有在不加载时)
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage!!,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
+                    )
+                } else {
                     Text(
                         text = if (isSearchMode) "未找到相关资源" else "暂无资源",
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
-                errorMessage != null -> {
-                     Text(
-                        text = errorMessage!!,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
-                    )
-                }
-                else -> {
-                    AppGrid(
-                        apps = itemsToShow,
-                        columns = if (isMyResourceMode) 4 else 3,
-                        onItemClick = { app -> 
-                            navigateToAppDetail(app.navigationId, app.navigationVersionId, app.store.name) 
-                        },
-                        gridState = gridState
-                    )
-                }
             }
 
-            if (isLoading && itemsToShow.isEmpty()) {
+            // 3. 显示加载指示器 (覆盖层)
+            // 只要 isLoading 为 true，就显示加载圈
+            if (isLoading) {
+                // 如果有内容，添加一个半透明背景，让用户知道正在加载但保留上下文
+                if (itemsToShow.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.5f))
+                    )
+                }
+                
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
         }

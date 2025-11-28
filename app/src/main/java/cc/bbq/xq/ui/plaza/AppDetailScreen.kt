@@ -104,9 +104,12 @@ fun AppDetailScreen(
             )
         }
 
+        // 修正 FAB 颜色
         FloatingActionButton(
             onClick = { viewModel.openCommentDialog() },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            containerColor = MaterialTheme.colorScheme.primary, // 显式设置背景色
+            contentColor = MaterialTheme.colorScheme.onPrimary   // 显式设置图标色
         ) {
             Icon(Icons.AutoMirrored.Filled.Comment, "评论")
         }
@@ -279,11 +282,6 @@ fun AppDetailContent(
             }
         } else {
             items(comments) { comment ->
-                // 这里需要一个能够适配 UnifiedComment 的 CommentItem
-                // 假设现有的 CommentItem 只能接受 KtorClient.Comment，我们需要转换或者修改 CommentItem
-                // 为了快速修复，我们这里做一个简单的转换，但这并不是长久之计
-                // 更好的做法是重构 CommentItem 接受 UnifiedComment
-                // 但考虑到工作量，我们先用一个简单的自定义 Item
                 UnifiedCommentItem(
                     comment = comment,
                     onReply = { onCommentReply(comment) },
@@ -298,7 +296,6 @@ fun AppDetailContent(
     }
 }
 
-// 简单的统一评论项组件
 @Composable
 fun UnifiedCommentItem(
     comment: UnifiedComment,
@@ -328,7 +325,6 @@ fun UnifiedCommentItem(
             Spacer(Modifier.height(8.dp))
             Text(comment.content, style = MaterialTheme.typography.bodyMedium)
             
-            // 显示父评论引用
             if (comment.fatherReply != null) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
