@@ -6,7 +6,6 @@ import cc.bbq.xq.BBQApplication
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.unified.*
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 
 /**
  * 小趣空间数据仓库实现。
@@ -47,8 +46,11 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
     override suspend fun getApps(categoryId: String?, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>> {
         return try {
             val (catId, subCatId) = parseCategory(categoryId)
+            // 恢复旧逻辑：如果是查看用户资源(userId不为空)，每页12个；否则(广场模式)每页9个
+            val limit = if (userId != null) 12 else 9
+            
             val result = apiClient.getAppsList(
-                limit = 12,
+                limit = limit,
                 page = page,
                 sortOrder = "desc",
                 categoryId = catId,
@@ -144,7 +146,7 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
                 token = token, 
                 content = content,
                 appsId = appId.toLong(),
-                appsVersionId = 0, // 小趣评论接口似乎不需要具体的版本ID，或者这里应该传入
+                appsVersionId = 0, 
                 parentId = parentCommentId?.toLongOrNull(),
                 imageUrl = null
             )
@@ -200,7 +202,6 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
     }
 
     override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> {
-        // 小趣空间通常只有一个下载源，包含在详情中
         return getAppDetail(appId, versionId).map { detail ->
             if (detail.downloadUrl != null) {
                 listOf(UnifiedDownloadSource(name = "默认下载", url = detail.downloadUrl, isOfficial = true))

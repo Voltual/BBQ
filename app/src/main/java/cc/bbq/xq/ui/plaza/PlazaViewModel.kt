@@ -159,12 +159,8 @@ class PlazaViewModel(
                     // 默认选中第一个分类
                     currentCategoryId = categoryList.firstOrNull()?.id
                     
-                    // --- 关键修复 ---
-                    // 在调用 loadPage 之前，必须先将 isLoading 设为 false
-                    // 否则 loadPage 会认为正在加载中而直接返回
                     _isLoading.postValue(false)
                     
-                    // 切换到主线程确保状态同步后再加载页面
                     withContext(Dispatchers.Main) {
                         loadPage(1, append = false)
                     }
@@ -181,19 +177,22 @@ class PlazaViewModel(
     }
 
     private fun loadPage(page: Int, append: Boolean = false) {
-        // 如果正在加载且不是追加模式（自动翻页），则阻止重复请求
         if (_isLoading.value == true && !append) return
         
         val total = _totalPages.value ?: 1
         if (page < 1 || (page > total && total > 0 && !append)) return
 
-        _isLoading.value = true // 立即在主线程设置 Loading 状态
+        _isLoading.value = true 
         _errorMessage.value = null
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val finalUserId = if (isMyResourceMode) {
-                    currentUserId ?: AuthManager.getCredentials(getApplication()).first()?.userId.toString()
+                // 关键逻辑恢复：
+                // 1. 如果 currentUserId 不为空（查看他人资源），直接使用。
+                // 2. 如果 currentUserId 为空，但 isMyResourceMode 为 true（查看我的资源），从 AuthManager 获取。
+                // 3. 否则为 null（普通广场）。
+                val finalUserId = currentUserId ?: if (isMyResourceMode) {
+                    AuthManager.getCredentials(getApplication()).first()?.userId?.toString()
                 } else null
 
                 val result = if (isSearchMode) {
@@ -231,7 +230,6 @@ class PlazaViewModel(
         _errorMessage.postValue(message)
     }
 
-    // --- DataStore 操作 ---
     private suspend fun readAutoScrollMode(): Boolean {
         return try {
             app.applicationContext.dataStore.data.first()[AUTO_SCROLL_MODE_KEY] ?: false
