@@ -61,6 +61,8 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
             _appStore.value = appStore
             resetState()
         }
+        // 修正：在这里调用 loadDataIfNeeded() 来触发数据加载
+        loadDataIfNeeded()
     }
 
     private fun resetState() {
@@ -71,7 +73,7 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
     }
 
     private fun loadDataIfNeeded() {
-        if (!_isInitialized && _currentAppId != -1L && _currentVersionId != -1L) {
+        if (!_isInitialized && _currentAppId != -1L) {
             _isInitialized = true
             loadAppDetail()
             loadComments()
@@ -80,7 +82,7 @@ class AppDetailComposeViewModel(application: Application) : AndroidViewModel(app
 
     // 提供手动刷新方法
     fun refresh() {
-        if (_currentAppId != -1L && _currentVersionId != -1L) {
+        if (_currentAppId != -1L) {
             loadAppDetail()
             loadComments()
         }
