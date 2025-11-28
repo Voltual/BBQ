@@ -101,11 +101,11 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
         }
     }
 
-    override suspend fun getAppComments(appId: String, page: Int): Result<Pair<List<UnifiedComment>, Int>> {
+    override suspend fun getAppComments(appId: String, versionId: Long, page: Int): Result<Pair<List<UnifiedComment>, Int>> {
         return try {
             val result = apiClient.getAppsCommentList(
                 appsId = appId.toLong(),
-                appsVersionId = 0, 
+                appsVersionId = versionId, // 使用传入的 versionId
                 limit = 20,
                 page = page,
                 sortOrder = "desc"

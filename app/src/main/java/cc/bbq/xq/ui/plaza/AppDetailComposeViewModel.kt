@@ -132,7 +132,8 @@ class AppDetailComposeViewModel(
 
     private fun loadComments() {
         viewModelScope.launch {
-            val result = repository.getAppComments(currentAppId, 1)
+            // 传入 currentVersionId
+            val result = repository.getAppComments(currentAppId, currentVersionId, 1)
             if (result.isSuccess) {
                 _comments.value = result.getOrThrow().first
             }
