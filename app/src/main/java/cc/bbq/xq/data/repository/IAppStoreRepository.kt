@@ -12,11 +12,11 @@ interface IAppStoreRepository {
     suspend fun getApps(categoryId: String?, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>>
     suspend fun searchApps(query: String, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>>
     suspend fun getAppDetail(appId: String, versionId: Long): Result<UnifiedAppDetail>
-    
-    // 修改：增加 versionId 参数
     suspend fun getAppComments(appId: String, versionId: Long, page: Int): Result<Pair<List<UnifiedComment>, Int>>
     
-    suspend fun postComment(appId: String, content: String, parentCommentId: String?, mentionUserId: String?): Result<Unit>
+    // 修改：增加 versionId 参数
+    suspend fun postComment(appId: String, versionId: Long, content: String, parentCommentId: String?, mentionUserId: String?): Result<Unit>
+    
     suspend fun deleteComment(commentId: String): Result<Unit>
     suspend fun toggleFavorite(appId: String, isCurrentlyFavorite: Boolean): Result<Boolean>
     suspend fun deleteApp(appId: String, versionId: Long): Result<Unit>

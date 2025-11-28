@@ -162,7 +162,8 @@ class AppDetailComposeViewModel(
     fun submitComment(content: String) {
         viewModelScope.launch {
             val parentId = _currentReplyComment.value?.id
-            val result = repository.postComment(currentAppId, content, parentId, null)
+            // 修正：传递 currentVersionId
+            val result = repository.postComment(currentAppId, currentVersionId, content, parentId, null)
             
             if (result.isSuccess) {
                 loadComments()

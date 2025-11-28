@@ -68,7 +68,6 @@ class SineShopRepository : IAppStoreRepository {
 
     override suspend fun getAppComments(appId: String, versionId: Long, page: Int): Result<Pair<List<UnifiedComment>, Int>> {
         return try {
-            // 弦应用商店忽略 versionId
             val result = SineShopClient.getSineShopAppComments(appId = appId.toInt(), page = page)
             result.map { commentData ->
                 val unifiedComments = commentData.list.map { it.toUnifiedComment() }
@@ -80,8 +79,9 @@ class SineShopRepository : IAppStoreRepository {
         }
     }
 
-    override suspend fun postComment(appId: String, content: String, parentCommentId: String?, mentionUserId: String?): Result<Unit> {
+    override suspend fun postComment(appId: String, versionId: Long, content: String, parentCommentId: String?, mentionUserId: String?): Result<Unit> {
         return try {
+            // 弦应用商店忽略 versionId
             val result: Result<Int> = if (parentCommentId == null) {
                 // 发表根评论
                 SineShopClient.postSineShopAppRootComment(appId = appId.toInt(), content = content)
@@ -113,7 +113,15 @@ class SineShopRepository : IAppStoreRepository {
             Result.failure(e)
         }
     }
-    
+
+    override suspend fun toggleFavorite(appId: String, isCurrentlyFavorite: Boolean): Result<Boolean> {
+        return Result.failure(UnsupportedOperationException("弦应用商店不支持收藏功能。"))
+    }
+
+    override suspend fun deleteApp(appId: String, versionId: Long): Result<Unit> {
+        return Result.failure(UnsupportedOperationException("弦应用商店不支持删除应用。"))
+    }
+
     override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> {
         return try {
             val result = SineShopClient.getAppDownloadSources(appId.toInt())
@@ -123,13 +131,5 @@ class SineShopRepository : IAppStoreRepository {
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-
-    override suspend fun toggleFavorite(appId: String, isCurrentlyFavorite: Boolean): Result<Boolean> {
-        return Result.failure(UnsupportedOperationException("弦应用商店不支持收藏功能。"))
-    }
-
-    override suspend fun deleteApp(appId: String, versionId: Long): Result<Unit> {
-        return Result.failure(UnsupportedOperationException("弦应用商店不支持删除应用。"))
     }
 }

@@ -46,7 +46,6 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
     override suspend fun getApps(categoryId: String?, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>> {
         return try {
             val (catId, subCatId) = parseCategory(categoryId)
-            // 恢复旧逻辑：如果是查看用户资源(userId不为空)，每页12个；否则(广场模式)每页9个
             val limit = if (userId != null) 12 else 9
             
             val result = apiClient.getAppsList(
@@ -139,15 +138,18 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
         }
     }
 
-    override suspend fun postComment(appId: String, content: String, parentCommentId: String?, mentionUserId: String?): Result<Unit> {
+    override suspend fun postComment(appId: String, versionId: Long, content: String, parentCommentId: String?, mentionUserId: String?): Result<Unit> {
         return try {
             val token = getToken()
+            // 修正：如果 parentCommentId 为 null，则传 0 (根评论)
+            val parentId = parentCommentId?.toLongOrNull() ?: 0L
+            
             val result = apiClient.postAppComment(
                 token = token, 
                 content = content,
                 appsId = appId.toLong(),
-                appsVersionId = 0, 
-                parentId = parentCommentId?.toLongOrNull(),
+                appsVersionId = versionId, // 修正：使用传入的 versionId
+                parentId = parentId,
                 imageUrl = null
             )
             result.map { response ->
