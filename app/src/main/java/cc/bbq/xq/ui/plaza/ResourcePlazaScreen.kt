@@ -1,11 +1,4 @@
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// /app/src/main/java/cc/bbq/xq/ui/plaza/ResourcePlazaScreen.kt
 package cc.bbq.xq.ui.plaza
 
 import androidx.compose.animation.*
@@ -40,7 +33,7 @@ import cc.bbq.xq.ui.theme.AppShapes
 import cc.bbq.xq.ui.theme.AppStoreDropdownMenu
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import org.koin.androidx.compose.koinViewModel // 导入 Koin 的扩展函数
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun ResourcePlazaScreen(
@@ -48,7 +41,7 @@ fun ResourcePlazaScreen(
     navigateToAppDetail: (String, Long) -> Unit,
     userId: String? = null,
     modifier: Modifier = Modifier,
-    viewModel: PlazaViewModel = koinViewModel() // 使用 Koin 获取 ViewModel
+    viewModel: PlazaViewModel = koinViewModel()
 ) {
     // 当参数变化时，初始化ViewModel
     LaunchedEffect(isMyResourceMode, userId) {
@@ -89,7 +82,6 @@ fun ResourcePlazaContent(
 
     val itemsToShow = if (isSearchMode) searchState else plazaState.popularApps
 
-    // --- 自动翻页逻辑 ---
     val shouldLoadMore by remember {
         derivedStateOf {
             val layoutInfo = gridState.layoutInfo
@@ -99,7 +91,7 @@ fun ResourcePlazaContent(
                 val lastVisibleItem = layoutInfo.visibleItemsInfo.last()
                 val totalItemsCount = layoutInfo.totalItemsCount
                 val hasMorePages = currentPage < totalPages
-                totalItemsCount > 0 && hasMorePages && lastVisibleItem.index >= totalItemsCount - 5 // 提前5个item开始加载
+                totalItemsCount > 0 && hasMorePages && lastVisibleItem.index >= totalItemsCount - 5
             }
         }
     }
@@ -109,21 +101,18 @@ fun ResourcePlazaContent(
             viewModel.loadMore()
         }
     }
-    // --- 自动翻页逻辑结束 ---
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 8.dp)
     ) {
-        // 应用商店切换菜单
         AppStoreDropdownMenu(
             selectedStore = selectedAppStore,
             onStoreChange = { viewModel.setAppStore(it) },
             modifier = Modifier.fillMaxWidth()
         )
 
-        // 搜索框
         if (!isMyResourceMode) {
             OutlinedTextField(
                 value = searchQuery,
@@ -151,14 +140,12 @@ fun ResourcePlazaContent(
             )
         }
 
-        // 分类标签
         CategoryTabs(
             categories = categories,
             onCategorySelected = { viewModel.loadCategory(it) },
-            enabled = !isSearchMode // 在搜索模式下禁用Tab点击
+            enabled = !isSearchMode
         )
 
-        // 内容区域：网格或空状态
         Box(modifier = Modifier.weight(1f)) {
             val showEmptyState = itemsToShow.isEmpty() && !isLoading && errorMessage == null
             when {
@@ -192,7 +179,6 @@ fun ResourcePlazaContent(
             }
         }
 
-        // 分页控制器
         PaginationControls(
             currentPage = currentPage,
             totalPages = totalPages,
@@ -237,7 +223,6 @@ private fun CategoryTabs(
 
     if (categories.isEmpty()) {
         Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-             // Placeholder for loading state, or let the main screen handle it
         }
         return
     }
@@ -298,7 +283,7 @@ fun AppGridItem(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 120.dp), // 使用 min-height
+            .heightIn(min = 120.dp),
         shape = AppShapes.medium
     ) {
         Column(
@@ -309,7 +294,7 @@ fun AppGridItem(
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(app.iconUrl)
-                    .crossfade(true)
+                    // .crossfade(true) // 移除 crossfade
                     .build(),
                 contentDescription = app.name,
                 modifier = Modifier
@@ -318,9 +303,9 @@ fun AppGridItem(
             )
             Text(
                 text = app.name,
-                style = MaterialTheme.typography.bodySmall, // 稍小字体以容纳更多文字
+                style = MaterialTheme.typography.bodySmall,
                 maxLines = 2,
-                minLines = 2, // 保证高度一致
+                minLines = 2,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 4.dp)
             )

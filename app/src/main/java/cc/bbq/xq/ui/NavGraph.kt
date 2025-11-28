@@ -333,26 +333,30 @@ composable(route = FanList.route) {
         }
 
         // --- 资源广场 ---
+        // --- 资源广场 ---
         composable(route = ResourcePlaza(false).route, arguments = ResourcePlaza.arguments) { backStackEntry ->
-    val isMyResource = backStackEntry.arguments?.getBoolean(AppDestination.ARG_IS_MY_RESOURCE) ?: false
-    val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
+            val isMyResource = backStackEntry.arguments?.getBoolean(AppDestination.ARG_IS_MY_RESOURCE) ?: false
+            val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
 
-    // 更新 ViewModel 的模式
-    LaunchedEffect(isMyResource) {
-        plazaViewModel.setMyResourceMode(isMyResource)
-    }
+            // 移除旧的 viewModel 调用，ResourcePlazaScreen 内部会处理初始化
+            // PlazaViewModel 现在使用 Koin 注入，不需要在这里手动获取
 
-    ResourcePlazaScreen(
-        viewModel = plazaViewModel,
-        isMyResourceMode = isMyResource,
-        navigateToAppDetail = { appId, versionId -> // 这里已经有了 appId 和 versionId
-            navController.navigate(AppDetail(appId.toLong(), versionId).createRoute())
-        },
-        userId = if (userId != -1L) userId else null,
-        modifier = Modifier.fillMaxSize()//,
-        //navController = navController // 确保传递了 navController
-    )
-}
+            ResourcePlazaScreen(
+                isMyResourceMode = isMyResource,
+                navigateToAppDetail = { appId, versionId -> 
+                    // appId 现在是 String, versionId 是 Long
+                    // 确保 appId 是 String 类型，如果是数字字符串转换为 Long 可能会有问题，但这里 appId 本身就是 String
+                    // AppDetail 路由定义为 app_detail/{appId}/{versionId}
+                    // 注意：AppDetail 的 appId 参数定义为 Long，如果 UnifiedAppItem 的 ID 包含非数字字符，这里会崩溃
+                    // 这是一个潜在的兼容性问题。
+                    // 对于小趣空间，ID 是纯数字。对于弦应用商店，ID 也是纯数字。
+                    // 所以我们可以安全地将其转换为 Long。
+                    navController.navigate(AppDetail(appId.toLongOrNull() ?: 0L, versionId).createRoute())
+                },
+                userId = if (userId != -1L) userId.toString() else null,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         // 在 NavGraph.kt 中更新 AppDetailScreen 的调用
 composable(route = AppDetail(0, 0).route, arguments = AppDetail.arguments) { backStackEntry ->

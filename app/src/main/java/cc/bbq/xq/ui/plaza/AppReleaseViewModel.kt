@@ -1,10 +1,4 @@
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// /app/src/main/java/cc/bbq/xq/ui/plaza/AppReleaseViewModel.kt
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
@@ -13,34 +7,29 @@ import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
-import cc.bbq.xq.KtorClient
-import io.ktor.client.request.forms.InputProvider // 确保导入
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.util.ApkInfo
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.util.ApkParser
-import kotlinx.coroutines.Dispatchers
-import io.ktor.utils.io.core.Input
-import io.ktor.utils.io.core.readBytes
-import java.io.FileInputStream
+import io.ktor.client.call.*
+import io.ktor.client.request.forms.*
+import io.ktor.http.*
 import io.ktor.utils.io.streams.asInput
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
-import io.ktor.client.request.forms.*
-import io.ktor.http.*
-import io.ktor.utils.io.*
-import io.ktor.utils.io.core.buildPacket
-import io.ktor.utils.io.core.writeFully
-import io.ktor.client.call.*
-import kotlinx.coroutines.flow.first
+
+// 在这里重新定义 AppCategory，因为 PlazaModels.kt 已被删除
+data class AppCategory(
+    val categoryId: Int?,
+    val subCategoryId: Int?,
+    val categoryName: String
+)
 
 enum class ApkUploadService(val displayName: String) {
     KEYUN("氪云"),
@@ -171,7 +160,6 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             val uploadJobs = urisToUpload.map { uri ->
                 launch {
                     val tempFileName = generateUniqueFileName("intro", "jpg")
-                    // 显式指定类型
                     val context : Application = getApplication()
                     val tempFile = uriToTempFile(context, uri, tempFileName)
                     tempFile?.let {
@@ -227,7 +215,6 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     fun releaseApp(onSuccess: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            // 显式指定类型
             val context: Application = getApplication()
             val userCredentialsFlow = AuthManager.getCredentials(context)
             val userCredentials = userCredentialsFlow.first()
@@ -304,7 +291,6 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
     fun deleteApp(onSuccess: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            // 显式指定类型
              val context: Application = getApplication()
             val userCredentialsFlow = AuthManager.getCredentials(context)
             val userCredentials = userCredentialsFlow.first()
@@ -340,85 +326,82 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-@OptIn(InternalAPI::class)
-private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
-    try {
-        val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
-            url = "api.php",
-            formData = formData {
-                append("file", createStreamInputProvider(file), Headers.build {
-                    append(HttpHeaders.ContentType, mediaType)
-                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                })
-            }
-        )
+    private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
+        try {
+            val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
+                url = "api.php",
+                formData = formData {
+                    append("file", createStreamInputProvider(file), Headers.build {
+                        append(HttpHeaders.ContentType, mediaType)
+                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                    })
+                }
+            )
 
-        if (response.status.isSuccess()) {
-            val responseBody: KtorClient.UploadResponse = response.body()
-            // 修复：服务器返回 code 为 0 表示成功，exists 为 1 表示文件已存在
-            if (responseBody.code == 0 && !responseBody.downurl.isNullOrBlank()) {
-                withContext(Dispatchers.Main) {
-                    _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
-                    onSuccess(responseBody.downurl)
+            if (response.status.isSuccess()) {
+                val responseBody: KtorClient.UploadResponse = response.body()
+                if (responseBody.code == 0 && !responseBody.downurl.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) {
+                        _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
+                        onSuccess(responseBody.downurl)
+                    }
+                } else {
+                    withContext(Dispatchers.Main){
+                        _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${responseBody.msg}"))
+                    }
                 }
             } else {
                 withContext(Dispatchers.Main){
-                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${responseBody.msg}"))
+                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 网络错误 ${response.status}"))
                 }
             }
-        } else {
+        } catch (e: Exception) {
             withContext(Dispatchers.Main){
-                _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 网络错误 ${response.status}"))
+                                _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${e.message}"))
             }
+        } finally {
+            file.delete()
         }
-    } catch (e: Exception) {
-        withContext(Dispatchers.Main){
-                            _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${e.message}"))
-        }
-    } finally {
-        file.delete()
     }
-}
 
-@OptIn(InternalAPI::class)
-private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
-    try {
-        val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
-            url = "upload",
-            formData = formData {
-                append("Api", "小趣API")
-                append("file", createStreamInputProvider(file), Headers.build {
-                    append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
-                    append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                })
-            }
-        )
+    private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
+        try {
+            val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
+                url = "upload",
+                formData = formData {
+                    append("Api", "小趣API")
+                    append("file", createStreamInputProvider(file), Headers.build {
+                        append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                    })
+                }
+            )
 
-        if (response.status.isSuccess()) {
-            val responseBody: KtorClient.WanyueyunUploadResponse = response.body()
-            if (responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
-                withContext(Dispatchers.Main) {
-                    _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
-                    onSuccess(responseBody.data)
+            if (response.status.isSuccess()) {
+                val responseBody: KtorClient.WanyueyunUploadResponse = response.body()
+                if (responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) {
+                        _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
+                        onSuccess(responseBody.data)
+                    }
+                } else {
+                    withContext(Dispatchers.Main){
+                        _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${responseBody.msg}"))
+                    }
                 }
             } else {
                 withContext(Dispatchers.Main){
-                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${responseBody.msg}"))
+                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): 网络错误 ${response.status}"))
                 }
             }
-        } else {
+        } catch (e: Exception) {
             withContext(Dispatchers.Main){
-                _processFeedback.value = Result.failure(Throwable("APK (挽悦云): 网络错误 ${response.status}"))
+                _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${e.message}"))
             }
+        } finally {
+            file.delete()
         }
-    } catch (e: Exception) {
-        withContext(Dispatchers.Main){
-            _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${e.message}"))
-        }
-    } finally {
-        file.delete()
     }
-}
 
     fun clearProcessFeedback() {
         _processFeedback.value = null

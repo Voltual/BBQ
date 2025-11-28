@@ -13,73 +13,80 @@ import cc.bbq.xq.data.repository.SineShopRepository
 import cc.bbq.xq.data.repository.XiaoQuRepository
 import cc.bbq.xq.ui.auth.LoginViewModel
 import cc.bbq.xq.ui.billing.BillingViewModel
-import cc.bbq.xq.ui.community.BrowseHistoryViewModel
 import cc.bbq.xq.ui.community.CommunityViewModel
 import cc.bbq.xq.ui.community.FollowingPostsViewModel
 import cc.bbq.xq.ui.community.HotPostsViewModel
 import cc.bbq.xq.ui.community.MyLikesViewModel
-import cc.bbq.xq.ui.community.PostCreateViewModel
-import cc.bbq.xq.ui.community.PostDetailViewModel
-import cc.bbq.xq.ui.home.HomeViewModel
-import cc.bbq.xq.ui.log.LogViewModel
-import cc.bbq.xq.ui.message.MessageViewModel
 import cc.bbq.xq.ui.payment.PaymentViewModel
-import cc.bbq.xq.ui.player.PlayerViewModel
+import cc.bbq.xq.ui.log.LogViewModel
+import cc.bbq.xq.ui.user.UserListViewModel
+import cc.bbq.xq.ui.message.MessageViewModel
 import cc.bbq.xq.ui.plaza.AppDetailComposeViewModel
+import cc.bbq.xq.ui.community.PostCreateViewModel
 import cc.bbq.xq.ui.plaza.AppReleaseViewModel
 import cc.bbq.xq.ui.plaza.PlazaViewModel
-import cc.bbq.xq.ui.rank.RankingListViewModel
+import cc.bbq.xq.ui.player.PlayerViewModel
 import cc.bbq.xq.ui.search.SearchViewModel
-import cc.bbq.xq.ui.settings.storage.StoreManagerViewModel
-import cc.bbq.xq.ui.settings.update.UpdateSettingsViewModel
 import cc.bbq.xq.ui.user.MyPostsViewModel
 import cc.bbq.xq.ui.user.UserDetailViewModel
-import cc.bbq.xq.ui.user.UserListViewModel
-import org.koin.androidx.viewmodel.dsl.viewModel
+import cc.bbq.xq.ui.settings.storage.StoreManagerViewModel 
+import cc.bbq.xq.data.StorageSettingsDataStore 
+import org.koin.android.ext.koin.androidApplication
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import cc.bbq.xq.ui.community.BrowseHistoryViewModel
+import cc.bbq.xq.ui.community.PostDetailViewModel
+import cc.bbq.xq.ui.rank.RankingListViewModel
+import cc.bbq.xq.ui.settings.update.UpdateSettingsViewModel
+import cc.bbq.xq.ui.home.HomeViewModel
 
 val appModule = module {
-    // === ViewModel Definitions ===
-    viewModel { LoginViewModel(get()) }
-    viewModel { HomeViewModel(get()) }
-    viewModel { CommunityViewModel(get()) }
-    viewModel { MessageViewModel(get()) }
-    viewModel { PlayerViewModel(get()) }
-    viewModel { PostDetailViewModel(get()) }
-    viewModel { UserDetailViewModel(get()) }
-    viewModel { PostCreateViewModel(get()) }
-    viewModel { MyLikesViewModel(get()) }
-    viewModel { FollowingPostsViewModel(get()) }
-    viewModel { HotPostsViewModel(get()) }
-    viewModel { UserListViewModel(get()) }
-    viewModel { RankingListViewModel(get()) }
-    viewModel { SearchViewModel(get()) }
-    viewModel { BrowseHistoryViewModel(get()) }
-    viewModel { StoreManagerViewModel(get()) }
-    viewModel { UpdateSettingsViewModel(get()) }
-    viewModel { MyPostsViewModel(get()) }
-    viewModel { LogViewModel(get()) }
-    viewModel { BillingViewModel(get()) }
-    viewModel { AppReleaseViewModel(get()) }
-    viewModel { PaymentViewModel(get()) }
-    viewModel { AppDetailComposeViewModel(get()) }
+    // ViewModel definitions - 保持原样，不要乱加参数
+    viewModel { LoginViewModel(androidApplication()) }
+    viewModel { BillingViewModel(androidApplication()) }
+    viewModel { CommunityViewModel() } // 原来没有参数，保持没有参数
+    viewModel { FollowingPostsViewModel(androidApplication()) }
+    viewModel { HotPostsViewModel() } // 原来没有参数
+    viewModel { MyLikesViewModel(androidApplication()) }
+    viewModel { LogViewModel(androidApplication()) }
+    viewModel { MessageViewModel(androidApplication()) }
+    viewModel { AppDetailComposeViewModel(androidApplication()) }
+    viewModel { AppReleaseViewModel(androidApplication()) }
+    
+    // 修改 PlazaViewModel 以支持新的 Repository 架构
+    viewModel { PlazaViewModel(androidApplication(), get()) }
+    
+    viewModel { PlayerViewModel(androidApplication()) }
+    viewModel { SearchViewModel() } // 原来没有参数
+    viewModel { UserListViewModel(androidApplication()) }
+    viewModel { PostCreateViewModel(androidApplication()) }
+    viewModel { MyPostsViewModel() } // 原来没有参数
+    viewModel { PaymentViewModel(androidApplication()) }
+    viewModel { UserDetailViewModel(androidApplication()) }
+    viewModel { StoreManagerViewModel(androidApplication()) }
+    
+    viewModel { BrowseHistoryViewModel(androidApplication()) }
+    viewModel { PostDetailViewModel(androidApplication()) }
+    viewModel { RankingListViewModel() } // 原来没有参数
+    viewModel { UpdateSettingsViewModel() } // 原来没有参数
+    viewModel { HomeViewModel() } // 原来没有参数
 
-    // === NEW: PlazaViewModel Definition using Koin ===
-    viewModel { PlazaViewModel(get(), get()) }
+    // Singletons
+    single { AuthManager }
+    single { BBQApplication.instance.database }
+    single { BBQApplication.instance.processedPostsDataStore }
+    single { BBQApplication.instance.searchHistoryDataStore }
+    single { StorageSettingsDataStore(androidApplication()) }
 
-    // === NEW: Repository Definitions for Plaza ===
+    // === 新增 Repository 定义 ===
+    
+    // XiaoQuRepository 需要 ApiService
+    single { XiaoQuRepository(KtorClient.ApiServiceImpl) }
 
-    // 提供 KtorClient 的 ApiService 实现
-    // KtorClient.ApiServiceImpl 是一个 object, Koin 可以直接使用
-    single { KtorClient.ApiServiceImpl }
-
-    // 提供 XiaoQuRepository
-    single { XiaoQuRepository(get()) }
-
-    // 提供 SineShopRepository
+    // SineShopRepository
     single { SineShopRepository() }
 
-    // 提供 Repository Map，用于在 ViewModel 中根据 AppStore 类型动态切换
+    // Repository Map
     single<Map<AppStore, IAppStoreRepository>> {
         mapOf(
             AppStore.XIAOQU_SPACE to get<XiaoQuRepository>(),

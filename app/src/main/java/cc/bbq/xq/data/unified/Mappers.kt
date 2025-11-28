@@ -12,25 +12,26 @@ import cc.bbq.xq.AppStore
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.SineShopClient
 
-// KtorClient (小趣空间) -> Unified Models
+// --- KtorClient (小趣空间) Mappers ---
 
 fun KtorClient.AppItem.toUnifiedAppItem(): UnifiedAppItem {
     return UnifiedAppItem(
-        uniqueId = "${AppStore.XIAOQU_SPACE}-${this.id}-${this.version_id}",
+        uniqueId = "${AppStore.XIAOQU_SPACE}-${this.id}-${this.apps_version_id}",
         navigationId = this.id.toString(),
-        navigationVersionId = this.version_id,
+        navigationVersionId = this.apps_version_id,
         store = AppStore.XIAOQU_SPACE,
-        name = this.name,
-        iconUrl = this.icon_image_url,
-        versionName = this.version
+        name = this.appname, // 修正字段名
+        iconUrl = this.app_icon, // 修正字段名
+        versionName = "" // 列表页无版本名
     )
 }
 
-fun KtorClient.User.toUnifiedUser(): UnifiedUser {
+// KtorClient 没有独立的 User 类，通常是扁平数据，这里需要手动处理
+fun createUnifiedUserFromKtor(id: Long, name: String, avatar: String): UnifiedUser {
     return UnifiedUser(
-        id = this.id.toString(),
-        displayName = this.name,
-        avatarUrl = this.avatar
+        id = id.toString(),
+        displayName = name,
+        avatarUrl = avatar
     )
 }
 
@@ -39,9 +40,10 @@ fun KtorClient.Comment.toUnifiedComment(): UnifiedComment {
         id = this.id.toString(),
         content = this.content,
         sendTime = this.time.toLongOrNull() ?: 0L,
-        sender = this.user.toUnifiedUser(),
-        childCount = this.son_num,
-        fatherReply = null, // 小趣空间的API不直接提供父评论的完整对象
+        // 从 Comment 对象中提取用户信息
+        sender = createUnifiedUserFromKtor(this.userid, this.nickname, this.usertx),
+        childCount = this.sub_comments_count, // 修正字段名
+        fatherReply = null, // KtorClient.Comment 没有父评论对象字段
         raw = this
     )
 }
@@ -50,36 +52,35 @@ fun KtorClient.AppDetail.toUnifiedAppDetail(): UnifiedAppDetail {
     return UnifiedAppDetail(
         id = this.id.toString(),
         store = AppStore.XIAOQU_SPACE,
-        packageName = this.apps_package_name,
-        name = this.name,
-        versionCode = this.version_code.toLong(),
+        packageName = "", // AppDetail 中没有 package_name 字段? 检查发现确实没有直接的 package_name，可能在 app_explain 中
+        name = this.appname,
+        versionCode = 0L, // AppDetail 没有 version_code
         versionName = this.version,
-        iconUrl = this.icon_image_url,
-        type = this.type_name,
-        previews = this.images_url,
-        description = this.description,
-        updateLog = this.update_description,
-        developer = null, // 小趣空间API无此字段
-        size = this.size,
-        uploadTime = this.time.toLongOrNull() ?: 0L,
-        user = this.user.toUnifiedUser(),
-        tags = null, // 小趣空间API无此字段
-        downloadCount = this.downloads,
-        isFavorite = this.is_collection == 1,
-        favoriteCount = this.collection,
-        reviewCount = this.comments_num,
+        iconUrl = this.app_icon,
+        type = this.category_name, // 使用分类名作为类型
+        previews = this.app_introduction_image_array,
+        description = this.app_introduce,
+        updateLog = this.app_explain, // 使用说明作为更新日志
+        developer = null,
+        size = this.app_size,
+        uploadTime = this.create_time.toLongOrNull() ?: 0L, // 可能是字符串时间，这里简化处理
+        user = createUnifiedUserFromKtor(this.userid, this.nickname, this.usertx),
+        tags = listOf(this.category_name, this.sub_category_name),
+        downloadCount = this.download_count,
+        isFavorite = false, // AppDetail 没有收藏状态字段
+        favoriteCount = 0, // AppDetail 没有收藏数字段
+        reviewCount = this.comment_count,
         raw = this
     )
 }
 
-
-// SineShopClient (弦应用商店) -> Unified Models
+// --- SineShopClient (弦应用商店) Mappers ---
 
 fun SineShopClient.SineShopApp.toUnifiedAppItem(): UnifiedAppItem {
     return UnifiedAppItem(
         uniqueId = "${AppStore.SIENE_SHOP}-${this.id}",
         navigationId = this.id.toString(),
-        navigationVersionId = 0L, // 弦应用商店详情页不需要versionId
+        navigationVersionId = 0L,
         store = AppStore.SIENE_SHOP,
         name = this.app_name,
         iconUrl = this.app_icon,
