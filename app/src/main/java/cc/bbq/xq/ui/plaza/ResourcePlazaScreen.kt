@@ -2,16 +2,13 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
+// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq.ui.plaza
 
-import android.content.Context
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -19,7 +16,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.navigation.NavController
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -27,7 +23,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -35,31 +30,39 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import cc.bbq.xq.AppStore
+import cc.bbq.xq.data.unified.UnifiedAppItem
+import cc.bbq.xq.data.unified.UnifiedCategory
 import cc.bbq.xq.ui.compose.PageJumpDialog
 import cc.bbq.xq.ui.compose.PaginationControls
 import cc.bbq.xq.ui.theme.AppShapes
+import cc.bbq.xq.ui.theme.AppStoreDropdownMenu
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import cc.bbq.xq.AppStore
-import cc.bbq.xq.ui.theme.AppStoreDropdownMenu
-import cc.bbq.xq.KtorClient
 import kotlinx.coroutines.launch
-import kotlin.math.min
 
 @Composable
 fun ResourcePlazaScreen(
-    viewModel: PlazaViewModel,
     isMyResourceMode: Boolean,
     navigateToAppDetail: (String, Long) -> Unit,
-//    navController: NavController,
-    userId: Long? = null,
+    userId: String? = null,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val viewModel: PlazaViewModel = viewModel(
+        factory = PlazaViewModelFactory(context.applicationContext as android.app.Application)
+    )
+
+    // 当参数变化时，初始化ViewModel
+    LaunchedEffect(isMyResourceMode, userId) {
+        viewModel.initialize(isMyResourceMode, userId)
+    }
+
     ResourcePlazaContent(
         modifier = modifier,
         viewModel = viewModel,
         isMyResourceMode = isMyResourceMode,
-        userId = userId,
         navigateToAppDetail = navigateToAppDetail
     )
 }
@@ -69,142 +72,61 @@ fun ResourcePlazaContent(
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel,
     isMyResourceMode: Boolean,
-    userId: Long? = null,
     navigateToAppDetail: (String, Long) -> Unit
 ) {
-    // 修复：使用简单的 rememberSaveable 而不需要自定义 Saver
-    var selectedCategoryIndex by rememberSaveable { mutableStateOf(0) }
     val selectedAppStore by viewModel.appStore.observeAsState(AppStore.XIAOQU_SPACE)
-
+    val categories by viewModel.categories.observeAsState(emptyList())
     val plazaState by viewModel.plazaData.observeAsState(PlazaData(emptyList()))
-    val searchState by viewModel.searchResults.observeAsState(emptyList<AppItem>())
+    val searchState by viewModel.searchResults.observeAsState(emptyList())
     val isLoading by viewModel.isLoading.observeAsState(false)
     val currentPage by viewModel.currentPage.observeAsState(1)
     val totalPages by viewModel.totalPages.observeAsState(1)
     val autoScrollMode by viewModel.autoScrollMode.observeAsState(false)
-    val isSearchMode by remember { derivedStateOf { searchState.isNotEmpty() } }
+
+    val isSearchMode by remember(searchState) { derivedStateOf { searchState.isNotEmpty() } }
     var searchQuery by remember { mutableStateOf("") }
-    val focusRequester = remember { FocusRequester() }
     var showPageDialog by remember { mutableStateOf(false) }
-    var showPagination by rememberSaveable { mutableStateOf(true) }
     val dialogShape = remember { RoundedCornerShape(4.dp) }
     val gridState = rememberLazyGridState()
-    val appTagList by viewModel.appTagList.observeAsState(emptyList()) // 弦应用商店标签
-    val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    val categories = remember(selectedAppStore, appTagList) {
-        if (selectedAppStore == AppStore.XIAOQU_SPACE) {
-            listOf(
-                AppCategory(null, null, "最新分享"),
-                AppCategory(45, 47, "影音阅读"),
-                AppCategory(45, 55, "音乐听歌"),
-                AppCategory(45, 61, "休闲娱乐"),
-                AppCategory(45, 58, "文件管理"),
-                AppCategory(45, 59, "图像摄影"),
-                AppCategory(45, 53, "输入方式"),
-                AppCategory(45, 54, "生活出行"),
-                AppCategory(45, 50, "社交通讯"),
-                AppCategory(45, 56, "上网浏览"),
-                AppCategory(45, 60, "其他类型"),
-                AppCategory(45, 62, "跑酷竞技")
-            )
-        } else {
-            // 将 SineShopClient.AppTag 转换为 AppCategory
-           appTagList.map { AppCategory(it.id, null, it.name) }
-        }
-    }
+    val focusRequester = remember { FocusRequester() }
     
-    // 确保 categories 列表不为空
-    val clampedSelectedCategoryIndex = minOf(selectedCategoryIndex, (categories.size - 1).coerceAtLeast(0))
-    val selectedCategory = categories.getOrNull(clampedSelectedCategoryIndex) ?: AppCategory(null, null, "暂无分类")
-
-    // 修复：使用 derivedStateOf 跟踪分类变化，避免不必要的重组
-    val currentCategory by remember(selectedCategory) {
-        derivedStateOf { selectedCategory }
-    }
-
-    // 修复：简化的初始化，只在模式或用户ID变化时重新初始化
-    LaunchedEffect(isMyResourceMode, userId, selectedAppStore) {
-        viewModel.initializeData(isMyResourceMode, userId)
-    }
-
-    // 修复：分类变化时正确调用 ViewModel 方法
-    LaunchedEffect(currentCategory, selectedAppStore) {
-        if (!isSearchMode) { // 只有在非搜索模式下才响应分类变化
-            viewModel.loadDataByCategory(
-                categoryId = currentCategory.categoryId, 
-                subCategoryId = currentCategory.subCategoryId, 
-                userId = userId
-            )
-        }
-    }
-
-    // 修复：搜索模式变化时重置分类选择
-    LaunchedEffect(isSearchMode) {
-        if (isSearchMode) {
-            // 搜索模式下保持当前分类选择，但不加载分类数据
-        } else {
-            // 退出搜索模式时重新加载当前分类数据
-            viewModel.loadDataByCategory(
-                categoryId = currentCategory.categoryId,
-                subCategoryId = currentCategory.subCategoryId,
-                userId = userId
-            )
-        }
-    }
-
-    // ==================== 自动翻页逻辑 ====================
+    val itemsToShow = if (isSearchMode) searchState else plazaState.popularApps
+    
+    // --- 自动翻页逻辑 ---
     val shouldLoadMore by remember {
         derivedStateOf {
-            // 检查基本条件：自动滚动模式是否开启、是否正在加载
-            if (!autoScrollMode || isLoading) {
+            val layoutInfo = gridState.layoutInfo
+            if (!autoScrollMode || isLoading || layoutInfo.visibleItemsInfo.isEmpty()) {
                 false
             } else {
-                val layoutInfo = gridState.layoutInfo
-                val visibleItemsInfo = layoutInfo.visibleItemsInfo
-                // 如果没有可见项目，则不加载更多
-                if (visibleItemsInfo.isEmpty()) return@derivedStateOf false
-                
-                val lastVisibleItem = visibleItemsInfo.last()
+                val lastVisibleItem = layoutInfo.visibleItemsInfo.last()
                 val totalItemsCount = layoutInfo.totalItemsCount
-
-                // 检查是否还有更多页
                 val hasMorePages = currentPage < totalPages
-                
-                // 如果总项目数大于0，则检查是否接近底部
-                if (totalItemsCount > 0 && hasMorePages) {
-                    // 当最后一个可见项目接近列表底部时，触发加载更多
-                    // 使用更宽松的条件：最后3个可见项目中的任何一个接近底部都触发
-                    val isNearBottom = lastVisibleItem.index >= totalItemsCount - 3
-                    isNearBottom
-                } else {
-                    // 如果总项目数为0或者没有更多页面，则不加载更多
-                    false
-                }
+                totalItemsCount > 0 && hasMorePages && lastVisibleItem.index >= totalItemsCount - 3
             }
         }
     }
 
-    // 当 shouldLoadMore 为 true 时，调用 ViewModel 的 loadMore 方法
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore) {
-            viewModel.loadMore(isSearchMode)
+            viewModel.loadMore()
         }
     }
-    // ==================== 自动翻页逻辑结束 ====================
+    // --- 自动翻页逻辑结束 ---
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 8.dp)
     ) {
+        // 应用商店切换菜单
         AppStoreDropdownMenu(
             selectedStore = selectedAppStore,
             onStoreChange = { viewModel.setAppStore(it) },
             modifier = Modifier.fillMaxWidth()
         )
         
+        // 搜索框
         if (!isMyResourceMode) {
             OutlinedTextField(
                 value = searchQuery,
@@ -214,60 +136,39 @@ fun ResourcePlazaContent(
                     .focusRequester(focusRequester)
                     .padding(top = 8.dp, bottom = 12.dp),
                 shape = AppShapes.medium,
-                label = { Text("搜索资源...") },
+                label = { Text("搜索...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = {
-                    if (searchQuery.isNotBlank()) {
-                        viewModel.searchResources(searchQuery, isMyResourceMode)
-                    }
-                }),
+                keyboardActions = KeyboardActions(onSearch = { viewModel.search(searchQuery) }),
                 singleLine = true
             )
         }
 
+        // 分类标签或搜索结果标题
         if (isSearchMode) {
-            Text(
-                text = if (isMyResourceMode) "搜索结果（我的资源）" else "搜索结果",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        } else {
-            // 修复：使用 PrimaryScrollableTabRow 替代弃用的 ScrollableTabRow
-            PrimaryScrollableTabRow(
-                selectedTabIndex = clampedSelectedCategoryIndex,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary,
-                // 确保categories不为空
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (categories.isEmpty()) {
-                    Text(
-                        text = "暂无分类",
-                        modifier = Modifier.padding(16.dp)
-                    )
-                } else {
-                    categories.forEachIndexed { index, category ->
-                        Tab(
-                            selected = clampedSelectedCategoryIndex == index,
-                            onClick = { 
-                                selectedCategoryIndex = index
-                                // 立即更新分类，不等待 LaunchedEffect
-                                viewModel.loadDataByCategory(
-                                    categoryId = category.categoryId,
-                                    subCategoryId = category.subCategoryId,
-                                    userId = userId
-                                )
-                            },
-                            text = { Text(category.categoryName) }
-                        )
-                    }
+                 Text(
+                    text = "搜索结果",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                TextButton(onClick = { 
+                    searchQuery = ""
+                    viewModel.cancelSearch() 
+                }) {
+                    Text("清除")
                 }
             }
+        } else {
+            CategoryTabs(categories = categories, onCategorySelected = { viewModel.loadCategory(it) })
         }
 
+        // 内容区域：网格或空状态
         Box(modifier = Modifier.weight(1f)) {
-            if ((isSearchMode && searchState.isEmpty()) || (!isSearchMode && plazaState.popularApps.isEmpty())) {
+            if (itemsToShow.isEmpty() && !isLoading) {
                 Text(
                     text = "暂无资源",
                     style = MaterialTheme.typography.bodyLarge,
@@ -275,68 +176,36 @@ fun ResourcePlazaContent(
                 )
             } else {
                 AppGrid(
-                    apps = if (isSearchMode) searchState else plazaState.popularApps,
+                    apps = itemsToShow,
                     columns = if (isMyResourceMode) 4 else 3,
-                    onItemClick = { app ->
-                        // 修改：根据应用商店传递不同的参数
-                        if (selectedAppStore == AppStore.XIAOQU_SPACE) {
-                            navigateToAppDetail(app.id, app.versionId)
-                        } else {
-                            // 弦应用商店：传递 appId 和默认的版本Id
-                            navigateToAppDetail(app.id, 0L)
-                        }
-                    },
-                    gridState = gridState,
-                    selectedAppStore = selectedAppStore // 传入 selectedAppStore
+                    onItemClick = { app -> navigateToAppDetail(app.navigationId, app.navigationVersionId) },
+                    gridState = gridState
                 )
             }
-
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
+        }
 
-            var lastVisibleItemIndex by remember { mutableStateOf(gridState.firstVisibleItemIndex) }
-            LaunchedEffect(gridState.firstVisibleItemIndex) {
-                if (gridState.firstVisibleItemIndex > lastVisibleItemIndex) {
-                    showPagination = false
-                } else if (gridState.firstVisibleItemIndex < lastVisibleItemIndex) {
-                    showPagination = true
+        // 分页控制器
+        PaginationControls(
+            currentPage = currentPage,
+            totalPages = totalPages,
+            onPrevClick = { viewModel.prevPage() },
+            onNextClick = { viewModel.nextPage() },
+            onPageClick = { showPageDialog = true },
+            isPrevEnabled = currentPage > 1 && !isLoading,
+            isNextEnabled = currentPage < totalPages && !isLoading,
+            extraControls = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("自动翻页", style = MaterialTheme.typography.bodySmall)
+                    Switch(
+                        checked = autoScrollMode,
+                        onCheckedChange = { viewModel.setAutoScrollMode(it) }
+                    )
                 }
-                lastVisibleItemIndex = gridState.firstVisibleItemIndex
             }
-
-        }
-
-        AnimatedVisibility(
-            visible = showPagination,
-            enter = slideInVertically(initialOffsetY = { it }),
-            exit = slideOutVertically(targetOffsetY = { it }),
-        ) {
-            PaginationControls(
-                currentPage = currentPage,
-                totalPages = totalPages,
-                onPrevClick = { if (isSearchMode) viewModel.searchPrevPage(searchQuery) else viewModel.prevPage() },
-                onNextClick = { if (isSearchMode) viewModel.searchNextPage(searchQuery) else viewModel.nextPage() },
-                onPageClick = { showPageDialog = true },
-                isPrevEnabled = currentPage > 1 && !isLoading,
-                isNextEnabled = currentPage < totalPages && !isLoading,
-                // 新增参数：对于弦应用商店，不显示总页数
-       //         showTotalPages = selectedAppStore != AppStore.SIENE_SHOP,
-                extraControls = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "自动翻页",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(end = 4.dp)
-                        )
-                        Switch(
-                            checked = autoScrollMode,
-                            onCheckedChange = { viewModel.setAutoScrollMode(it) }
-                        )
-                    }
-                }
-            )
-        }
+        )
     }
 
     if (showPageDialog) {
@@ -346,7 +215,7 @@ fun ResourcePlazaContent(
             shape = dialogShape,
             onDismiss = { showPageDialog = false },
             onConfirm = { page ->
-                if (isSearchMode) viewModel.searchGoToPage(page) else viewModel.goToPage(page)
+                viewModel.goToPage(page)
                 showPageDialog = false
             }
         )
@@ -354,12 +223,42 @@ fun ResourcePlazaContent(
 }
 
 @Composable
+private fun CategoryTabs(
+    categories: List<UnifiedCategory>,
+    onCategorySelected: (String?) -> Unit
+) {
+    var selectedTabIndex by remember(categories) { mutableIntStateOf(0) }
+
+    if (categories.isEmpty()) {
+        Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
+             Text("加载分类中...", style = MaterialTheme.typography.bodyMedium)
+        }
+        return
+    }
+    
+    PrimaryScrollableTabRow(
+        selectedTabIndex = selectedTabIndex,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        categories.forEachIndexed { index, category ->
+            Tab(
+                selected = selectedTabIndex == index,
+                onClick = {
+                    selectedTabIndex = index
+                    onCategorySelected(category.id)
+                },
+                text = { Text(category.name) }
+            )
+        }
+    }
+}
+
+@Composable
 fun AppGrid(
-    apps: List<AppItem>,
+    apps: List<UnifiedAppItem>,
     columns: Int,
-    onItemClick: (AppItem) -> Unit,
-    gridState: LazyGridState,
-    selectedAppStore: AppStore // 新增参数
+    onItemClick: (UnifiedAppItem) -> Unit,
+    gridState: LazyGridState
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
@@ -370,42 +269,22 @@ fun AppGrid(
         state = gridState
     ) {
         items(apps, key = { it.uniqueId }) { app ->
-            // 将 selectedAppStore 传递给 AppGridItem
-            AppGridItem(app, onItemClick, selectedAppStore) 
+            AppGridItem(app, onClick = { onItemClick(app) })
         }
     }
 }
 
 @Composable
 fun AppGridItem(
-    app: AppItem,
-    onClick: (AppItem) -> Unit,
-    selectedAppStore: AppStore // 新增参数
+    app: UnifiedAppItem,
+    onClick: () -> Unit,
 ) {
-    // 移除这里的硬编码状态
-    // val selectedAppStore by remember { mutableStateOf(AppStore.XIAOQU_SPACE) } // 假设默认是小趣空间
-
-    val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
     Card(
-        onClick = {
-            if (selectedAppStore == AppStore.XIAOQU_SPACE) {
-                onClick(app)
-            } else {
-                // 弦应用商店：传递 appId 和默认的版本Id
-                onClick(app)
-            }
-        },
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp),
-        shape = AppShapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant, // 使用 surfaceVariant 背景色
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        shape = AppShapes.medium
     ) {
         Column(
             modifier = Modifier.padding(4.dp),
@@ -415,7 +294,6 @@ fun AppGridItem(
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(app.iconUrl)
-//                    .crossfade(true)
                     .build(),
                 contentDescription = app.name,
                 modifier = Modifier
