@@ -1,11 +1,4 @@
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// /app/src/main/java/cc/bbq/xq/ui/plaza/PlazaViewModel.kt
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
@@ -14,10 +7,7 @@ import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.data.repository.IAppStoreRepository
@@ -26,6 +16,7 @@ import cc.bbq.xq.data.unified.UnifiedCategory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 // --- 统一的数据模型包装 ---
 data class PlazaData(val popularApps: List<UnifiedAppItem>)
@@ -155,21 +146,31 @@ class PlazaViewModel(
     // --- 私有辅助方法 ---
 
     private fun resetStateAndLoadCategories() {
-        _isLoading.value = true
+        _isLoading.value = true // 开始加载分类
         currentCategoryId = null // 重置分类选择
+        
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val categoriesResult = currentRepository.getCategories()
                 if (categoriesResult.isSuccess) {
                     val categoryList = categoriesResult.getOrThrow()
                     _categories.postValue(categoryList)
-                    // 加载完分类后，自动加载第一个分类的数据
+                    
+                    // 默认选中第一个分类
                     currentCategoryId = categoryList.firstOrNull()?.id
-                    // 触发加载
-                    loadPage(1, append = false)
+                    
+                    // --- 关键修复 ---
+                    // 在调用 loadPage 之前，必须先将 isLoading 设为 false
+                    // 否则 loadPage 会认为正在加载中而直接返回
+                    _isLoading.postValue(false)
+                    
+                    // 切换到主线程确保状态同步后再加载页面
+                    withContext(Dispatchers.Main) {
+                        loadPage(1, append = false)
+                    }
                 } else {
                     handleFailure(categoriesResult.exceptionOrNull())
-                    _categories.postValue(emptyList()) // 加载失败则清空分类
+                    _categories.postValue(emptyList())
                     _isLoading.postValue(false)
                 }
             } catch (e: Exception) {
@@ -180,12 +181,14 @@ class PlazaViewModel(
     }
 
     private fun loadPage(page: Int, append: Boolean = false) {
-        if (_isLoading.value == true && !append) return // 如果是追加模式（自动滚屏），允许并发请求
+        // 如果正在加载且不是追加模式（自动翻页），则阻止重复请求
+        if (_isLoading.value == true && !append) return
+        
         val total = _totalPages.value ?: 1
         if (page < 1 || (page > total && total > 0 && !append)) return
 
-        _isLoading.value = true
-        _errorMessage.postValue(null)
+        _isLoading.value = true // 立即在主线程设置 Loading 状态
+        _errorMessage.value = null
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
