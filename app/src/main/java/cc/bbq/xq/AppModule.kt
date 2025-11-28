@@ -1,11 +1,4 @@
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
+// /app/src/main/java/cc/bbq/xq/AppModule.kt
 package cc.bbq.xq
 
 import cc.bbq.xq.data.repository.IAppStoreRepository
@@ -41,35 +34,38 @@ import cc.bbq.xq.ui.settings.update.UpdateSettingsViewModel
 import cc.bbq.xq.ui.home.HomeViewModel
 
 val appModule = module {
-    // ViewModel definitions - 保持原样，不要乱加参数
+    // ViewModel definitions
     viewModel { LoginViewModel(androidApplication()) }
     viewModel { BillingViewModel(androidApplication()) }
-    viewModel { CommunityViewModel() } // 原来没有参数，保持没有参数
+    viewModel { CommunityViewModel() }
     viewModel { FollowingPostsViewModel(androidApplication()) }
-    viewModel { HotPostsViewModel() } // 原来没有参数
+    viewModel { HotPostsViewModel() }
     viewModel { MyLikesViewModel(androidApplication()) }
     viewModel { LogViewModel(androidApplication()) }
     viewModel { MessageViewModel(androidApplication()) }
-    viewModel { AppDetailComposeViewModel(androidApplication()) }
+    
+    // 修正：注入 repositories 参数
+    viewModel { AppDetailComposeViewModel(androidApplication(), get()) }
+    
     viewModel { AppReleaseViewModel(androidApplication()) }
     
-    // 修改 PlazaViewModel 以支持新的 Repository 架构
+    // PlazaViewModel
     viewModel { PlazaViewModel(androidApplication(), get()) }
     
     viewModel { PlayerViewModel(androidApplication()) }
-    viewModel { SearchViewModel() } // 原来没有参数
+    viewModel { SearchViewModel() }
     viewModel { UserListViewModel(androidApplication()) }
     viewModel { PostCreateViewModel(androidApplication()) }
-    viewModel { MyPostsViewModel() } // 原来没有参数
+    viewModel { MyPostsViewModel() }
     viewModel { PaymentViewModel(androidApplication()) }
     viewModel { UserDetailViewModel(androidApplication()) }
     viewModel { StoreManagerViewModel(androidApplication()) }
     
     viewModel { BrowseHistoryViewModel(androidApplication()) }
     viewModel { PostDetailViewModel(androidApplication()) }
-    viewModel { RankingListViewModel() } // 原来没有参数
-    viewModel { UpdateSettingsViewModel() } // 原来没有参数
-    viewModel { HomeViewModel() } // 原来没有参数
+    viewModel { RankingListViewModel() }
+    viewModel { UpdateSettingsViewModel() }
+    viewModel { HomeViewModel() }
 
     // Singletons
     single { AuthManager }
@@ -78,15 +74,9 @@ val appModule = module {
     single { BBQApplication.instance.searchHistoryDataStore }
     single { StorageSettingsDataStore(androidApplication()) }
 
-    // === 新增 Repository 定义 ===
-    
-    // XiaoQuRepository 需要 ApiService
+    // Repositories
     single { XiaoQuRepository(KtorClient.ApiServiceImpl) }
-
-    // SineShopRepository
     single { SineShopRepository() }
-
-    // Repository Map
     single<Map<AppStore, IAppStoreRepository>> {
         mapOf(
             AppStore.XIAOQU_SPACE to get<XiaoQuRepository>(),

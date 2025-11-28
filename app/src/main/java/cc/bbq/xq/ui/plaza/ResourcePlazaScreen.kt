@@ -38,13 +38,11 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun ResourcePlazaScreen(
     isMyResourceMode: Boolean,
-    navigateToAppDetail: (String, Long) -> Unit,
-    navigateToAppDetail: (String, Long, String) -> Unit, 
+    navigateToAppDetail: (String, Long, String) -> Unit, // 统一使用三个参数：ID, VersionID, StoreName
     userId: String? = null,
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel = koinViewModel()
 ) {
-    // 当参数变化时，初始化ViewModel
     LaunchedEffect(isMyResourceMode, userId) {
         viewModel.initialize(isMyResourceMode, userId)
     }
@@ -62,7 +60,7 @@ fun ResourcePlazaContent(
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel,
     isMyResourceMode: Boolean,
-    navigateToAppDetail: (String, Long) -> Unit
+    navigateToAppDetail: (String, Long, String) -> Unit
 ) {
     val selectedAppStore by viewModel.appStore.observeAsState(AppStore.XIAOQU_SPACE)
     val categories by viewModel.categories.observeAsState(emptyList())
@@ -169,7 +167,9 @@ fun ResourcePlazaContent(
                     AppGrid(
                         apps = itemsToShow,
                         columns = if (isMyResourceMode) 4 else 3,
-                        onItemClick = { app -> navigateToAppDetail(app.navigationId, app.navigationVersionId, app.store.name) },
+                        onItemClick = { app -> 
+                            navigateToAppDetail(app.navigationId, app.navigationVersionId, app.store.name) 
+                        },
                         gridState = gridState
                     )
                 }
@@ -295,7 +295,6 @@ fun AppGridItem(
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(app.iconUrl)
-                    // .crossfade(true) // 移除 crossfade
                     .build(),
                 contentDescription = app.name,
                 modifier = Modifier
@@ -312,4 +311,3 @@ fun AppGridItem(
             )
         }
     }
-}

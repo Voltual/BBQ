@@ -34,7 +34,8 @@ fun KtorClient.Comment.toUnifiedComment(): UnifiedComment {
         sendTime = this.time.toLongOrNull() ?: 0L,
         sender = createUnifiedUserFromKtor(this.userid, this.nickname, this.usertx),
         childCount = this.sub_comments_count,
-        childComments = this.son?.map { it.toUnifiedComment() } ?: emptyList(),
+        // KtorClient.Comment 没有直接包含子评论列表，设为空
+        childComments = emptyList(), 
         fatherReply = null,
         raw = this
     )
@@ -86,7 +87,7 @@ fun KtorClient.AppDetail.toUnifiedAppDetail(): UnifiedAppDetail {
         isFavorite = false,
         favoriteCount = 0,
         reviewCount = this.comment_count,
-        downloadUrl = if (this.is_pay == 0 || this.is_user_pay) this.download else null, // 映射下载链接
+        downloadUrl = if (this.is_pay == 0 || this.is_user_pay) this.download else null,
         raw = this
     )
 }
@@ -147,7 +148,7 @@ fun SineShopClient.SineShopAppDetail.toUnifiedAppDetail(): UnifiedAppDetail {
         isFavorite = this.is_favourite == 1,
         favoriteCount = this.favourite_count,
         reviewCount = this.review_count,
-        downloadUrl = null, // 弦应用商店详情接口未直接返回下载链接
+        downloadUrl = null,
         raw = this
     )
 }

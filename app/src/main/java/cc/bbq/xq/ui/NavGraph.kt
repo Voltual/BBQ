@@ -333,51 +333,34 @@ composable(route = FanList.route) {
         }
 
         // --- 资源广场 ---
-        // --- 资源广场 ---
         composable(route = ResourcePlaza(false).route, arguments = ResourcePlaza.arguments) { backStackEntry ->
             val isMyResource = backStackEntry.arguments?.getBoolean(AppDestination.ARG_IS_MY_RESOURCE) ?: false
             val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
 
-            // 移除旧的 viewModel 调用，ResourcePlazaScreen 内部会处理初始化
-            // PlazaViewModel 现在使用 Koin 注入，不需要在这里手动获取
-
             ResourcePlazaScreen(
                 isMyResourceMode = isMyResource,
-                navigateToAppDetail = { appId, versionId -> 
-                    // appId 现在是 String, versionId 是 Long
-                    // 确保 appId 是 String 类型，如果是数字字符串转换为 Long 可能会有问题，但这里 appId 本身就是 String
-                    // AppDetail 路由定义为 app_detail/{appId}/{versionId}
-                    // 注意：AppDetail 的 appId 参数定义为 Long，如果 UnifiedAppItem 的 ID 包含非数字字符，这里会崩溃
-                    // 这是一个潜在的兼容性问题。
-                    // 对于小趣空间，ID 是纯数字。对于弦应用商店，ID 也是纯数字。
-                    // 所以我们可以安全地将其转换为 Long。
-                    navController.navigate(AppDetail(appId.toLongOrNull() ?: 0L, versionId).createRoute())
+                navigateToAppDetail = { appId, versionId, storeName -> // 接收三个参数
+                    navController.navigate(AppDetail(appId, versionId, storeName).createRoute())
                 },
                 userId = if (userId != -1L) userId.toString() else null,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        // 在 NavGraph.kt 中更新 AppDetailScreen 的调用
-composable(route = AppDetail(0, 0).route, arguments = AppDetail.arguments) { backStackEntry ->
-    val appId = backStackEntry.arguments?.getLong(AppDestination.ARG_APP_ID) ?: 0L
-    val versionId = backStackEntry.arguments?.getLong(AppDestination.ARG_VERSION_ID) ?: 0L
+        // --- 应用详情页 ---
+        composable(route = AppDetail("", 0, "").route, arguments = AppDetail.arguments) { backStackEntry ->
+            val appId = backStackEntry.arguments?.getString(AppDestination.ARG_APP_ID) ?: ""
+            val versionId = backStackEntry.arguments?.getLong(AppDestination.ARG_VERSION_ID) ?: 0L
+            val storeName = backStackEntry.arguments?.getString("storeName") ?: "XIAOQU_SPACE"
 
-    // 使用公共方法 initializeData() 替代私有方法
-    LaunchedEffect(appId, versionId) {
-        if (appId != 0L && versionId != 0L) {
-            appDetailViewModel.initializeData(appId, versionId)
+            AppDetailScreen(
+                appId = appId,
+                versionId = versionId,
+                storeName = storeName,
+                navController = navController,
+                modifier = Modifier.fillMaxSize()
+            )
         }
-    }
-
-    AppDetailScreen(
-        viewModel = appDetailViewModel,
-        appId = appId, // 添加 appId 参数
-        versionId = versionId, // 添加 versionId 参数
-        navController = navController,
-        modifier = Modifier.fillMaxSize()
-    )
-}
 
 
         // 在 NavGraph.kt 中更新 AppReleaseScreen 的调用

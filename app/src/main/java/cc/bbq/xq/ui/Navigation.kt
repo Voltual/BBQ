@@ -10,6 +10,7 @@ package cc.bbq.xq.ui
 
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import android.net.Uri // 添加导入
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 

@@ -76,7 +76,6 @@ class AppDetailComposeViewModel(
         
         viewModelScope.launch {
             try {
-                // 并行加载详情和评论
                 val detailResult = repository.getAppDetail(currentAppId, currentVersionId)
                 
                 if (detailResult.isSuccess) {
@@ -95,12 +94,9 @@ class AppDetailComposeViewModel(
 
     private fun loadComments() {
         viewModelScope.launch {
-            val result = repository.getAppComments(currentAppId, 1) // 暂时只加载第一页
+            val result = repository.getAppComments(currentAppId, 1)
             if (result.isSuccess) {
                 _comments.value = result.getOrThrow().first
-            } else {
-                // 评论加载失败不影响详情显示，只显示Toast或Log
-                // _errorMessage.value = "加载评论失败" 
             }
         }
     }
@@ -127,7 +123,6 @@ class AppDetailComposeViewModel(
     fun submitComment(content: String) {
         viewModelScope.launch {
             val parentId = _currentReplyComment.value?.id
-            // 简单处理：如果是回复，暂时不处理 @mention，因为 UnifiedComment 还没完全统一 mention 逻辑
             val result = repository.postComment(currentAppId, content, parentId, null)
             
             if (result.isSuccess) {
@@ -160,3 +155,4 @@ class AppDetailComposeViewModel(
             }
         }
     }
+}
