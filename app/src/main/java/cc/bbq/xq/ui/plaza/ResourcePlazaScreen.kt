@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,7 +31,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.data.unified.UnifiedAppItem
 import cc.bbq.xq.data.unified.UnifiedCategory
@@ -40,20 +40,16 @@ import cc.bbq.xq.ui.theme.AppShapes
 import cc.bbq.xq.ui.theme.AppStoreDropdownMenu
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
-import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel // 导入 Koin 的扩展函数
 
 @Composable
 fun ResourcePlazaScreen(
     isMyResourceMode: Boolean,
     navigateToAppDetail: (String, Long) -> Unit,
     userId: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: PlazaViewModel = koinViewModel() // 使用 Koin 获取 ViewModel
 ) {
-    val context = LocalContext.current
-    val viewModel: PlazaViewModel = viewModel(
-        factory = PlazaViewModelFactory(context.applicationContext as android.app.Application)
-    )
-
     // 当参数变化时，初始化ViewModel
     LaunchedEffect(isMyResourceMode, userId) {
         viewModel.initialize(isMyResourceMode, userId)
@@ -82,6 +78,7 @@ fun ResourcePlazaContent(
     val currentPage by viewModel.currentPage.observeAsState(1)
     val totalPages by viewModel.totalPages.observeAsState(1)
     val autoScrollMode by viewModel.autoScrollMode.observeAsState(false)
+    val errorMessage by viewModel.errorMessage.observeAsState()
 
     val isSearchMode by remember(searchState) { derivedStateOf { searchState.isNotEmpty() } }
     var searchQuery by remember { mutableStateOf("") }
@@ -89,9 +86,9 @@ fun ResourcePlazaContent(
     val dialogShape = remember { RoundedCornerShape(4.dp) }
     val gridState = rememberLazyGridState()
     val focusRequester = remember { FocusRequester() }
-    
+
     val itemsToShow = if (isSearchMode) searchState else plazaState.popularApps
-    
+
     // --- 自动翻页逻辑 ---
     val shouldLoadMore by remember {
         derivedStateOf {
@@ -102,7 +99,7 @@ fun ResourcePlazaContent(
                 val lastVisibleItem = layoutInfo.visibleItemsInfo.last()
                 val totalItemsCount = layoutInfo.totalItemsCount
                 val hasMorePages = currentPage < totalPages
-                totalItemsCount > 0 && hasMorePages && lastVisibleItem.index >= totalItemsCount - 3
+                totalItemsCount > 0 && hasMorePages && lastVisibleItem.index >= totalItemsCount - 5 // 提前5个item开始加载
             }
         }
     }
@@ -125,7 +122,7 @@ fun ResourcePlazaContent(
             onStoreChange = { viewModel.setAppStore(it) },
             modifier = Modifier.fillMaxWidth()
         )
-        
+
         // 搜索框
         if (!isMyResourceMode) {
             OutlinedTextField(
@@ -138,51 +135,59 @@ fun ResourcePlazaContent(
                 shape = AppShapes.medium,
                 label = { Text("搜索...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                     if (searchQuery.isNotEmpty()) {
+                         IconButton(onClick = { 
+                             searchQuery = ""
+                             viewModel.cancelSearch()
+                         }) {
+                             Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                         }
+                     }
+                },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { viewModel.search(searchQuery) }),
                 singleLine = true
             )
         }
 
-        // 分类标签或搜索结果标题
-        if (isSearchMode) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                 Text(
-                    text = "搜索结果",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                TextButton(onClick = { 
-                    searchQuery = ""
-                    viewModel.cancelSearch() 
-                }) {
-                    Text("清除")
-                }
-            }
-        } else {
-            CategoryTabs(categories = categories, onCategorySelected = { viewModel.loadCategory(it) })
-        }
+        // 分类标签
+        CategoryTabs(
+            categories = categories,
+            onCategorySelected = { viewModel.loadCategory(it) },
+            enabled = !isSearchMode // 在搜索模式下禁用Tab点击
+        )
 
         // 内容区域：网格或空状态
         Box(modifier = Modifier.weight(1f)) {
-            if (itemsToShow.isEmpty() && !isLoading) {
-                Text(
-                    text = "暂无资源",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            } else {
-                AppGrid(
-                    apps = itemsToShow,
-                    columns = if (isMyResourceMode) 4 else 3,
-                    onItemClick = { app -> navigateToAppDetail(app.navigationId, app.navigationVersionId) },
-                    gridState = gridState
-                )
+            val showEmptyState = itemsToShow.isEmpty() && !isLoading && errorMessage == null
+            when {
+                showEmptyState -> {
+                    Text(
+                        text = if (isSearchMode) "未找到相关资源" else "暂无资源",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                errorMessage != null -> {
+                     Text(
+                        text = errorMessage!!,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
+                    )
+                }
+                else -> {
+                    AppGrid(
+                        apps = itemsToShow,
+                        columns = if (isMyResourceMode) 4 else 3,
+                        onItemClick = { app -> navigateToAppDetail(app.navigationId, app.navigationVersionId) },
+                        gridState = gridState
+                    )
+                }
             }
-            if (isLoading) {
+
+            if (isLoading && itemsToShow.isEmpty()) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
         }
@@ -225,17 +230,24 @@ fun ResourcePlazaContent(
 @Composable
 private fun CategoryTabs(
     categories: List<UnifiedCategory>,
-    onCategorySelected: (String?) -> Unit
+    onCategorySelected: (String?) -> Unit,
+    enabled: Boolean
 ) {
     var selectedTabIndex by remember(categories) { mutableIntStateOf(0) }
 
     if (categories.isEmpty()) {
         Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-             Text("加载分类中...", style = MaterialTheme.typography.bodyMedium)
+             // Placeholder for loading state, or let the main screen handle it
         }
         return
     }
     
+    LaunchedEffect(categories) {
+        if(categories.isNotEmpty()) {
+            selectedTabIndex = 0
+        }
+    }
+
     PrimaryScrollableTabRow(
         selectedTabIndex = selectedTabIndex,
         modifier = Modifier.fillMaxWidth()
@@ -244,10 +256,13 @@ private fun CategoryTabs(
             Tab(
                 selected = selectedTabIndex == index,
                 onClick = {
-                    selectedTabIndex = index
-                    onCategorySelected(category.id)
+                    if (enabled) {
+                        selectedTabIndex = index
+                        onCategorySelected(category.id)
+                    }
                 },
-                text = { Text(category.name) }
+                text = { Text(category.name) },
+                enabled = enabled
             )
         }
     }
@@ -283,28 +298,31 @@ fun AppGridItem(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp),
+            .heightIn(min = 120.dp), // 使用 min-height
         shape = AppShapes.medium
     ) {
         Column(
-            modifier = Modifier.padding(4.dp),
+            modifier = Modifier.padding(4.dp).fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(app.iconUrl)
+                    .crossfade(true)
                     .build(),
                 contentDescription = app.name,
                 modifier = Modifier
                     .size(56.dp)
-                    .padding(8.dp)
+                    .padding(bottom = 8.dp)
             )
             Text(
                 text = app.name,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodySmall, // 稍小字体以容纳更多文字
                 maxLines = 2,
-                modifier = Modifier.padding(top = 4.dp)
+                minLines = 2, // 保证高度一致
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 4.dp)
             )
         }
     }

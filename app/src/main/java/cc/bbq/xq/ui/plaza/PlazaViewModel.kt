@@ -14,13 +14,13 @@ import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
-import androidx.lifecycle.*
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
-import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.repository.IAppStoreRepository
-import cc.bbq.xq.data.repository.SineShopRepository
-import cc.bbq.xq.data.repository.XiaoQuRepository
 import cc.bbq.xq.data.unified.UnifiedAppItem
 import cc.bbq.xq.data.unified.UnifiedCategory
 import kotlinx.coroutines.Dispatchers
@@ -33,26 +33,10 @@ data class PlazaData(val popularApps: List<UnifiedAppItem>)
 // --- Preference DataStore ---
 private val Context.dataStore by preferencesDataStore(name = "plaza_preferences")
 
-// --- ViewModel 工厂 ---
-class PlazaViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(PlazaViewModel::class.java)) {
-            // 在工厂中创建并注入 Repository 实例
-            val repositories = mapOf(
-                AppStore.XIAOQU_SPACE to XiaoQuRepository(KtorClient.ApiServiceImpl),
-                AppStore.SIENE_SHOP to SineShopRepository()
-            )
-            return PlazaViewModel(application, repositories) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
-
 class PlazaViewModel(
-    application: Application,
+    private val app: Application,
     private val repositories: Map<AppStore, IAppStoreRepository>
-) : AndroidViewModel(application) {
+) : AndroidViewModel(app) {
 
     // --- LiveData & State ---
     private val _isLoading = MutableLiveData(false)
@@ -114,13 +98,17 @@ class PlazaViewModel(
         if (this.isMyResourceMode == isMyResource && this.currentUserId == userId) return
         this.isMyResourceMode = isMyResource
         this.currentUserId = userId
+        // 切换商店或模式时，重新加载分类和数据
         resetStateAndLoadCategories()
     }
 
     fun loadCategory(categoryId: String?) {
+        // 如果正在搜索，选择分类意味着退出搜索模式
+        if (isSearchMode) {
+           cancelSearch()
+        }
         if (currentCategoryId == categoryId) return
-        isSearchMode = false
-        _searchResults.value = emptyList()
+
         currentCategoryId = categoryId
         loadPage(1)
     }
@@ -129,6 +117,9 @@ class PlazaViewModel(
         if (query.isBlank()) return
         isSearchMode = true
         currentQuery = query
+        // 清空列表数据，保留分类和搜索词
+        _plazaData.value = PlazaData(emptyList())
+        _searchResults.value = emptyList() // 清空搜索结果以触发UI更新
         loadPage(1)
     }
 
@@ -140,9 +131,17 @@ class PlazaViewModel(
         loadPage(1)
     }
 
-    fun nextPage() = loadPage( (_currentPage.value ?: 1) + 1 )
-    fun prevPage() = loadPage( (_currentPage.value ?: 1) - 1 )
+    fun nextPage() {
+        val next = (_currentPage.value ?: 1) + 1
+        loadPage(next, append = autoScrollMode.value == true)
+    }
+
+    fun prevPage() {
+        val prev = (_currentPage.value ?: 1) - 1
+        loadPage(prev)
+    }
     fun goToPage(page: Int) = loadPage(page)
+
     fun loadMore() {
         if (autoScrollMode.value == true && _isLoading.value != true) {
             val current = _currentPage.value ?: 1
@@ -157,6 +156,7 @@ class PlazaViewModel(
 
     private fun resetStateAndLoadCategories() {
         _isLoading.value = true
+        currentCategoryId = null // 重置分类选择
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val categoriesResult = currentRepository.getCategories()
@@ -165,26 +165,28 @@ class PlazaViewModel(
                     _categories.postValue(categoryList)
                     // 加载完分类后，自动加载第一个分类的数据
                     currentCategoryId = categoryList.firstOrNull()?.id
-                    loadPage(1)
+                    // 触发加载
+                    loadPage(1, append = false)
                 } else {
                     handleFailure(categoriesResult.exceptionOrNull())
+                    _categories.postValue(emptyList()) // 加载失败则清空分类
+                    _isLoading.postValue(false)
                 }
             } catch (e: Exception) {
                 handleFailure(e)
-            } finally {
-                // loadPage会处理isLoading状态
+                _isLoading.postValue(false)
             }
         }
     }
 
     private fun loadPage(page: Int, append: Boolean = false) {
-        if (_isLoading.value == true) return
+        if (_isLoading.value == true && !append) return // 如果是追加模式（自动滚屏），允许并发请求
         val total = _totalPages.value ?: 1
-        if (page < 1 || (page > total && !append)) { // 在追加模式下，即使页码大于当前总页数也可能尝试加载
-            return
-        }
+        if (page < 1 || (page > total && total > 0 && !append)) return
 
         _isLoading.value = true
+        _errorMessage.postValue(null)
+
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val finalUserId = if (isMyResourceMode) {
@@ -199,7 +201,7 @@ class PlazaViewModel(
 
                 if (result.isSuccess) {
                     val (items, totalPages) = result.getOrThrow()
-                    _totalPages.postValue(totalPages)
+                    _totalPages.postValue(if(totalPages > 0) totalPages else 1)
                     _currentPage.postValue(page)
 
                     if (isSearchMode) {
@@ -209,7 +211,6 @@ class PlazaViewModel(
                         val currentList = if (append) _plazaData.value?.popularApps ?: emptyList() else emptyList()
                         _plazaData.postValue(PlazaData(currentList + items))
                     }
-                    _errorMessage.postValue(null)
                 } else {
                     handleFailure(result.exceptionOrNull())
                 }
@@ -230,13 +231,13 @@ class PlazaViewModel(
     // --- DataStore 操作 ---
     private suspend fun readAutoScrollMode(): Boolean {
         return try {
-            getApplication<Application>().applicationContext.dataStore.data.first()[AUTO_SCROLL_MODE_KEY] ?: false
+            app.applicationContext.dataStore.data.first()[AUTO_SCROLL_MODE_KEY] ?: false
         } catch (e: Exception) { false }
     }
 
     fun setAutoScrollMode(enabled: Boolean) {
         viewModelScope.launch {
-            getApplication<Application>().applicationContext.dataStore.edit { preferences ->
+            app.applicationContext.dataStore.edit { preferences ->
                 preferences[AUTO_SCROLL_MODE_KEY] = enabled
             }
             _autoScrollMode.postValue(enabled)
