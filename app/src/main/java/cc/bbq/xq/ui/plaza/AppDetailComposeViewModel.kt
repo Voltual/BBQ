@@ -174,6 +174,7 @@ class AppDetailComposeViewModel(
         }
     }
 
+
     fun deleteComment(commentId: String) {
         viewModelScope.launch {
             val result = repository.deleteComment(commentId)
