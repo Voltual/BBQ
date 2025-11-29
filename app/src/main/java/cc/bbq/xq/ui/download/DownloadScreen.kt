@@ -1,6 +1,7 @@
 // 文件路径: cc/bbq/xq/ui/download/DownloadScreen.kt
 package cc.bbq.xq.ui.download
 
+import android.content.Context
 import android.text.format.Formatter
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
@@ -33,8 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,6 +44,8 @@ import cc.bbq.xq.ui.theme.AppShapes
 import cc.bbq.xq.ui.theme.BBQButton
 import cc.bbq.xq.ui.theme.BBQCard
 import cc.bbq.xq.ui.theme.BBQIconButton
+// 关键：导入 FileActionUtil
+import cc.bbq.xq.util.FileActionUtil
 
 @Composable
 fun DownloadScreen(
@@ -138,7 +139,7 @@ fun DownloadingState(
     onCancel: () -> Unit
 ) {
     val context = LocalContext.current
-    
+
     BBQCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -148,7 +149,7 @@ fun DownloadingState(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "正在下载文件...", // 实际应用中应从 Service 获取文件名
+                        text = "正在下载文件...",
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -160,7 +161,7 @@ fun DownloadingState(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                
+
                 BBQIconButton(
                     onClick = onCancel,
                     icon = Icons.Default.Close,
@@ -195,7 +196,7 @@ fun DownloadingState(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = status.speed, // 显示速度
+                    text = status.speed,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -230,6 +231,7 @@ fun PausedState(status: DownloadStatus.Paused) {
 
 @Composable
 fun SuccessState(status: DownloadStatus.Success) {
+    val context = LocalContext.current
     BBQCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -259,14 +261,14 @@ fun SuccessState(status: DownloadStatus.Success) {
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 BBQButton(
-                    onClick = { 
-                        // 这里可以添加打开文件的逻辑
-                        // FileUtil.openFile(context, status.file)
+                    onClick = {
+                        // 使用 FileActionUtil 打开文件
+                        FileActionUtil.openFile(context, status.file)
                     },
                     text = { Text("查看文件") }
                 )

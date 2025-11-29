@@ -1,0 +1,21 @@
+<!-- 文件路径: app/src/main/res/xml/file_paths.xml -->
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 对应 Context.getFilesDir() : /data/user/0/包名/files -->
+    <!-- 我们之前的 DownloadService 可能会用到这里 -->
+    <files-path name="internal_files" path="." />
+
+    <!-- 对应 Context.getExternalFilesDir(null) : /storage/emulated/0/Android/data/包名/files -->
+    <!-- 这是推荐的下载目录，不需要额外权限即可读写 -->
+    <external-files-path name="external_files" path="." />
+
+    <!-- 对应 Context.getCacheDir() -->
+    <cache-path name="internal_cache" path="." />
+
+    <!-- 对应 Context.getExternalCacheDir() -->
+    <external-cache-path name="external_cache" path="." />
+
+    <!-- 对应 Environment.getExternalStorageDirectory() -->
+    <!-- 注意：Android 10+ Scoped Storage 限制了对此目录的直接访问，但在某些遗留场景下可能需要 -->
+    <external-path name="external_storage" path="." />
+</paths>
