@@ -143,12 +143,12 @@ fun SineShopProfileScreen(
             label = "本地下载",
             onClick = { /* TODO: Implement local downloads */ }
         )
-/*        FunctionCard(
+/*      FunctionCard(
             icon = Icons.Filled.Devices,
             label = "我的设备",
-            onClick = {  TODO: Implement my devices  }*/
+            onClick = {  TODO: Implement my devices  }
         )
-/*        FunctionCard(
+        FunctionCard(
             icon = Icons.Filled.Info,
             label = "关于弦",
             onClick = {  TODO: Implement about SineShop  }
