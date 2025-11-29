@@ -31,6 +31,11 @@
         </activity>
 
         <service android:name=".HeartbeatService" />
+        
+<service 
+    android:name=".service.download.DownloadService" 
+    android:foregroundServiceType="dataSync" 
+    android:exported="false" />
 
         <activity
             android:name=".ui.CrashLogActivity"

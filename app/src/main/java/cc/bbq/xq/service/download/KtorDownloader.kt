@@ -10,32 +10,20 @@ import io.ktor.client.plugins.onDownload
 import io.ktor.client.request.get
 import io.ktor.client.request.head
 import io.ktor.client.request.header
-import io.ktor.client.request.url
-import io.ktor.client.statement.HttpHeaders
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.ContentRange
-import io.ktor.http.HttpHeaders.ContentLength
-import io.ktor.http.HttpStatusCode
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentLength
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.core.isEmpty
-import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.RandomAccessFile
-import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicLong
 
 class KtorDownloader {
@@ -43,14 +31,13 @@ class KtorDownloader {
     private val _status = MutableStateFlow<DownloadStatus>(DownloadStatus.Idle)
     val status: StateFlow<DownloadStatus> = _status.asStateFlow()
 
-    private var downloadJob: Job? = null
-    
-    // 专门用于下载的 Client，超时时间设置较长
+    // 专门用于下载的 Client
     private val client = HttpClient(OkHttp) {
         install(HttpTimeout) {
-            requestTimeoutMillis = HttpTimeout.INFINITE_TIMEOUT_MS
+            // Ktor 3.x 可能未直接暴露 INFINITE_TIMEOUT_MS常量，直接使用 Long.MAX_VALUE
+            requestTimeoutMillis = Long.MAX_VALUE 
             connectTimeoutMillis = 30_000
-            socketTimeoutMillis = HttpTimeout.INFINITE_TIMEOUT_MS
+            socketTimeoutMillis = Long.MAX_VALUE
         }
     }
 
@@ -141,11 +128,6 @@ class KtorDownloader {
         chunk: Chunk,
         onBytesRead: (Int) -> Unit
     ) {
-        // 使用 RandomAccessFile 进行随机写入
-        // 注意：RandomAccessFile 不是线程安全的，但如果是向不同的 offset 写入，
-        // 且每个线程有自己的 RandomAccessFile 实例指向同一个文件，这在 OS 层面通常是安全的。
-        // 为保险起见，这里我们在 use 块内操作。
-        
         Log.d("KtorDownloader", "Starting chunk ${chunk.id}: ${chunk.start}-${chunk.end}")
 
         val response = client.get(url) {
@@ -154,24 +136,21 @@ class KtorDownloader {
 
         val channel: ByteReadChannel = response.body()
         val bufferSize = 8192
-        val buffer = ByteBuffer.allocate(bufferSize)
+        val buffer = ByteArray(bufferSize)
         
         withContext(Dispatchers.IO) {
             RandomAccessFile(file, "rw").use { raf ->
-                raf.seek(chunk.start)
+                raf.seek(chunk.start + (chunk.current - chunk.start))
                 
                 while (!channel.isClosedForRead) {
-                    val read = channel.readAvailable(buffer)
+                    // 使用 readAvailable(ByteArray) 替代 ByteBuffer 以获得更好的兼容性
+                    val read = channel.readAvailable(buffer, 0, bufferSize)
                     if (read == -1) break
                     
-                    buffer.flip() // 切换到读模式
-                    // 将 ByteBuffer 写入文件
-                    raf.write(buffer.array(), buffer.position(), buffer.remaining())
+                    raf.write(buffer, 0, read)
                     
                     onBytesRead(read)
                     chunk.current += read
-                    
-                    buffer.clear() // 清空 buffer 供下次使用
                 }
             }
         }
@@ -183,7 +162,11 @@ class KtorDownloader {
     private suspend fun downloadSingleThreaded(url: String, file: File, totalLength: Long) {
         val response = client.get(url) {
             onDownload { bytesSentTotal, contentLength ->
-                 updateProgress(bytesSentTotal, contentLength)
+                 // contentLength 是 Long?，需要处理空值
+                 val total = contentLength ?: totalLength
+                 if (total > 0) {
+                     updateProgress(bytesSentTotal, total)
+                 }
             }
         }
         
@@ -197,21 +180,26 @@ class KtorDownloader {
     private fun updateProgress(current: Long, total: Long) {
         if (total <= 0) return
         val progress = current.toFloat() / total.toFloat()
-        // 简单的限流更新，避免 StateFlow 更新太频繁（实际生产中可加 debounce）
-        if (_status.value !is DownloadStatus.Downloading || 
-           (progress - (_status.value as? DownloadStatus.Downloading)?.progress ?: 0f) > 0.01f ||
+        
+        // 简单的限流更新
+        val currentStatus = _status.value
+        val lastProgress = if (currentStatus is DownloadStatus.Downloading) currentStatus.progress else 0f
+        
+        if (currentStatus !is DownloadStatus.Downloading || 
+           (progress - lastProgress) > 0.01f ||
            progress >= 1.0f) {
             
             _status.value = DownloadStatus.Downloading(
                 progress = progress,
                 downloadedBytes = current,
                 totalBytes = total,
-                speed = "Calculating..." // 速度计算需要额外的时间戳逻辑，暂时留空
+                speed = "" 
             )
         }
     }
     
     fun cancel() {
-        // 实现取消逻辑
+        // 实际取消逻辑需要配合 Job 管理，这里暂时留空
+        _status.value = DownloadStatus.Idle
     }
 }
