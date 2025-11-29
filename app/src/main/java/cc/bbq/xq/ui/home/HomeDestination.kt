@@ -33,7 +33,7 @@ fun HomeDestination(
 ) {
     val context = LocalContext.current
     val viewModel: HomeViewModel = viewModel()
-    val uiState by viewModel.uiState
+    //val uiState by viewModel.uiState // 移除这行
 
     // 使用 LaunchedEffect 配合登录状态，只在登录状态变化时触发
     val coroutineScope = rememberCoroutineScope() // 移动到外部，这样 onClick lambda 可以访问它
@@ -43,7 +43,7 @@ fun HomeDestination(
         val isLoggedIn = userCredentials != null
 
         viewModel.updateLoginState(isLoggedIn)
-        if (isLoggedIn && uiState.dataLoadState == DataLoadState.NotLoaded) {
+        if (isLoggedIn && viewModel.uiState.value.dataLoadState == DataLoadState.NotLoaded) {
             viewModel.loadUserData(context)
         }
 
@@ -55,7 +55,7 @@ fun HomeDestination(
 
     val onAvatarClick = remember {
         {
-            if (!uiState.showLoginPrompt) {
+            if (!viewModel.uiState.value.showLoginPrompt) {
                 viewModel.toggleDarkMode()
                 val modeName = if (ThemeManager.isAppDarkTheme) "深色" else "亮色"
                 // fixed: call snackbar with just message
@@ -70,7 +70,7 @@ fun HomeDestination(
     val onAvatarLongClick = remember {
         { 
             // 长按时强制刷新数据
-            if (!uiState.showLoginPrompt) {
+            if (!viewModel.uiState.value.showLoginPrompt) {
                 viewModel.refreshUserData(context)
             }
             restartMainActivity(context) 
@@ -89,26 +89,6 @@ fun HomeDestination(
 
     BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
         HomeScreen(
-            state = HomeState(
-                showLoginPrompt = uiState.showLoginPrompt,
-                isLoading = uiState.isLoading,
-                avatarUrl = uiState.avatarUrl,
-                nickname = uiState.nickname,
-                level = uiState.level,
-                coins = uiState.coins,
-                exp = uiState.exp,
-                userId = uiState.userId,
-                followersCount = uiState.followersCount,
-                fansCount = uiState.fansCount,
-                postsCount = uiState.postsCount,
-                likesCount = uiState.likesCount,
-                seriesDays = uiState.seriesDays,
-                signStatusMessage = uiState.signStatusMessage,
-                displayDaysDiff = uiState.displayDaysDiff
-            ),
-            sineShopUserInfo = uiState.sineShopUserInfo, // 传递 sineShopUserInfo
-            sineShopLoginPrompt = uiState.sineShopLoginPrompt, // 传递 sineShopLoginPrompt
-            onSineShopLoginClick = onSineShopLoginClick, // 传递 onSineShopLoginClick
             onPaymentCenterClick = { navController.navigate(PaymentCenterAdvanced.route) },
             onAvatarClick = onAvatarClick,
             onAvatarLongClick = onAvatarLongClick,
@@ -153,6 +133,7 @@ fun HomeDestination(
             onAboutClick = { navController.navigate(About.route) },
             onAccountProfileClick = { navController.navigate(AccountProfile.route) },
             onRecalculateDays = { viewModel.recalculateDaysDiff() },
+            onSineShopLoginClick = onSineShopLoginClick, // 传递 onSineShopLoginClick
             viewModel = viewModel,
             snackbarHostState = snackbarHostState
         )
