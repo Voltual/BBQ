@@ -334,19 +334,21 @@ composable(route = FanList.route) {
         }
 
         // --- 资源广场 ---
-        composable(route = ResourcePlaza(false).route, arguments = ResourcePlaza.arguments) { backStackEntry ->
-            val isMyResource = backStackEntry.arguments?.getBoolean(AppDestination.ARG_IS_MY_RESOURCE) ?: false
-            val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
+composable(route = ResourcePlaza(false).route, arguments = ResourcePlaza.arguments) { backStackEntry ->
+    val isMyResource = backStackEntry.arguments?.getBoolean(AppDestination.ARG_IS_MY_RESOURCE) ?: false
+    val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
+    val mode = backStackEntry.arguments?.getString("mode") ?: "public"
 
-            ResourcePlazaScreen(
-                isMyResourceMode = isMyResource,
-                navigateToAppDetail = { appId, versionId, storeName -> // 接收三个参数
-                    navController.navigate(AppDetail(appId, versionId, storeName).createRoute())
-                },
-                userId = if (userId != -1L) userId.toString() else null,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
+    ResourcePlazaScreen(
+        isMyResourceMode = isMyResource,
+        mode = mode, // 传递模式参数
+        navigateToAppDetail = { appId, versionId, storeName -> // 接收三个参数
+            navController.navigate(AppDetail(appId, versionId, storeName).createRoute())
+        },
+        userId = if (userId != -1L) userId.toString() else null,
+        modifier = Modifier.fillMaxSize()
+    )
+}
 
         // --- 应用详情页 ---
         composable(route = AppDetail("", 0, "").route, arguments = AppDetail.arguments) { backStackEntry ->

@@ -39,13 +39,14 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun ResourcePlazaScreen(
     isMyResourceMode: Boolean,
+    mode: String = "public", // 新增模式参数
     navigateToAppDetail: (String, Long, String) -> Unit,
     userId: String? = null,
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel = koinViewModel()
 ) {
-    LaunchedEffect(isMyResourceMode, userId) {
-        viewModel.initialize(isMyResourceMode, userId)
+    LaunchedEffect(isMyResourceMode, userId, mode) {
+        viewModel.initialize(isMyResourceMode, userId, mode)
     }
 
     ResourcePlazaContent(

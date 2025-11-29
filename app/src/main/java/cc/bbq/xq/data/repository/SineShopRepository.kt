@@ -13,36 +13,42 @@ class SineShopRepository : IAppStoreRepository {
     }
 
     override suspend fun getCategories(): Result<List<UnifiedCategory>> {
-        return try {
-            val result = SineShopClient.getAppTagList()
-            result.map { tagList ->
-                val specialCategories = listOf(
-                    UnifiedCategory(id = "-1", name = "最新上传"),
-                    UnifiedCategory(id = "-2", name = "最多下载")
-                )
-                specialCategories + tagList.map { it.toUnifiedCategory() }
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+    return try {
+        val result = SineShopClient.getAppTagList()
+        result.map { tagList ->
+            val specialCategories = listOf(
+                UnifiedCategory(id = "-1", name = "最新上传"),
+                UnifiedCategory(id = "-2", name = "最多下载"),
+                UnifiedCategory(id = "-3", name = "我的上传"),
+                UnifiedCategory(id = "-4", name = "我的收藏"),
+                UnifiedCategory(id = "-5", name = "历史足迹")
+            )
+            specialCategories + tagList.map { it.toUnifiedCategory() }
         }
+    } catch (e: Exception) {
+        Result.failure(e)
     }
+}
 
     override suspend fun getApps(categoryId: String?, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>> {
-        return try {
-            val result = when (categoryId) {
-                "-1" -> SineShopClient.getLatestAppsList(page = page)
-                "-2" -> SineShopClient.getMostDownloadedAppsList(page = page)
-                else -> SineShopClient.getAppsList(tag = categoryId?.toIntOrNull(), page = page)
-            }
-            result.map { appListData ->
-                val unifiedItems = appListData.list.map { it.toUnifiedAppItem() }
-                val totalPages = calculateTotalPages(appListData.total)
-                Pair(unifiedItems, totalPages)
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+    return try {
+        val result = when (categoryId) {
+            "-1" -> SineShopClient.getLatestAppsList(page = page)
+            "-2" -> SineShopClient.getMostDownloadedAppsList(page = page)
+            "-3" -> SineShopClient.getMyUploadAppsList(page = page)      // 我的上传
+            "-4" -> SineShopClient.getMyFavouriteAppsList(page = page)  // 我的收藏
+            "-5" -> SineShopClient.getMyHistoryAppsList(page = page)     // 我的历史足迹
+            else -> SineShopClient.getAppsList(tag = categoryId?.toIntOrNull(), page = page)
         }
+        result.map { appListData ->
+            val unifiedItems = appListData.list.map { it.toUnifiedAppItem() }
+            val totalPages = calculateTotalPages(appListData.total)
+            Pair(unifiedItems, totalPages)
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
     }
+}
 
     override suspend fun searchApps(query: String, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>> {
         return try {

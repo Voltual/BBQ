@@ -63,6 +63,7 @@ class PlazaViewModel(
     private var currentCategoryId: String? = null
     private var currentUserId: String? = null
     private var isMyResourceMode: Boolean = false
+    private var currentMode: String = "public" // 新增模式变量
 
     private val currentRepository: IAppStoreRepository
         get() = repositories[_appStore.value] ?: throw IllegalStateException("No repository found for the selected app store")
@@ -85,10 +86,20 @@ class PlazaViewModel(
         resetStateAndLoadCategories()
     }
 
-    fun initialize(isMyResource: Boolean, userId: String?) {
-        if (this.isMyResourceMode == isMyResource && this.currentUserId == userId) return
+    fun initialize(isMyResource: Boolean, userId: String?, mode: String = "public") {
+        if (this.isMyResourceMode == isMyResource && 
+            this.currentUserId == userId && 
+            this.currentMode == mode) return
+            
         this.isMyResourceMode = isMyResource
         this.currentUserId = userId
+        this.currentMode = mode
+        
+        // 根据模式设置应用商店
+        if (mode in listOf("my_upload", "my_favourite", "my_history")) {
+            _appStore.value = AppStore.SIENE_SHOP
+        }
+        
         // 切换商店或模式时，重新加载分类和数据
         resetStateAndLoadCategories()
     }
@@ -151,23 +162,42 @@ class PlazaViewModel(
         
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val categoriesResult = currentRepository.getCategories()
-                if (categoriesResult.isSuccess) {
-                    val categoryList = categoriesResult.getOrThrow()
-                    _categories.postValue(categoryList)
-                    
-                    // 默认选中第一个分类
-                    currentCategoryId = categoryList.firstOrNull()?.id
-                    
+                // 根据模式设置特殊的分类ID
+                when (currentMode) {
+                    "my_upload" -> currentCategoryId = "-3"
+                    "my_favourite" -> currentCategoryId = "-4"
+                    "my_history" -> currentCategoryId = "-5"
+                    else -> currentCategoryId = null
+                }
+                
+                // 对于特殊模式，直接加载数据而不加载分类
+                if (currentMode in listOf("my_upload", "my_favourite", "my_history")) {
+                    _categories.postValue(emptyList())
                     _isLoading.postValue(false)
-                    
                     withContext(Dispatchers.Main) {
                         loadPage(1, append = false)
                     }
                 } else {
-                    handleFailure(categoriesResult.exceptionOrNull())
-                    _categories.postValue(emptyList())
-                    _isLoading.postValue(false)
+                    val categoriesResult = currentRepository.getCategories()
+                    if (categoriesResult.isSuccess) {
+                        val categoryList = categoriesResult.getOrThrow()
+                        _categories.postValue(categoryList)
+                        
+                        // 默认选中第一个分类（如果未设置特殊分类）
+                        if (currentCategoryId == null) {
+                            currentCategoryId = categoryList.firstOrNull()?.id
+                        }
+                        
+                        _isLoading.postValue(false)
+                        
+                        withContext(Dispatchers.Main) {
+                            loadPage(1, append = false)
+                        }
+                    } else {
+                        handleFailure(categoriesResult.exceptionOrNull())
+                        _categories.postValue(emptyList())
+                        _isLoading.postValue(false)
+                    }
                 }
             } catch (e: Exception) {
                 handleFailure(e)
