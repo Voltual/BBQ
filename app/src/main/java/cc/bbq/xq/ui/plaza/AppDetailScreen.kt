@@ -1,4 +1,4 @@
-// /app/src/main/java/cc/bbq/xq/ui/plaza/AppDetailScreen.kt
+// 文件路径: cc/bbq/xq/ui/plaza/AppDetailScreen.kt
 package cc.bbq.xq.ui.plaza
 
 import android.content.Context
@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Comment
@@ -43,6 +42,7 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import cc.bbq.xq.ui.Download // 确保导入 Download
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -62,16 +62,16 @@ fun AppDetailScreen(
     val currentReplyComment by viewModel.currentReplyComment.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    
+
     val showDownloadDrawer by viewModel.showDownloadDrawer.collectAsState()
     val downloadSources by viewModel.downloadSources.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    
+
     // 应用删除确认对话框
     var showDeleteAppDialog by remember { mutableStateOf(false) }
-    
+
     // 评论删除确认对话框
     var showDeleteCommentDialog by remember { mutableStateOf(false) }
     var commentToDeleteId by remember { mutableStateOf<String?>(null) }
@@ -79,7 +79,7 @@ fun AppDetailScreen(
     LaunchedEffect(appId, versionId, storeName) {
         viewModel.initializeData(appId, versionId, storeName)
     }
-    
+
     LaunchedEffect(Unit) {
         viewModel.openUrlEvent.collectLatest { url ->
             try {
@@ -87,6 +87,22 @@ fun AppDetailScreen(
                 context.startActivity(intent)
             } catch (e: Exception) {
                 snackbarHostState.showSnackbar("无法打开链接: $url")
+            }
+        }
+    }
+    
+    // 监听 ViewModel 中的 snackbarEvent
+    LaunchedEffect(viewModel.snackbarEvent) {
+        viewModel.snackbarEvent.collectLatest { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+    
+    // 监听 ViewModel 中的 navigateToDownloadEvent
+    LaunchedEffect(viewModel.navigateToDownloadEvent) {
+        viewModel.navigateToDownloadEvent.collectLatest { navigate ->
+            if (navigate) {
+                navController.navigate(Download.route)  // 导航到下载管理页面
             }
         }
     }
@@ -114,7 +130,7 @@ fun AppDetailScreen(
                 comments = comments,
                 onCommentReply = { viewModel.openReplyDialog(it) },
                 onDownloadClick = { viewModel.handleDownloadClick() },
-                onCommentLongClick = { commentId -> 
+                onCommentLongClick = { commentId ->
                     commentToDeleteId = commentId
                     showDeleteCommentDialog = true
                 },
@@ -167,7 +183,7 @@ fun AppDetailScreen(
             onSubmit = { content, _ -> viewModel.submitComment(content) }
         )
     }
-    
+
     // 删除应用确认对话框
     if (showDeleteAppDialog) {
         AlertDialog(
@@ -329,9 +345,9 @@ fun AppDetailContent(
                     comment = comment,
                     onReply = { onCommentReply(comment) },
                     onLongClick = { onCommentLongClick(comment.id) },
-                    onUserClick = { 
+                    onUserClick = {
                         val userId = comment.sender.id.toLongOrNull()
-                        if(userId != null) navController.navigate(UserDetail(userId).createRoute())
+                        if (userId != null) navController.navigate(UserDetail(userId).createRoute())
                     }
                 )
             }
@@ -377,7 +393,7 @@ fun UnifiedCommentItem(
             }
             Spacer(Modifier.height(8.dp))
             Text(comment.content, style = MaterialTheme.typography.bodyMedium)
-            
+
             if (comment.fatherReply != null) {
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,

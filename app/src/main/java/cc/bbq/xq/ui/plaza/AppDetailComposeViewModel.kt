@@ -1,4 +1,4 @@
-// /app/src/main/java/cc/bbq/xq/ui/plaza/AppDetailComposeViewModel.kt
+// 文件路径: cc/bbq/xq/ui/plaza/AppDetailComposeViewModel.kt
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
@@ -44,12 +44,20 @@ class AppDetailComposeViewModel(
     private var currentStore: AppStore = AppStore.XIAOQU_SPACE
     private var currentAppId: String = ""
     private var currentVersionId: Long = 0L
-    
+
     private val _downloadSources = MutableStateFlow<List<UnifiedDownloadSource>>(emptyList())
     val downloadSources: StateFlow<List<UnifiedDownloadSource>> = _downloadSources.asStateFlow()
 
     private val _showDownloadDrawer = MutableStateFlow(false)
     val showDownloadDrawer: StateFlow<Boolean> = _showDownloadDrawer.asStateFlow()
+
+    // 新增：Snackbar 事件
+    private val _snackbarEvent = MutableSharedFlow<String>()
+    val snackbarEvent: SharedFlow<String> = _snackbarEvent.asSharedFlow()
+    
+    // 新增：导航事件
+    private val _navigateToDownloadEvent = MutableSharedFlow<Boolean>()
+    val navigateToDownloadEvent: SharedFlow<Boolean> = _navigateToDownloadEvent.asSharedFlow()
 
     // 新增：用于发送一次性事件（如打开浏览器）
     private val _openUrlEvent = MutableSharedFlow<String>()
@@ -72,14 +80,14 @@ class AppDetailComposeViewModel(
         currentAppId = appId
         currentVersionId = versionId
         currentStore = store
-        
+
         loadData()
     }
 
     fun refresh() {
         loadData()
     }
-    
+
     fun handleDownloadClick() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -91,8 +99,8 @@ class AppDetailComposeViewModel(
                 if (sources.isEmpty()) {
                     _errorMessage.value = "未找到下载源"
                 } else if (sources.size == 1) {
-                    // 只有一个源，直接触发打开URL事件
-                    _openUrlEvent.emit(sources.first().url)
+                    // 只有一个源，直接触发下载
+                    startDownload(sources.first().url)
                 } else {
                     // 多个源，显示抽屉
                     _downloadSources.value = sources
@@ -111,11 +119,11 @@ class AppDetailComposeViewModel(
     private fun loadData() {
         _isLoading.value = true
         _errorMessage.value = ""
-        
+
         viewModelScope.launch {
             try {
                 val detailResult = repository.getAppDetail(currentAppId, currentVersionId)
-                
+
                 if (detailResult.isSuccess) {
                     _appDetail.value = detailResult.getOrThrow()
                     loadComments()
@@ -164,7 +172,7 @@ class AppDetailComposeViewModel(
             val parentId = _currentReplyComment.value?.id
             // 修正：传递 currentVersionId
             val result = repository.postComment(currentAppId, currentVersionId, content, parentId, null)
-            
+
             if (result.isSuccess) {
                 loadComments()
                 if (parentId == null) closeCommentDialog() else closeReplyDialog()
@@ -185,7 +193,7 @@ class AppDetailComposeViewModel(
             }
         }
     }
-    
+
     fun deleteApp(onSuccess: () -> Unit) {
         viewModelScope.launch {
             val result = repository.deleteApp(currentAppId, currentVersionId)
@@ -195,5 +203,33 @@ class AppDetailComposeViewModel(
                 _errorMessage.value = "删除应用失败: ${result.exceptionOrNull()?.message}"
             }
         }
+    }
+    
+    // 新增：启动下载
+    private fun startDownload(downloadUrl: String) {
+        viewModelScope.launch {
+            try {
+                // 触发 Service 开始下载
+                val appName = _appDetail.value?.name ?: "未命名应用"
+                getApplication<Application>().startDownload(downloadUrl, appName)
+                
+                // 发送 Snackbar 事件
+                _snackbarEvent.emit("开始下载: $appName")
+                
+                // 发送导航到下载管理界面的事件
+                _navigateToDownloadEvent.emit(true)
+                
+            } catch (e: Exception) {
+                _errorMessage.value = "启动下载失败: ${e.message}"
+            }
+        }
+    }
+
+    // 扩展函数：启动下载服务
+    private fun Application.startDownload(downloadUrl: String, fileName: String) {
+        val intent = Intent(this, cc.bbq.xq.service.download.DownloadService::class.java)
+        intent.putExtra("url", downloadUrl)
+        intent.putExtra("fileName", fileName)
+        startService(intent)
     }
 }
