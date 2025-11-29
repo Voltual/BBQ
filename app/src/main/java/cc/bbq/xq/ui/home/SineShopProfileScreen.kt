@@ -113,11 +113,11 @@ fun SineShopProfileScreen(
             label = "我的历史足迹",
             onClick = { /* TODO: Implement my history */ }
         )
-        FunctionCard(
+/*        FunctionCard(
             icon = Icons.Filled.Report,
             label = "我的举报",
-            onClick = { /* TODO: Implement my reports */ }
-        )
+            onClick = {  TODO: Implement my reports  }
+        )*/
         FunctionCard(
             icon = Icons.Filled.Update,
             label = "应用更新",
@@ -128,11 +128,11 @@ fun SineShopProfileScreen(
             label = "编辑账号信息",
             onClick = { /* TODO: Implement edit profile */ }
         )
-        FunctionCard(
+/*        FunctionCard(
             icon = Icons.Filled.Security,
             label = "账号安全",
-            onClick = { /* TODO: Implement account security */ }
-        )
+            onClick = {  TODO: Implement account security  }
+        )*/
         FunctionCard(
             icon = Icons.AutoMirrored.Filled.ExitToApp, // 使用自动镜像版本
             label = "退出登录",
@@ -143,16 +143,16 @@ fun SineShopProfileScreen(
             label = "本地下载",
             onClick = { /* TODO: Implement local downloads */ }
         )
-        FunctionCard(
+/*        FunctionCard(
             icon = Icons.Filled.Devices,
             label = "我的设备",
-            onClick = { /* TODO: Implement my devices */ }
+            onClick = {  TODO: Implement my devices  }*/
         )
-        FunctionCard(
+/*        FunctionCard(
             icon = Icons.Filled.Info,
             label = "关于弦",
-            onClick = { /* TODO: Implement about SineShop */ }
-        )
+            onClick = {  TODO: Implement about SineShop  }
+        )*/
     }
 }
 

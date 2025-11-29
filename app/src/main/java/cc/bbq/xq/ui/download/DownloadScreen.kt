@@ -65,14 +65,14 @@ fun DownloadScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
+/*MainActivuty已处理标题此处重复了所以注释掉            Text(
                 text = "下载管理",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier
                     .align(Alignment.Start)
                     .padding(bottom = 24.dp)
-            )
+            )*/
 
             AnimatedContent(targetState = status, label = "DownloadStatus") { currentStatus ->
                 when (currentStatus) {
