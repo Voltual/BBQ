@@ -102,7 +102,7 @@ class DownloadService : Service() {
         )
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.dsdownload)
+            .setSmallIcon(R.drawable.dsdownload)
             .setContentTitle("下载服务")
             .setContentIntent(pendingIntent)
             .setOnlyAlertOnce(true)
