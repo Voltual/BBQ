@@ -652,6 +652,81 @@ suspend fun deleteSineShopComment(commentId: Int): Result<Unit> {
         }
     }
     
+    // 新增：获取弦应用商店我的收藏应用列表方法
+suspend fun getMyFavouriteAppsList(page: Int = 1): Result<AppListData> {
+    val url = "/user/favourite"
+    val parameters = sineShopParameters {
+        append("page", page.toString())
+    }
+    return safeApiCall<BaseResponse<AppListData>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }
+    }.map { response: BaseResponse<AppListData> ->
+        if (response.code == 0) {
+            response.data ?: AppListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 AppListData
+        } else {
+            throw IOException("Failed to get my favourite app list: ${response.msg}")
+        }
+    }
+}
+
+// 新增：获取弦应用商店我的上传应用列表方法
+suspend fun getMyUploadAppsList(page: Int = 1): Result<AppListData> {
+    val url = "/user/upload"
+    val parameters = sineShopParameters {
+        append("page", page.toString())
+    }
+    return safeApiCall<BaseResponse<AppListData>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }
+    }.map { response: BaseResponse<AppListData> ->
+        if (response.code == 0) {
+            response.data ?: AppListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 AppListData
+        } else {
+            throw IOException("Failed to get my upload app list: ${response.msg}")
+        }
+    }
+}
+
+// 新增：获取弦应用商店我的历史足迹应用列表方法
+suspend fun getMyHistoryAppsList(page: Int = 1): Result<AppListData> {
+    val url = "/user/history"
+    val parameters = sineShopParameters {
+        append("page", page.toString())
+    }
+    return safeApiCall<BaseResponse<AppListData>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }
+    }.map { response: BaseResponse<AppListData> ->
+        if (response.code == 0) {
+            response.data ?: AppListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 AppListData
+        } else {
+            throw IOException("Failed to get my history app list: ${response.msg}")
+        }
+    }
+}
+    
     private fun getToken(): String {
         return runBlocking {
             AuthManager.getSineMarketToken(BBQApplication.instance).first()

@@ -132,12 +132,12 @@ fun SineShopProfileScreen(
             icon = Icons.Filled.Security,
             label = "账号安全",
             onClick = {  TODO: Implement account security  }
-        )*/
+        )
         FunctionCard(
             icon = Icons.AutoMirrored.Filled.ExitToApp, // 使用自动镜像版本
             label = "退出登录",
-            onClick = { /* TODO: Implement logout */ }
-        )
+            onClick = {  TODO: Implement logout  }
+        )*/
         FunctionCard(
             icon = Icons.Filled.Download,
             label = "本地下载",
