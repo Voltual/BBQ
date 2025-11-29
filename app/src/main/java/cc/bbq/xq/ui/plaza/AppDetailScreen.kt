@@ -4,6 +4,8 @@ package cc.bbq.xq.ui.plaza
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -66,13 +68,18 @@ fun AppDetailScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    
+    // 应用删除确认对话框
+    var showDeleteAppDialog by remember { mutableStateOf(false) }
+    
+    // 评论删除确认对话框
+    var showDeleteCommentDialog by remember { mutableStateOf(false) }
+    var commentToDeleteId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(appId, versionId, storeName) {
         viewModel.initializeData(appId, versionId, storeName)
     }
     
-    // 监听打开 URL 事件
     LaunchedEffect(Unit) {
         viewModel.openUrlEvent.collectLatest { url ->
             try {
@@ -106,9 +113,12 @@ fun AppDetailScreen(
                 appDetail = appDetail!!,
                 comments = comments,
                 onCommentReply = { viewModel.openReplyDialog(it) },
-                onDownloadClick = { viewModel.handleDownloadClick() }, // 不再需要 Context
-                onCommentDelete = { viewModel.deleteComment(it) },
-                onDeleteClick = { showDeleteConfirmDialog = true },
+                onDownloadClick = { viewModel.handleDownloadClick() },
+                onCommentLongClick = { commentId -> 
+                    commentToDeleteId = commentId
+                    showDeleteCommentDialog = true
+                },
+                onDeleteAppClick = { showDeleteAppDialog = true },
                 onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) }
             )
         }
@@ -158,18 +168,35 @@ fun AppDetailScreen(
         )
     }
     
-    if (showDeleteConfirmDialog) {
+    // 删除应用确认对话框
+    if (showDeleteAppDialog) {
         AlertDialog(
-            onDismissRequest = { showDeleteConfirmDialog = false },
-            title = { Text("确认删除") },
+            onDismissRequest = { showDeleteAppDialog = false },
+            title = { Text("确认删除应用") },
             text = { Text("确定要删除此应用吗？此操作不可撤销。") },
             confirmButton = {
                 TextButton(onClick = {
-                    showDeleteConfirmDialog = false
+                    showDeleteAppDialog = false
                     viewModel.deleteApp { navController.popBackStack() }
                 }) { Text("删除", color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { showDeleteConfirmDialog = false }) { Text("取消") } }
+            dismissButton = { TextButton(onClick = { showDeleteAppDialog = false }) { Text("取消") } }
+        )
+    }
+
+    // 删除评论确认对话框
+    if (showDeleteCommentDialog && commentToDeleteId != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteCommentDialog = false },
+            title = { Text("确认删除评论") },
+            text = { Text("确定要删除这条评论吗？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteCommentDialog = false
+                    commentToDeleteId?.let { viewModel.deleteComment(it) }
+                }) { Text("删除", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteCommentDialog = false }) { Text("取消") } }
         )
     }
 }
@@ -181,14 +208,15 @@ fun AppDetailContent(
     comments: List<UnifiedComment>,
     onCommentReply: (UnifiedComment) -> Unit,
     onDownloadClick: () -> Unit,
-    onCommentDelete: (String) -> Unit,
-    onDeleteClick: () -> Unit,
+    onCommentLongClick: (String) -> Unit, // 修改参数名，更清晰
+    onDeleteAppClick: () -> Unit, // 修改参数名，区分删除应用和删除评论
     onImagePreview: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // --- 应用头部信息 ---
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -206,7 +234,7 @@ fun AppDetailContent(
                             Text("版本: ${appDetail.versionName}", style = MaterialTheme.typography.bodyMedium)
                             Text("大小: ${appDetail.size}", style = MaterialTheme.typography.bodyMedium)
                         }
-                        IconButton(onClick = onDeleteClick) {
+                        IconButton(onClick = onDeleteAppClick) {
                             Icon(Icons.Default.MoreVert, "更多")
                         }
                     }
@@ -223,6 +251,7 @@ fun AppDetailContent(
             }
         }
 
+        // --- 应用介绍 ---
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -233,6 +262,7 @@ fun AppDetailContent(
             }
         }
 
+        // --- 应用截图 ---
         if (!appDetail.previews.isNullOrEmpty()) {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
@@ -257,6 +287,7 @@ fun AppDetailContent(
             }
         }
 
+        // --- 作者信息 ---
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -283,6 +314,7 @@ fun AppDetailContent(
             }
         }
 
+        // --- 评论列表 ---
         item {
             Text("评论 (${appDetail.reviewCount})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
@@ -296,7 +328,7 @@ fun AppDetailContent(
                 UnifiedCommentItem(
                     comment = comment,
                     onReply = { onCommentReply(comment) },
-                    onDelete = { onCommentDelete(comment.id) },
+                    onLongClick = { onCommentLongClick(comment.id) },
                     onUserClick = { 
                         val userId = comment.sender.id.toLongOrNull()
                         if(userId != null) navController.navigate(UserDetail(userId).createRoute())
@@ -307,14 +339,24 @@ fun AppDetailContent(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun UnifiedCommentItem(
     comment: UnifiedComment,
     onReply: () -> Unit,
-    onDelete: () -> Unit,
+    onLongClick: () -> Unit,
     onUserClick: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            // 添加长按支持
+            .combinedClickable(
+                onClick = {}, // 点击事件目前没有特殊操作，留空
+                onLongClick = onLongClick
+            )
+    ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
