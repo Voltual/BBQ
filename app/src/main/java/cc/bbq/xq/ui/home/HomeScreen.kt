@@ -71,14 +71,14 @@ import cc.bbq.xq.ui.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.launch
-import cc.bbq.xq.SineShopClient // 导入 SineShopClient
+import cc.bbq.xq.SineShopClient 
 
 @Composable
 fun HomeScreen(
     state: HomeState,
     sineShopUserInfo: SineShopClient.SineShopUserInfo?,
-    sineShopLoginPrompt: Boolean, // 新增参数
-    onSineShopLoginClick: () -> Unit, // 新增参数
+    sineShopLoginPrompt: Boolean,
+    onSineShopLoginClick: () -> Unit, 
     onAvatarClick: () -> Unit,
     onAvatarLongClick: () -> Unit,
     onMessageCenterClick: () -> Unit,
@@ -94,11 +94,12 @@ fun HomeScreen(
     onPaymentCenterClick: () -> Unit,
     onSignClick: () -> Unit,
     onRecalculateDays: () -> Unit,
-    onAboutClick: () -> Unit, // 添加onAboutClick参数
-    onAccountProfileClick: () -> Unit, // 新增“账号资料”点击事件
+    onAboutClick: () -> Unit, 
+    onAccountProfileClick: () -> Unit, 
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
-    snackbarHostState: SnackbarHostState//新增ViewModel和snackbar参数
+    snackbarHostState: SnackbarHostState,
+    navController: NavController // 添加 navController 参数
 ) {
     val pagerState = rememberPagerState(pageCount = { 2 })
 
@@ -144,7 +145,28 @@ fun HomeScreen(
                 } else {
                     SineShopProfileScreen(
                         userInfo = sineShopUserInfo,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        onNavigateToResourcePlaza = { mode -> 
+                            // 根据模式导航到不同的资源广场
+                            when (mode) {
+                                "my_upload" -> {
+                                    // 导航到弦应用商店的我的上传
+                                    navController.navigate(ResourcePlaza(isMyResource = true, mode = "my_upload").createRoute())
+                                }
+                                "my_favourite" -> {
+                                    // 导航到弦应用商店的我的收藏
+                                    navController.navigate(ResourcePlaza(isMyResource = true, mode = "my_favourite").createRoute())
+                                }
+                                "my_history" -> {
+                                    // 导航到弦应用商店的历史足迹
+                                    navController.navigate(ResourcePlaza(isMyResource = true, mode = "my_history").createRoute())
+                                }
+                                else -> {
+                                    // 默认导航到公共资源广场
+                                    navController.navigate(ResourcePlaza(false).createRoute())
+                                }
+                            }
+                        }
                     )
                 }
             }

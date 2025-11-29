@@ -38,7 +38,8 @@ import androidx.compose.foundation.clickable // 导入 clickable
 @Composable
 fun SineShopProfileScreen(
     userInfo: SineShopClient.SineShopUserInfo?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNavigateToResourcePlaza: (String) -> Unit = {}, // 添加导航回调参数
 ) {
     Column(
         modifier = modifier
@@ -91,12 +92,12 @@ fun SineShopProfileScreen(
         FunctionCard(
             icon = Icons.AutoMirrored.Filled.List, // 使用自动镜像版本
             label = "我的上传",
-            onClick = { /* TODO: Implement my uploads */ }
+            onClick = { onNavigateToResourcePlaza("my_upload") } // 修改为导航到资源广场
         )
         FunctionCard(
             icon = Icons.Filled.Favorite,
             label = "我的收藏",
-            onClick = { /* TODO: Implement my favorites */ }
+            onClick = { onNavigateToResourcePlaza("my_favourite") } // 修改为导航到资源广场
         )
         FunctionCard(
             icon = Icons.Filled.Star,
@@ -111,7 +112,7 @@ fun SineShopProfileScreen(
         FunctionCard(
             icon = Icons.Filled.History,
             label = "我的历史足迹",
-            onClick = { /* TODO: Implement my history */ }
+            onClick = { onNavigateToResourcePlaza("my_history") } // 修改为导航到资源广场
         )
 /*        FunctionCard(
             icon = Icons.Filled.Report,

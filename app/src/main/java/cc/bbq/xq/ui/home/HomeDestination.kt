@@ -154,7 +154,8 @@ fun HomeDestination(
             onAccountProfileClick = { navController.navigate(AccountProfile.route) },
             onRecalculateDays = { viewModel.recalculateDaysDiff() },
             viewModel = viewModel,
-            snackbarHostState = snackbarHostState
+            snackbarHostState = snackbarHostState,
+            navController = navController // 添加 navController 参数
         )
     }
 }
