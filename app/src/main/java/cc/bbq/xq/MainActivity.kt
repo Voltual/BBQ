@@ -398,6 +398,7 @@ fun getTitleForDestination(backStackEntry: NavBackStackEntry?): String {
         StoreManager.route -> "存储管理"
         "app_detail" -> "应用详情"
         UpdateSettings.route -> "更新设置"
+        Download.route -> "下载管理" // 添加 Download 路由的标题
         else -> "BBQ"
     }
 }

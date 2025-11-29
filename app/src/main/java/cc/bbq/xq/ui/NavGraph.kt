@@ -14,7 +14,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.layout.fillMaxSize
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.foundation.layout.padding
-import cc.bbq.xq.ui.settings.storage.StoreManagerScreen // 导入 StoreManagerScreen
+import cc.bbq.xq.ui.download.DownloadScreen // 导入 DownloadScreen
+import cc.bbq.xq.ui.settings.storage.StoreManagerScreen
 import org.koin.core.parameter.parametersOf
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -226,11 +227,11 @@ composable(route = CreateRefundPost(0, 0, "", 0).route, arguments = CreateRefund
                 onClose = { navController.popBackStack() }
             )
         }
+        
+        composable(route = Download.route) {
+    DownloadScreen(modifier = Modifier.fillMaxSize())
+}
 
-        // --- 用户 ---
-        // 在 NavGraph.kt 中修复 UserDetailScreen 调用
-
-        // 在 NavGraph.kt 中更新 UserDetailScreen 的调用
 composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { backStackEntry ->
     val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
     

@@ -68,7 +68,7 @@ fun NavigationDrawerItems(
     val context = LocalContext.current
 
     val allDrawerItems = remember {
-        listOf(
+        mutableListOf( // 修改为 mutableListOf
             DrawerItem("home", "首页", R.drawable.ic_menu_home, Home.route),
             DrawerItem("resources", "资源广场", R.drawable.ic_menu_apps, ResourcePlaza(isMyResource = false).createRoute()),
             DrawerItem("community", "交流社区", R.drawable.ic_menu_community, Community.route),
@@ -77,7 +77,8 @@ fun NavigationDrawerItems(
             DrawerItem("release_app", "发布应用", R.drawable.bg, CreateAppRelease.route),
             DrawerItem("bot_logs", "日志", R.drawable.work_log, LogViewer.route),
             DrawerItem("store_manager", "存储管理", R.drawable.appbackuprestore, StoreManager.route),
-            // 新增：更新设置菜单项
+            // 新增：下载管理菜单项
+            DrawerItem("download", "下载管理", R.drawable.dsdownload, Download.route),
             DrawerItem("update_settings", "更新设置", R.drawable.asusupdate, UpdateSettings.route),
             DrawerItem("settings", "主题设置", R.drawable.ic_menu_settings, ThemeCustomize.route),
             DrawerItem("logout", "退出登录", R.drawable.ic_menu_logout, "logout") // 特殊处理

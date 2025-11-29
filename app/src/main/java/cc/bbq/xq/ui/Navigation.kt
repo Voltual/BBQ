@@ -100,6 +100,10 @@ object BrowseHistory : AppDestination {
     override val route = "browse_history"
 }
 
+object Download : AppDestination {
+    override val route = "download"
+}
+
 data class PostDetail(val postId: Long) : AppDestination {
     override val route = "post_detail/{${AppDestination.ARG_POST_ID}}"
     fun createRoute() = "post_detail/$postId"
