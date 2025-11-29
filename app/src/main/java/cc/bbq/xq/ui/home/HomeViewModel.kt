@@ -314,4 +314,30 @@ class HomeViewModel : ViewModel() {
             snackbarHostState.value?.showSnackbar(message)
         }
     }
+
+    // 新增：显式检查和更新弦应用商店登录状态的方法
+    fun checkAndUpdateSineShopLoginState(context: Context) {
+        viewModelScope.launch {
+            try {
+                // 获取弦应用商店token
+                val sineShopTokenFlow = AuthManager.getSineMarketToken(context)
+                val sineShopToken = sineShopTokenFlow.first()
+
+                // 更新登录状态
+                val isLoggedIn = !sineShopToken.isNullOrEmpty()
+                uiState.value = uiState.value.copy(sineShopLoginPrompt = !isLoggedIn)
+
+                // 如果已登录，加载用户信息
+                if (isLoggedIn) {
+                    loadSineShopUserInfo(context)
+                }
+            } catch (e: Exception) {
+                println("Error checking SineShop login state: ${e.message}")
+                uiState.value = uiState.value.copy(
+                    sineShopLoginPrompt = true,
+                    sineShopUserInfo = null
+                )
+            }
+        }
+    }
 }

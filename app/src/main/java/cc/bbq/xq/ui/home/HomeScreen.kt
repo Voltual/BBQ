@@ -72,14 +72,13 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.launch
 import cc.bbq.xq.SineShopClient // 导入 SineShopClient
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun HomeScreen(
+    state: HomeState,
+    sineShopUserInfo: SineShopClient.SineShopUserInfo?,
+    sineShopLoginPrompt: Boolean, // 新增参数
+    onSineShopLoginClick: () -> Unit, // 新增参数
     onAvatarClick: () -> Unit,
     onAvatarLongClick: () -> Unit,
     onMessageCenterClick: () -> Unit,
@@ -95,15 +94,12 @@ fun HomeScreen(
     onPaymentCenterClick: () -> Unit,
     onSignClick: () -> Unit,
     onRecalculateDays: () -> Unit,
-    onAboutClick: () -> Unit,
-    onAccountProfileClick: () -> Unit,
-    onSineShopLoginClick: () -> Unit, // 保留 onSineShopLoginClick
+    onAboutClick: () -> Unit, // 添加onAboutClick参数
+    onAccountProfileClick: () -> Unit, // 新增“账号资料”点击事件
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: SnackbarHostState//新增ViewModel和snackbar参数
 ) {
-    val uiState by viewModel.uiState // 直接观察 ViewModel 的状态
-
     val pagerState = rememberPagerState(pageCount = { 2 })
 
     LaunchedEffect(Unit) {
@@ -118,23 +114,7 @@ fun HomeScreen(
             0 -> {
                 // 小趣空间主页
                 XiaoquSpaceHomePage(
-                    state = HomeState(
-                        showLoginPrompt = uiState.showLoginPrompt,
-                        isLoading = uiState.isLoading,
-                        avatarUrl = uiState.avatarUrl,
-                        nickname = uiState.nickname,
-                        level = uiState.level,
-                        coins = uiState.coins,
-                        exp = uiState.exp,
-                        userId = uiState.userId,
-                        followersCount = uiState.followersCount,
-                        fansCount = uiState.fansCount,
-                        postsCount = uiState.postsCount,
-                        likesCount = uiState.likesCount,
-                        seriesDays = uiState.seriesDays,
-                        signStatusMessage = uiState.signStatusMessage,
-                        displayDaysDiff = uiState.displayDaysDiff
-                    ),
+                    state = state,
                     onAvatarClick = onAvatarClick,
                     onAvatarLongClick = onAvatarLongClick,
                     onMessageCenterClick = onMessageCenterClick,
@@ -159,11 +139,11 @@ fun HomeScreen(
             }
             1 -> {
                 // 弦应用商店个人主页
-                if (uiState.sineShopLoginPrompt) {
+                if (sineShopLoginPrompt) {
                     SineShopLoginPrompt(onSineShopLoginClick = onSineShopLoginClick)
                 } else {
                     SineShopProfileScreen(
-                        userInfo = uiState.sineShopUserInfo,
+                        userInfo = sineShopUserInfo,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
