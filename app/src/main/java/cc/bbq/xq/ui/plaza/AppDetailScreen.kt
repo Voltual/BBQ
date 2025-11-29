@@ -13,8 +13,10 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+// 修复：从正确的包导入 pullRefresh 相关组件
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Comment
@@ -44,7 +46,7 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import cc.bbq.xq.ui.Download // 确保导入 Download
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterialApi::class) // 保留 ExperimentalMaterialApi 注解
 @Composable
 fun AppDetailScreen(
     appId: String,
@@ -108,6 +110,7 @@ fun AppDetailScreen(
     }
 
     var refreshing by remember { mutableStateOf(false) }
+    // 修复：使用正确的 rememberPullRefreshState
     val pullRefreshState = rememberPullRefreshState(refreshing, onRefresh = {
         refreshing = true
         viewModel.refresh()
@@ -120,6 +123,7 @@ fun AppDetailScreen(
         }
     }
 
+    // 修复：使用 Modifier.pullRefresh 包装内容
     Box(modifier = modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -148,7 +152,14 @@ fun AppDetailScreen(
             Icon(Icons.AutoMirrored.Filled.Comment, "评论")
         }
 
-        PullRefreshIndicator(refreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
+        // 修复：使用语义颜色
+        PullRefreshIndicator(
+            refreshing, 
+            pullRefreshState, 
+            Modifier.align(Alignment.TopCenter),
+            backgroundColor = MaterialTheme.colorScheme.surface, // 使用语义颜色
+            contentColor = MaterialTheme.colorScheme.primary // 使用语义颜色
+        )
         BBQSnackbarHost(snackbarHostState, Modifier.align(Alignment.BottomCenter))
     }
 
