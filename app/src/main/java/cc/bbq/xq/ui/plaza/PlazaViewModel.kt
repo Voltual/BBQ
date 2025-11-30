@@ -1,4 +1,12 @@
 // /app/src/main/java/cc/bbq/xq/ui/plaza/PlazaViewModel.kt
+//Copyright (C) 2025 Voltual
+// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
+//（或任意更新的版本）的条款重新分发和/或修改它。
+//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
+// 有关更多细节，请参阅 GNU 通用公共许可证。
+//
+// 你应该已经收到了一份 GNU 通用公共许可证的副本
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
@@ -63,7 +71,13 @@ class PlazaViewModel(
     private var currentCategoryId: String? = null
     private var currentUserId: String? = null
     private var isMyResourceMode: Boolean = false
-    private var currentMode: String = "public" // 新增模式变量
+    private var currentMode: String = "public"
+
+    // 新增：状态跟踪变量（参考旧版本 UserDetailViewModel 模式）
+    private var _isInitialized = false
+    private var _currentIsMyResourceMode: Boolean = false
+    private var _currentUserIdState: String? = null
+    private var _currentModeState: String = ""
 
     // 新增：保存状态
     private var savedCurrentPage: Int = 1
@@ -71,17 +85,12 @@ class PlazaViewModel(
     private var savedCurrentCategoryId: String? = null
 
     private val currentRepository: IAppStoreRepository
-        get() = repositories[_appStore.value] ?: throw IllegalStateException("No repository found for the selected app store")
+        get() = repositories[_appStore.value ?: AppStore.XIAOQU_SPACE] ?: throw IllegalStateException("No repository found for the selected app store")
 
     private val AUTO_SCROLL_MODE_KEY = booleanPreferencesKey("auto_scroll_mode")
 
-    // --- 状态跟踪 ---
-    private var _isInitialized = false
-    private var _currentModeState: String? = null // 使用 String? 类型
-    private var _currentUserIdState: String? = null // 使用 String? 类型
-    private var _currentAppStoreState: AppStore? = null // 新增 AppStore 状态
-
     init {
+        // 只初始化 autoScrollMode，不主动加载数据
         viewModelScope.launch {
             _autoScrollMode.postValue(readAutoScrollMode())
         }
@@ -89,50 +98,53 @@ class PlazaViewModel(
 
     // --- 公共方法 ---
 
+    /**
+     * 初始化方法：参考旧版本逻辑，只有参数真正变化时才重置并重新加载
+     */
+    fun initialize(isMyResource: Boolean, userId: String?, mode: String = "public") {
+        Log.d("PlazaViewModel", "initialize called: isMyResource=$isMyResource, userId=$userId, mode=$mode")
+        
+        // 只有当模式、用户ID或模式真正改变时才重新初始化
+        val needsReinit = _currentIsMyResourceMode != isMyResource ||
+                          _currentUserIdState != userId ||
+                          _currentModeState != mode
+        
+        if (needsReinit) {
+            Log.d("PlazaViewModel", "参数变化，重新初始化...")
+            // 更新跟踪状态
+            _currentIsMyResourceMode = isMyResource
+            _currentUserIdState = userId
+            _currentModeState = mode
+            _isInitialized = false  // 重置初始化标志
+            
+            // 更新内部状态
+            this.isMyResourceMode = isMyResource
+            this.currentUserId = userId
+            this.currentMode = mode
+            
+            // 重置数据状态并加载
+            resetStateAndLoadCategories()
+        } else {
+            Log.d("PlazaViewModel", "参数未变化，确保数据已加载...")
+            // 参数未变化，确保数据已加载（参考旧版本）
+            loadDataIfNeeded()
+        }
+    }
+
     fun setAppStore(store: AppStore) {
-        if (_appStore.value == store) return // 修正：如果 AppStore 没有变化，直接返回
+        if (_appStore.value == store && _categories.value?.isNotEmpty() == true) return
         _appStore.value = store
         resetStateAndLoadCategories()
     }
 
-    fun initialize(isMyResource: Boolean, userId: String?, mode: String = "public") {
-
-        // 更新状态
-        this.isMyResourceMode = isMyResource
-        this.currentUserId = userId
-        this.currentMode = mode
-
-        // 根据模式设置应用商店
-        val targetAppStore = when (mode) {
-            "my_upload", "my_favourite", "my_history" -> AppStore.SIENE_SHOP
-            else -> AppStore.XIAOQU_SPACE
-        }
-        
-        if (_appStore.value != targetAppStore) {
-            _appStore.value = targetAppStore
-        }
-
-        // 根据模式设置特殊的分类ID
-        currentCategoryId = when (mode) {
-            "my_upload" -> "-3"
-            "my_favourite" -> "-4"
-            "my_history" -> "-5"
-            else -> null
-        }
-
-        // 重置状态并加载数据
-        resetStateAndLoadCategories()
-    }
-
     fun loadCategory(categoryId: String?) {
-        // 如果正在搜索，选择分类意味着退出搜索模式
         if (isSearchMode) {
-           cancelSearch()
+            cancelSearch()
         }
         if (currentCategoryId == categoryId) return
 
         currentCategoryId = categoryId
-        savedCurrentCategoryId = categoryId // 保存状态
+        savedCurrentCategoryId = categoryId
         loadPage(1)
     }
 
@@ -140,19 +152,17 @@ class PlazaViewModel(
         if (query.isBlank()) return
         isSearchMode = true
         currentQuery = query
-        savedCurrentQuery = query // 保存状态
-        // 清空列表数据，保留分类和搜索词
+        savedCurrentQuery = query
         _plazaData.value = PlazaData(emptyList())
-        _searchResults.value = emptyList() // 清空搜索结果以触发UI更新
+        _searchResults.value = emptyList()
         loadPage(1)
     }
 
     fun cancelSearch() {
         isSearchMode = false
         currentQuery = ""
-        savedCurrentQuery = "" // 保存状态
+        savedCurrentQuery = ""
         _searchResults.value = emptyList()
-        // 重新加载当前分类的第一页
         loadPage(1)
     }
 
@@ -165,8 +175,9 @@ class PlazaViewModel(
         val prev = (_currentPage.value ?: 1) - 1
         loadPage(prev)
     }
+
     fun goToPage(page: Int) {
-        savedCurrentPage = page // 保存状态
+        savedCurrentPage = page
         loadPage(page)
     }
 
@@ -180,54 +191,73 @@ class PlazaViewModel(
         }
     }
 
-    // --- 私有辅助方法 ---
+    // --- 新增：参考旧版本的 loadDataIfNeeded ---
+    private fun loadDataIfNeeded() {
+        if (!_isInitialized) {
+            _isInitialized = true
+            resetStateAndLoadCategories()
+        }
+    }
 
+    // --- 私有辅助方法（保持原有逻辑） ---
     private fun resetStateAndLoadCategories() {
-        _isLoading.value = true // 开始加载分类
-        _categories.value = emptyList() // 清空分类数据
-        _plazaData.value = PlazaData(emptyList()) // 清空列表数据
-        _searchResults.value = emptyList() // 清空搜索结果
-        _currentPage.value = 1 // 重置当前页码
+        _isLoading.value = true
+        currentCategoryId = null
         
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // 根据模式设置特殊的分类ID
-                val specialCategoryId = when (currentMode) {
-                    "my_upload" -> "-3"
-                    "my_favourite" -> "-4"
-                    "my_history" -> "-5"
-                    else -> null
+                // 根据模式设置应用商店（已在 initialize 中处理，此处可优化）
+                when (currentMode) {
+                    "my_upload", "my_favourite", "my_history" -> {
+                        if (_appStore.value != AppStore.SIENE_SHOP) {
+                            _appStore.postValue(AppStore.SIENE_SHOP)
+                        }
+                    }
                 }
                 
-                // 对于特殊模式，直接加载数据而不加载分类
-                if (specialCategoryId != null) {
-                    currentCategoryId = specialCategoryId
+                // 根据模式设置特殊的分类ID
+                when (currentMode) {
+                    "my_upload" -> currentCategoryId = "-3"
+                    "my_favourite" -> currentCategoryId = "-4"
+                    "my_history" -> currentCategoryId = "-5"
+                    else -> currentCategoryId = null
+                }
+                
+                if (currentMode in listOf("my_upload", "my_favourite", "my_history")) {
                     _categories.postValue(emptyList())
-                    loadPage(1, append = false)
+                    _isLoading.postValue(false)
+                    withContext(Dispatchers.Main) {
+                        loadPage(1, append = false)
+                    }
                 } else {
                     val categoriesResult = currentRepository.getCategories()
                     if (categoriesResult.isSuccess) {
                         val categoryList = categoriesResult.getOrThrow()
                         _categories.postValue(categoryList)
                         
-                        // 默认选中第一个分类
-                        currentCategoryId = categoryList.firstOrNull()?.id
+                        if (currentCategoryId == null) {
+                            currentCategoryId = categoryList.firstOrNull()?.id
+                        }
                         
-                        loadPage(1, append = false)
+                        _isLoading.postValue(false)
+                        withContext(Dispatchers.Main) {
+                            loadPage(1, append = false)
+                        }
                     } else {
                         handleFailure(categoriesResult.exceptionOrNull())
                         _categories.postValue(emptyList())
+                        _isLoading.postValue(false)
                     }
                 }
             } catch (e: Exception) {
                 handleFailure(e)
-            } finally {
                 _isLoading.postValue(false)
             }
         }
     }
 
     private fun loadPage(page: Int, append: Boolean = false) {
+        // ... 保持原有 loadPage 逻辑不变 ...
         if (_isLoading.value == true && !append) return
         
         val total = _totalPages.value ?: 1
@@ -238,7 +268,9 @@ class PlazaViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val finalUserId = currentUserId
+                val finalUserId = currentUserId ?: if (isMyResourceMode) {
+                    AuthManager.getCredentials(getApplication()).first()?.userId?.toString()
+                } else null
 
                 val result = if (isSearchMode) {
                     currentRepository.searchApps(currentQuery, page, finalUserId)
@@ -250,7 +282,7 @@ class PlazaViewModel(
                     val (items, totalPages) = result.getOrThrow()
                     _totalPages.postValue(if(totalPages > 0) totalPages else 1)
                     _currentPage.postValue(page)
-                    savedCurrentPage = page // 保存状态
+                    savedCurrentPage = page
 
                     if (isSearchMode) {
                         val currentList = if (append) _searchResults.value ?: emptyList() else emptyList()
