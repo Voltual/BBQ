@@ -96,16 +96,7 @@ class PlazaViewModel(
     }
 
     fun initialize(isMyResource: Boolean, userId: String?, mode: String = "public") {
-        // 状态没有变化，直接返回
-        if (_isInitialized &&
-            this.isMyResourceMode == isMyResource &&
-            this.currentUserId == userId &&
-            this.currentMode == mode) {
-            Log.d("PlazaViewModel", "initialize: 状态未改变，直接返回")
-            return
-        }
 
-        Log.d("PlazaViewModel", "initialize: 状态改变，重新初始化")
 
         // 更新状态
         this.isMyResourceMode = isMyResource
