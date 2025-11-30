@@ -302,10 +302,5 @@ private fun CategoryTabs(
                 )
             }
         }
-    } else {
-        // 可选：当 categories 为空时显示一个占位符或加载指示器
-        Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-            Text(text = "加载分类中...", style = MaterialTheme.typography.bodyMedium)
-        }
-    }
+    } 
 }
