@@ -69,6 +69,7 @@ import coil3.compose.AsyncImage
 import cc.bbq.xq.MainActivity
 import cc.bbq.xq.ui.*
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.navigation.NavController
 import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.launch
 import cc.bbq.xq.SineShopClient 
