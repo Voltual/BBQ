@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -251,27 +252,34 @@ fun ResourcePlazaContent(
     }
 }
 
-// /app/src/main/java/cc/bbq/xq/ui/plaza/ResourcePlazaScreen.kt
-
 @Composable
 private fun CategoryTabs(
     categories: List<UnifiedCategory>,
     onCategorySelected: (String?) -> Unit,
     enabled: Boolean
 ) {
+    // 2. 使用 rememberSaveable() 函数调用
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
 
     // 修复：只有在 categories 不为空时才显示 TabRow
     if (categories.isNotEmpty()) {
-        // 修复：确保 selectedTabIndex 不超出范围
+        // 3. 修正 LaunchedEffect 内的逻辑和类型安全
         LaunchedEffect(categories) {
-            if (selectedTabIndex >= categories.size) {
-                selectedTabIndex = 0.coerceAtLeast(categories.size - 1)
+            // 确保 selectedTabIndex 不超出新的 categories 列表范围
+            // categories.size - 1 is always >= 0 because categories is not empty here
+            val maxIndex = categories.size - 1 
+            if (selectedTabIndex > maxIndex) {
+                selectedTabIndex = maxIndex
+            }
+            // 如果 selectedTabIndex 是负数（理论上不应该发生），也修正它
+            if (selectedTabIndex < 0) {
+                selectedTabIndex = 0
             }
         }
         
         PrimaryScrollableTabRow(
-            selectedTabIndex = selectedTabIndex.coerceAtMost(categories.size - 1), // 确保索引有效
+            // 4. 确保传递给 PrimaryScrollableTabRow 的索引是有效的
+            selectedTabIndex = selectedTabIndex.coerceIn(0, (categories.size - 1).coerceAtLeast(0)),
             modifier = Modifier.fillMaxWidth()
         ) {
             categories.forEachIndexed { index, category ->
@@ -295,5 +303,4 @@ private fun CategoryTabs(
             // Text("加载中...", style = MaterialTheme.typography.bodyMedium)
         }
     }
-}
 }
