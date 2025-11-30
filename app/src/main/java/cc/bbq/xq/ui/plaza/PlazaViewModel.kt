@@ -87,22 +87,28 @@ class PlazaViewModel(
     }
 
     fun initialize(isMyResource: Boolean, userId: String?, mode: String = "public") {
-        if (this.isMyResourceMode == isMyResource && 
-            this.currentUserId == userId && 
-            this.currentMode == mode) return
-            
-        this.isMyResourceMode = isMyResource
-        this.currentUserId = userId
-        this.currentMode = mode
+    if (this.isMyResourceMode == isMyResource && 
+        this.currentUserId == userId && 
+        this.currentMode == mode) return
         
-        // 根据模式设置应用商店
-        if (mode in listOf("my_upload", "my_favourite", "my_history")) {
-            _appStore.value = AppStore.SIENE_SHOP
+    this.isMyResourceMode = isMyResource
+    this.currentUserId = userId
+    this.currentMode = mode
+    
+    // 根据模式设置应用商店
+    when (mode) {
+        "my_upload", "my_favourite", "my_history" -> {
+            // 对于弦应用商店的特殊模式，设置应用商店为 SIENE_SHOP
+            if (_appStore.value != AppStore.SIENE_SHOP) {
+                _appStore.value = AppStore.SIENE_SHOP
+            }
         }
-        
-        // 切换商店或模式时，重新加载分类和数据
-        resetStateAndLoadCategories()
+        // 其他模式保持当前的 appStore 设置
     }
+    
+    // 切换商店或模式时，重新加载分类和数据
+    resetStateAndLoadCategories()
+}
 
     fun loadCategory(categoryId: String?) {
         // 如果正在搜索，选择分类意味着退出搜索模式
@@ -157,54 +163,64 @@ class PlazaViewModel(
     // --- 私有辅助方法 ---
 
     private fun resetStateAndLoadCategories() {
-        _isLoading.value = true // 开始加载分类
-        currentCategoryId = null // 重置分类选择
-        
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                // 根据模式设置特殊的分类ID
-                when (currentMode) {
-                    "my_upload" -> currentCategoryId = "-3"
-                    "my_favourite" -> currentCategoryId = "-4"
-                    "my_history" -> currentCategoryId = "-5"
-                    else -> currentCategoryId = null
+    _isLoading.value = true // 开始加载分类
+    currentCategoryId = null // 重置分类选择
+    
+    viewModelScope.launch(Dispatchers.IO) {
+        try {
+            // 根据模式设置应用商店
+            when (currentMode) {
+                "my_upload", "my_favourite", "my_history" -> {
+                    // 对于弦应用商店的特殊模式，直接设置应用商店为 SIENE_SHOP
+                    if (_appStore.value != AppStore.SIENE_SHOP) {
+                        _appStore.postValue(AppStore.SIENE_SHOP)
+                    }
                 }
-                
-                // 对于特殊模式，直接加载数据而不加载分类
-                if (currentMode in listOf("my_upload", "my_favourite", "my_history")) {
-                    _categories.postValue(emptyList())
+                // 其他模式保持当前的 appStore 设置
+            }
+            
+            // 根据模式设置特殊的分类ID
+            when (currentMode) {
+                "my_upload" -> currentCategoryId = "-3"
+                "my_favourite" -> currentCategoryId = "-4"
+                "my_history" -> currentCategoryId = "-5"
+                else -> currentCategoryId = null
+            }
+            
+            // 对于特殊模式，直接加载数据而不加载分类
+            if (currentMode in listOf("my_upload", "my_favourite", "my_history")) {
+                _categories.postValue(emptyList())
+                _isLoading.postValue(false)
+                withContext(Dispatchers.Main) {
+                    loadPage(1, append = false)
+                }
+            } else {
+                val categoriesResult = currentRepository.getCategories()
+                if (categoriesResult.isSuccess) {
+                    val categoryList = categoriesResult.getOrThrow()
+                    _categories.postValue(categoryList)
+                    
+                    // 默认选中第一个分类（如果未设置特殊分类）
+                    if (currentCategoryId == null) {
+                        currentCategoryId = categoryList.firstOrNull()?.id
+                    }
+                    
                     _isLoading.postValue(false)
                     withContext(Dispatchers.Main) {
                         loadPage(1, append = false)
                     }
                 } else {
-                    val categoriesResult = currentRepository.getCategories()
-                    if (categoriesResult.isSuccess) {
-                        val categoryList = categoriesResult.getOrThrow()
-                        _categories.postValue(categoryList)
-                        
-                        // 默认选中第一个分类（如果未设置特殊分类）
-                        if (currentCategoryId == null) {
-                            currentCategoryId = categoryList.firstOrNull()?.id
-                        }
-                        
-                        _isLoading.postValue(false)
-                        
-                        withContext(Dispatchers.Main) {
-                            loadPage(1, append = false)
-                        }
-                    } else {
-                        handleFailure(categoriesResult.exceptionOrNull())
-                        _categories.postValue(emptyList())
-                        _isLoading.postValue(false)
-                    }
+                    handleFailure(categoriesResult.exceptionOrNull())
+                    _categories.postValue(emptyList())
+                    _isLoading.postValue(false)
                 }
-            } catch (e: Exception) {
-                handleFailure(e)
-                _isLoading.postValue(false)
             }
+        } catch (e: Exception) {
+            handleFailure(e)
+            _isLoading.postValue(false)
         }
     }
+}
 
     private fun loadPage(page: Int, append: Boolean = false) {
         if (_isLoading.value == true && !append) return
