@@ -127,10 +127,12 @@ fun ResourcePlazaContent(
     ) {
         // 修正：仅在非“我的资源”模式下显示商店切换菜单
         if (!isMyResourceMode) {
+            // 修正：使用过滤后的 AppStore 列表
             AppStoreDropdownMenu(
                 selectedStore = selectedAppStore,
                 onStoreChange = { viewModel.setAppStore(it) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                appStores = remember { AppStore.entries.filter { it != AppStore.LOCAL } }
             )
         }
 
