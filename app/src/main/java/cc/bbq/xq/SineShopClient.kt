@@ -50,6 +50,7 @@ object SineShopClient {
         }
     }
 
+
     private fun initConfig(client: HttpClientConfig<OkHttpConfig>) {
         // 默认请求配置
         client.defaultRequest {
