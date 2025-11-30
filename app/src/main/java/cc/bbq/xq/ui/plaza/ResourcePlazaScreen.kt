@@ -48,15 +48,10 @@ fun ResourcePlazaScreen(
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel = koinViewModel()
 ) {
-    // 移除 LaunchedEffect，因为 ViewModel 已经负责状态恢复
-    // LaunchedEffect(isMyResourceMode, userId, mode) {
-    //     viewModel.initialize(isMyResourceMode, userId, mode)
-    // }
-
-    // 使用 DisposableEffect 确保 initialize 只在必要时调用
-    DisposableEffect(isMyResourceMode, userId, mode) {
+    // 使用 LaunchedEffect 确保 initialize 在参数变化时被调用
+    // 由于 initialize 是幂等的，重复调用是安全的
+    LaunchedEffect(isMyResourceMode, userId, mode) {
         viewModel.initialize(isMyResourceMode, userId, mode)
-        onDispose { }
     }
 
     ResourcePlazaContent(
