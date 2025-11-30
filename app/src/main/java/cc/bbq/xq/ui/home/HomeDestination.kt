@@ -1,3 +1,4 @@
+// File: /app/src/main/java/cc/bbq/xq/ui/home/HomeDestination.kt
 //Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
@@ -25,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import cc.bbq.xq.ui.Update // 导入 Update 导航目标
 
 @Composable
 fun HomeDestination(
@@ -153,6 +155,8 @@ fun HomeDestination(
             onAboutClick = { navController.navigate(About.route) },
             onAccountProfileClick = { navController.navigate(AccountProfile.route) },
             onRecalculateDays = { viewModel.recalculateDaysDiff() },
+            onNavigateToUpdate = { navController.navigate(Update.route) }, // 传递导航回调
+            modifier = Modifier.fillMaxSize(),
             viewModel = viewModel,
             snackbarHostState = snackbarHostState,
             navController = navController // 添加 navController 参数
