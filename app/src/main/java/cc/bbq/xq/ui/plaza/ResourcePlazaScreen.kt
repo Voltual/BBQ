@@ -54,7 +54,6 @@ fun ResourcePlazaScreen(
 
     // 使用 LaunchedEffect 和 remember 确保 initialize 只执行一次
     LaunchedEffect(initializationKey) {
-        Log.d("ResourcePlazaScreen", "LaunchedEffect(initializationKey) 执行，key=$initializationKey")
         viewModel.initialize(isMyResourceMode, userId, mode)
     }
 
