@@ -103,7 +103,7 @@ class PlazaViewModel(
 
         Log.d("PlazaViewModel", "initialize: 执行初始化，isMyResource=$isMyResource, userId=$userId, mode=$mode")
 
-        isInitialized = true
+        isInitialized = false
         this.isMyResourceMode = isMyResource
         this.currentUserId = userId
         this.currentMode = mode
