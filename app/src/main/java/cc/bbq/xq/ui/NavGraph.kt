@@ -147,10 +147,12 @@ fun AppNavHost(
                 modifier = Modifier.fillMaxSize() // 添加 modifier
             )
         }
-        //新增更新屏幕
+        // 新增：应用更新屏幕的导航项
         composable(route = Update.route) {
             UpdateScreen(
-                modifier = Modifier.fillMaxSize() // 添加 modifier 以填充屏幕
+                snackbarHostState = snackbarHostState, // 传递来自 AppNavHost 的 snackbarHostState
+                modifier = Modifier.fillMaxSize()
+                // viewModel 会通过 viewModel() 工厂自动注入
             )
         }
 
