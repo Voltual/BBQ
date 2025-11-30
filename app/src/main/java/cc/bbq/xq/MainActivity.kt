@@ -357,16 +357,24 @@ fun getTitleForDestination(backStackEntry: NavBackStackEntry?): String {
     val route = backStackEntry?.destination?.route
     val isMyResource = backStackEntry?.arguments?.getBoolean(AppDestination.ARG_IS_MY_RESOURCE) ?: false
     val userId = backStackEntry?.arguments?.getLong(AppDestination.ARG_USER_ID, -1L) ?: -1L
-
+    val mode = backStackEntry?.arguments?.getString("mode") ?: "public" // 获取模式参数
     val routeBase = route?.substringBefore("?")?.substringBefore("/")
-
+    
     return when (routeBase) {
         Home.route -> "首页"
         Login.route -> "登录"
         "plaza" -> {
-            if (userId != -1L) "Ta的资源"
-            else if (isMyResource) "我的资源"
-            else "资源广场"
+            // 根据模式设置不同的标题
+            when (mode) {
+                "my_upload" -> "我的上传"
+                "my_favourite" -> "我的收藏"
+                "my_history" -> "历史足迹"
+                else -> {
+                    if (userId != -1L) "Ta的资源"
+                    else if (isMyResource) "我的资源"
+                    else "资源广场"
+                }
+            }
         }
         RankingList.route -> "天梯竞赛"
         MessageCenter.route -> "消息中心"
@@ -398,7 +406,7 @@ fun getTitleForDestination(backStackEntry: NavBackStackEntry?): String {
         StoreManager.route -> "存储管理"
         "app_detail" -> "应用详情"
         UpdateSettings.route -> "更新设置"
-        Download.route -> "下载管理" // 添加 Download 路由的标题
+        Download.route -> "下载管理"
         else -> "BBQ"
     }
 }
