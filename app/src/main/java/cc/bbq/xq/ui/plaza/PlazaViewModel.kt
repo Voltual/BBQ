@@ -112,7 +112,6 @@ class PlazaViewModel(
     resetStateAndLoadCategories()
 }
 
-
     fun loadCategory(categoryId: String?) {
         // 如果正在搜索，选择分类意味着退出搜索模式
         if (isSearchMode) {
