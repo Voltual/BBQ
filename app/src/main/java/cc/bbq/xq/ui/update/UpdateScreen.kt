@@ -11,6 +11,7 @@
 package cc.bbq.xq.ui.update
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.* // 添加必要的导入
 import androidx.compose.material3.* // 添加必要的导入
@@ -22,7 +23,7 @@ import cc.bbq.xq.AppStore // 导入更新后的 AppStore
 import cc.bbq.xq.data.unified.UnifiedAppItem // 导入 UnifiedAppItem
 import cc.bbq.xq.ui.compose.BaseListScreen
 import cc.bbq.xq.ui.theme.AppGridItem // 确保导入 AppGridItem
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID // 用于生成 uniqueId
@@ -93,17 +94,20 @@ private suspend fun loadInstalledApps(
     try {
         val pm = context.packageManager
         // 获取基本应用信息列表 (注意: 这里可能需要 QUERY_ALL_PACKAGES 权限)
-        val packages = withContext(coroutineScope.coroutineContext) {
+        // 修正：使用 withContext(Dispatchers.IO) 切换到 IO 线程
+        val packages = withContext(Dispatchers.IO) {
             pm.getInstalledPackages(PackageManager.GET_META_DATA)
         }
 
         val appList = packages.mapNotNull { packageInfo ->
             try {
-                val appInfo = packageInfo.applicationInfo
+                // 修正：安全调用 applicationInfo
+                val appInfo: ApplicationInfo = packageInfo.applicationInfo ?: return@mapNotNull null
                 val appName = appInfo.loadLabel(pm).toString()
                 val packageName = packageInfo.packageName
                 val versionName = packageInfo.versionName ?: "N/A"
                 // 使用应用图标资源 ID 构造 URI
+                // 修正：安全调用 icon
                 val iconResId = appInfo.icon
                 val iconUri = if (iconResId != 0) {
                     "android.resource://${context.packageName}/$iconResId"
