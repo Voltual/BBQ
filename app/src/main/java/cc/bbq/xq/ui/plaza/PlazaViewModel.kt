@@ -198,19 +198,25 @@ class PlazaViewModel(
     // --- 新增：参考旧版本的 loadDataIfNeeded ---
     private fun loadDataIfNeeded() {
         if (!_isInitialized) {
-            _isInitialized = true
-            resetStateAndLoadCategories()
+            // _isInitialized = true // <-- 移除这行
+            resetStateAndLoadCategories() // 或者直接调用 loadPage(1) 如果状态已经准备好
+            // 实际上，如果参数没变，状态应该也基本准备好，直接加载第一页即可
+            // 但为了保险，还是调用 resetStateAndLoadCategories，它内部会处理
         }
     }
 
     // --- 私有辅助方法（保持原有逻辑） ---
     private fun resetStateAndLoadCategories() {
+        Log.d("PlazaViewModel", "resetStateAndLoadCategories called")
         _isLoading.value = true
         currentCategoryId = null
+        // 在开始新的加载流程时，重置 _isInitialized 状态
+        // 这样可以确保 loadDataIfNeeded 在下一次调用时会尝试加载
+        // 但如果这次加载成功，loadPage 会将其设为 true
+        _isInitialized = false 
         
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // 根据模式设置应用商店（已在 initialize 中处理，此处可优化）
                 when (currentMode) {
                     "my_upload", "my_favourite", "my_history" -> {
                         if (_appStore.value != AppStore.SIENE_SHOP) {
@@ -219,7 +225,6 @@ class PlazaViewModel(
                     }
                 }
                 
-                // 根据模式设置特殊的分类ID
                 when (currentMode) {
                     "my_upload" -> currentCategoryId = "-3"
                     "my_favourite" -> currentCategoryId = "-4"
@@ -251,17 +256,20 @@ class PlazaViewModel(
                         handleFailure(categoriesResult.exceptionOrNull())
                         _categories.postValue(emptyList())
                         _isLoading.postValue(false)
+                        // 加载失败，保持 _isInitialized = false，允许重试
                     }
                 }
             } catch (e: Exception) {
                 handleFailure(e)
                 _isLoading.postValue(false)
+                 // 加载失败，保持 _isInitialized = false，允许重试
             }
         }
     }
 
+    // --- 修改：loadPage ---
     private fun loadPage(page: Int, append: Boolean = false) {
-        // ... 保持原有 loadPage 逻辑不变 ...
+        Log.d("PlazaViewModel", "loadPage called: page=$page, append=$append, _isInitialized=$_isInitialized")
         if (_isLoading.value == true && !append) return
         
         val total = _totalPages.value ?: 1
@@ -294,6 +302,13 @@ class PlazaViewModel(
                     } else {
                         val currentList = if (append) _plazaData.value?.popularApps ?: emptyList() else emptyList()
                         _plazaData.postValue(PlazaData(currentList + items))
+                    }
+                    
+                    // 关键修改：只有在成功加载第一页数据后，才将 _isInitialized 设为 true
+                    // 这表明初始数据加载已完成
+                    if (!_isInitialized && page == 1 && !append) {
+                         Log.d("PlazaViewModel", "Initial data load successful, setting _isInitialized = true")
+                         _isInitialized = true
                     }
                 } else {
                     handleFailure(result.exceptionOrNull())
