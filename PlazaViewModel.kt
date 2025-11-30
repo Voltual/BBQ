@@ -3,6 +3,7 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
+// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>。
@@ -28,7 +29,7 @@ import kotlinx.coroutines.withContext
 // --- 统一的数据模型包装 ---
 data class PlazaData(val popularApps: List<UnifiedAppItem>)
 
-// --- Preference DataStore （仅保留 autoScrollMode） ---
+// --- Preference DataStore ---
 private val Context.dataStore by preferencesDataStore(name = "plaza_preferences")
 
 class PlazaViewModel(
@@ -67,7 +68,7 @@ class PlazaViewModel(
     // --- 内部状态管理 ---
     private var isSearchMode = false
     private var currentQuery = ""
-    private var currentCategoryId: String? = null // 当前选中的分类 ID
+    private var currentCategoryId: String? = null
     private var currentUserId: String? = null
     private var isMyResourceMode: Boolean = false
     private var currentMode: String = "public"
@@ -78,10 +79,10 @@ class PlazaViewModel(
     private var _currentUserIdState: String? = null
     private var _currentModeState: String = ""
 
-    // 新增：保存状态 (只保留 currentPage 和 query)
+    // 新增：保存状态
     private var savedCurrentPage: Int = 1
     private var savedCurrentQuery: String = ""
-    // 移除：private var savedCurrentCategoryId: String? = null
+    private var savedCurrentCategoryId: String? = null
 
     private val currentRepository: IAppStoreRepository
         get() = repositories[_appStore.value ?: AppStore.XIAOQU_SPACE] ?: throw IllegalStateException("No repository found for the selected app store")
@@ -89,11 +90,17 @@ class PlazaViewModel(
     private val AUTO_SCROLL_MODE_KEY = booleanPreferencesKey("auto_scroll_mode")
 
     init {
+        // 只初始化 autoScrollMode，不主动加载数据
         viewModelScope.launch {
             _autoScrollMode.postValue(readAutoScrollMode())
         }
     }
 
+    // --- 公共方法 ---
+
+    /**
+     * 初始化方法：参考旧版本逻辑，只有参数真正变化时才重置并重新加载
+     */
     /**
      * 初始化方法：参考旧版本逻辑，只有参数真正变化时才重置并重新加载
      */
@@ -112,7 +119,7 @@ class PlazaViewModel(
             _currentIsMyResourceMode = isMyResource
             _currentUserIdState = userId
             _currentModeState = mode
-            _isInitialized = false  // 重置初始化标志
+            // 不要在这里重置 _isInitialized，留给 resetStateAndLoadCategories 或 loadDataIfNeeded 处理
             
             // 更新内部状态
             this.isMyResourceMode = isMyResource
@@ -141,7 +148,7 @@ class PlazaViewModel(
         if (currentCategoryId == categoryId) return
 
         currentCategoryId = categoryId
-        // savedCurrentCategoryId = categoryId // 移除：不再需要持久化存储分类
+        savedCurrentCategoryId = categoryId
         loadPage(1)
     }
 
@@ -191,13 +198,14 @@ class PlazaViewModel(
     // --- 新增：参考旧版本的 loadDataIfNeeded ---
     private fun loadDataIfNeeded() {
         if (!_isInitialized) {
+            // _isInitialized = true // <-- 移除这行
             resetStateAndLoadCategories() // 或者直接调用 loadPage(1) 如果状态已经准备好
             // 实际上，如果参数没变，状态应该也基本准备好，直接加载第一页即可
             // 但为了保险，还是调用 resetStateAndLoadCategories，它内部会处理
         }
     }
 
-    // --- 修改：resetStateAndLoadCategories ---
+    // --- 私有辅助方法（保持原有逻辑） ---
     private fun resetStateAndLoadCategories() {
         Log.d("PlazaViewModel", "resetStateAndLoadCategories called")
         _isLoading.value = true
@@ -209,7 +217,6 @@ class PlazaViewModel(
         
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // 根据模式设置应用商店（已在 initialize 中处理，此处可优化）
                 when (currentMode) {
                     "my_upload", "my_favourite", "my_history" -> {
                         if (_appStore.value != AppStore.SIENE_SHOP) {
@@ -262,7 +269,7 @@ class PlazaViewModel(
 
     // --- 修改：loadPage ---
     private fun loadPage(page: Int, append: Boolean = false) {
-        Log.d("PlazaViewModel", "loadPage called: page=$page, append=$append, _isInitialized=$_isInitialized, currentCategoryId=$currentCategoryId")
+        Log.d("PlazaViewModel", "loadPage called: page=$page, append=$append, _isInitialized=$_isInitialized")
         if (_isLoading.value == true && !append) return
         
         val total = _totalPages.value ?: 1

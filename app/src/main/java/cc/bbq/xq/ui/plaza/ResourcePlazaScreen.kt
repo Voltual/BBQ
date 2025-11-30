@@ -1,4 +1,12 @@
 // /app/src/main/java/cc/bbq/xq/ui/plaza/ResourcePlazaScreen.kt
+//Copyright (C) 2025 Voltual
+// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
+//（或任意更新的版本）的条款重新分发和/或修改它。
+//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
+// 有关更多细节，请参阅 GNU 通用公共许可证。
+//
+// 你应该已经收到了一份 GNU 通用公共许可证的副本
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 package cc.bbq.xq.ui.plaza
 
 import androidx.compose.animation.*
@@ -37,7 +45,6 @@ import coil3.request.ImageRequest
 import org.koin.androidx.compose.koinViewModel
 import cc.bbq.xq.ui.theme.AppGrid
 import cc.bbq.xq.ui.theme.AppGridItem
-import java.util.UUID
 
 @Composable
 fun ResourcePlazaScreen(
@@ -48,11 +55,10 @@ fun ResourcePlazaScreen(
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel = koinViewModel()
 ) {
-
-    // 使用 LaunchedEffect 和 remember 确保 initialize 只执行一次
-    LaunchedEffect(Unit) {
-        viewModel.initialize(isMyResourceMode, userId, mode)
-    }
+    // 移除 LaunchedEffect，因为 ViewModel 已经负责状态恢复
+    // LaunchedEffect(isMyResourceMode, userId, mode) {
+    //     viewModel.initialize(isMyResourceMode, userId, mode)
+    // }
 
     ResourcePlazaContent(
         modifier = modifier,
@@ -82,6 +88,8 @@ fun ResourcePlazaContent(
     val totalPages by viewModel.totalPages.observeAsState(1)
     val autoScrollMode by viewModel.autoScrollMode.observeAsState(false)
     val errorMessage by viewModel.errorMessage.observeAsState()
+    // 新增：从 ViewModel 获取 currentCategoryId
+    val currentCategoryId by viewModel.currentCategoryId.observeAsState()
 
     val isSearchMode by remember(searchState) { derivedStateOf { searchState.isNotEmpty() } }
     var searchQuery by remember { mutableStateOf("") }
@@ -110,6 +118,11 @@ fun ResourcePlazaContent(
         if (shouldLoadMore) {
             viewModel.loadMore()
         }
+    }
+
+    // 新增：初始化 ViewModel（确保只执行一次）
+    LaunchedEffect(isMyResourceMode, userId, mode) {
+        viewModel.initialize(isMyResourceMode, userId, mode)
     }
 
     Column(
@@ -164,6 +177,8 @@ fun ResourcePlazaContent(
         } else {
             CategoryTabs(
                 categories = categories,
+                // 传递 currentCategoryId
+                selectedCategoryId = currentCategoryId,
                 onCategorySelected = { viewModel.loadCategory(it) },
                 enabled = true
             )
@@ -242,26 +257,21 @@ fun ResourcePlazaContent(
     }
 }
 
+// 修改：CategoryTabs 接收 selectedCategoryId
 @Composable
 private fun CategoryTabs(
     categories: List<UnifiedCategory>,
+    selectedCategoryId: String?,
     onCategorySelected: (String?) -> Unit,
     enabled: Boolean
 ) {
-    var selectedTabIndex by remember(categories) { mutableIntStateOf(0) }
+    // 使用 rememberUpdatedState 来捕获最新的 lambda
+    val onCategorySelectedState = rememberUpdatedState(onCategorySelected)
 
-    if (categories.isEmpty()) {
-        Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-        }
-        return
+    // 根据 currentCategoryId 计算 selectedTabIndex
+    val selectedTabIndex = remember(categories, selectedCategoryId) {
+        categories.indexOfFirst { it.id == selectedCategoryId }.takeIf { it != -1 } ?: 0
     }
-    
-    // 移除：不应在 categories 变化时重置 selectedTabIndex
-    // LaunchedEffect(categories) {
-    //     if(categories.isNotEmpty()) {
-    //         selectedTabIndex = 0
-    //     }
-    // }
 
     PrimaryScrollableTabRow(
         selectedTabIndex = selectedTabIndex,
@@ -272,8 +282,8 @@ private fun CategoryTabs(
                 selected = selectedTabIndex == index,
                 onClick = {
                     if (enabled) {
-                        selectedTabIndex = index
-                        onCategorySelected(category.id)
+                        // 使用 rememberUpdatedState 捕获的最新 lambda
+                        onCategorySelectedState.value(category.id)
                     }
                 },
                 text = { Text(category.name) },
