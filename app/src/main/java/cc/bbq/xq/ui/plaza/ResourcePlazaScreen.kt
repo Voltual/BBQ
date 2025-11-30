@@ -251,37 +251,49 @@ fun ResourcePlazaContent(
     }
 }
 
+// /app/src/main/java/cc/bbq/xq/ui/plaza/ResourcePlazaScreen.kt
+
 @Composable
 private fun CategoryTabs(
     categories: List<UnifiedCategory>,
     onCategorySelected: (String?) -> Unit,
     enabled: Boolean
 ) {
-    var selectedTabIndex by remember(categories) { mutableIntStateOf(0) }
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
 
-    // 修复：只在 categories 首次加载时设置 selectedTabIndex
-    LaunchedEffect(categories) {
-        if (categories.isNotEmpty()) {
-            selectedTabIndex = 0
+    // 修复：只有在 categories 不为空时才显示 TabRow
+    if (categories.isNotEmpty()) {
+        // 修复：确保 selectedTabIndex 不超出范围
+        LaunchedEffect(categories) {
+            if (selectedTabIndex >= categories.size) {
+                selectedTabIndex = 0.coerceAtLeast(categories.size - 1)
+            }
+        }
+        
+        PrimaryScrollableTabRow(
+            selectedTabIndex = selectedTabIndex.coerceAtMost(categories.size - 1), // 确保索引有效
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            categories.forEachIndexed { index, category ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = {
+                        if (enabled) {
+                            selectedTabIndex = index
+                            onCategorySelected(category.id)
+                        }
+                    },
+                    text = { Text(category.name) },
+                    enabled = enabled
+                )
+            }
+        }
+    } else {
+        // 可选：显示一个占位符或空状态
+        Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
+            // 可以显示加载指示器或“无分类”文本
+            // Text("加载中...", style = MaterialTheme.typography.bodyMedium)
         }
     }
-
-    PrimaryScrollableTabRow(
-        selectedTabIndex = selectedTabIndex,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        categories.forEachIndexed { index, category ->
-            Tab(
-                selected = selectedTabIndex == index,
-                onClick = {
-                    if (enabled) {
-                        selectedTabIndex = index
-                        onCategorySelected(category.id)
-                    }
-                },
-                text = { Text(category.name) },
-                enabled = enabled
-            )
-        }
-    }
+}
 }
