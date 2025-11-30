@@ -56,7 +56,9 @@ fun ResourcePlazaScreen(
         modifier = modifier,
         viewModel = viewModel,
         isMyResourceMode = isMyResourceMode,
-        navigateToAppDetail = navigateToAppDetail
+        navigateToAppDetail = navigateToAppDetail,
+        userId = userId, // 传递 userId
+        mode = mode // 传递 mode
     )
 }
 
@@ -65,7 +67,9 @@ fun ResourcePlazaContent(
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel,
     isMyResourceMode: Boolean,
-    navigateToAppDetail: (String, Long, String) -> Unit
+    navigateToAppDetail: (String, Long, String) -> Unit,
+    userId: String?, // 新增 userId 参数
+    mode: String // 新增 mode 参数
 ) {
     val selectedAppStore by viewModel.appStore.observeAsState(AppStore.XIAOQU_SPACE)
     val categories by viewModel.categories.observeAsState(emptyList())
