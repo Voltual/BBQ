@@ -101,9 +101,13 @@ class PlazaViewModel(
     /**
      * 初始化方法：参考旧版本逻辑，只有参数真正变化时才重置并重新加载
      */
+    /**
+     * 初始化方法：参考旧版本逻辑，只有参数真正变化时才重置并重新加载
+     */
     fun initialize(isMyResource: Boolean, userId: String?, mode: String = "public") {
         Log.d("PlazaViewModel", "initialize called: isMyResource=$isMyResource, userId=$userId, mode=$mode")
-        
+        Log.d("PlazaViewModel", "Current tracked state: _isInitialized=$_isInitialized, _currentIsMyResourceMode=$_currentIsMyResourceMode, _currentUserIdState=$_currentUserIdState, _currentModeState=$_currentModeState")
+
         // 只有当模式、用户ID或模式真正改变时才重新初始化
         val needsReinit = _currentIsMyResourceMode != isMyResource ||
                           _currentUserIdState != userId ||
@@ -115,7 +119,7 @@ class PlazaViewModel(
             _currentIsMyResourceMode = isMyResource
             _currentUserIdState = userId
             _currentModeState = mode
-            _isInitialized = false  // 重置初始化标志
+            // 不要在这里重置 _isInitialized，留给 resetStateAndLoadCategories 或 loadDataIfNeeded 处理
             
             // 更新内部状态
             this.isMyResourceMode = isMyResource
@@ -125,7 +129,7 @@ class PlazaViewModel(
             // 重置数据状态并加载
             resetStateAndLoadCategories()
         } else {
-            Log.d("PlazaViewModel", "参数未变化，确保数据已加载...")
+            Log.d("PlazaViewModel", "参数未变化，确保数据已加载... _isInitialized=$_isInitialized")
             // 参数未变化，确保数据已加载（参考旧版本）
             loadDataIfNeeded()
         }
