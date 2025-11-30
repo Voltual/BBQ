@@ -86,7 +86,11 @@ class LoginViewModel(
                 when (_selectedStore.value) {
                     AppStore.XIAOQU_SPACE -> loginXiaoqu()
                     AppStore.SIENE_SHOP -> loginSineShop()
-                    // 删除 LOCAL 分支，因为在 LoginScreen 中已经阻止选择 LOCAL
+                    // 添加 LOCAL 分支，但什么也不做
+                    AppStore.LOCAL -> {
+                        // 不支持本地登录
+                        _errorMessage.value = "不支持本地登录" // 可选：显示错误信息
+                    }
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"

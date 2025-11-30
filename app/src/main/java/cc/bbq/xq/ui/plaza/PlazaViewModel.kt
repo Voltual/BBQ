@@ -65,6 +65,11 @@ class PlazaViewModel(
     private var isMyResourceMode: Boolean = false
     private var currentMode: String = "public" // 新增模式变量
 
+    // 新增：保存状态
+    private var savedCurrentPage: Int = 1
+    private var savedCurrentQuery: String = ""
+    private var savedCurrentCategoryId: String? = null
+
     private val currentRepository: IAppStoreRepository
         get() = repositories[_appStore.value] ?: throw IllegalStateException("No repository found for the selected app store")
 
@@ -75,6 +80,11 @@ class PlazaViewModel(
             _autoScrollMode.postValue(readAutoScrollMode())
             // 初始化时加载默认商店的数据
             setAppStore(AppStore.XIAOQU_SPACE)
+
+            // 恢复状态
+            _currentPage.postValue(savedCurrentPage)
+            currentQuery = savedCurrentQuery
+            currentCategoryId = savedCurrentCategoryId
         }
     }
 
@@ -120,6 +130,7 @@ class PlazaViewModel(
         if (currentCategoryId == categoryId) return
 
         currentCategoryId = categoryId
+        savedCurrentCategoryId = categoryId // 保存状态
         loadPage(1)
     }
 
@@ -127,6 +138,7 @@ class PlazaViewModel(
         if (query.isBlank()) return
         isSearchMode = true
         currentQuery = query
+        savedCurrentQuery = query // 保存状态
         // 清空列表数据，保留分类和搜索词
         _plazaData.value = PlazaData(emptyList())
         _searchResults.value = emptyList() // 清空搜索结果以触发UI更新
@@ -136,6 +148,7 @@ class PlazaViewModel(
     fun cancelSearch() {
         isSearchMode = false
         currentQuery = ""
+        savedCurrentQuery = "" // 保存状态
         _searchResults.value = emptyList()
         // 重新加载当前分类的第一页
         loadPage(1)
@@ -150,7 +163,10 @@ class PlazaViewModel(
         val prev = (_currentPage.value ?: 1) - 1
         loadPage(prev)
     }
-    fun goToPage(page: Int) = loadPage(page)
+    fun goToPage(page: Int) {
+        savedCurrentPage = page // 保存状态
+        loadPage(page)
+    }
 
     fun loadMore() {
         if (autoScrollMode.value == true && _isLoading.value != true) {
@@ -253,6 +269,7 @@ class PlazaViewModel(
                     val (items, totalPages) = result.getOrThrow()
                     _totalPages.postValue(if(totalPages > 0) totalPages else 1)
                     _currentPage.postValue(page)
+                    savedCurrentPage = page // 保存状态
 
                     if (isSearchMode) {
                         val currentList = if (append) _searchResults.value ?: emptyList() else emptyList()
