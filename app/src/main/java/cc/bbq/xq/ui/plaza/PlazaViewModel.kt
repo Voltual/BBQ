@@ -97,12 +97,10 @@ class PlazaViewModel(
 
     fun initialize(isMyResource: Boolean, userId: String?, mode: String = "public") {
 
-
         // 更新状态
         this.isMyResourceMode = isMyResource
         this.currentUserId = userId
         this.currentMode = mode
-        _isInitialized = true // 设置为已初始化
 
         // 根据模式设置应用商店
         val targetAppStore = when (mode) {
