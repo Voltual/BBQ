@@ -145,7 +145,7 @@ object SineShopClient {
         @SerialName("app_version_type") val app_version_type: String,
         @SerialName("app_abi") val app_abi: Int,
         @SerialName("app_sdk_min") val app_sdk_min: Int,
-        @SerialName("version_count") val version_count: Int
+        @SerialName("version_count") val version_count: Int?  // 改为可空类型
     )
 
     // 为标签列表定义单独的数据模型，保持与 AppTag 一致
