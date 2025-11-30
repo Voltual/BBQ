@@ -89,6 +89,7 @@ import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.heightIn
 
 // 基础按钮组件
 @Composable
