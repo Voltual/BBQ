@@ -248,7 +248,7 @@ fun BBQIconButton(
     }
 }
 
-//移动帖子详情页“带文本的开关”到theme下的公共位置以便复用
+//移动帖子详情页"带文本的开关"到theme下的公共位置以便复用
 @Composable
 fun SwitchWithText(
     text: String,
@@ -446,10 +446,11 @@ fun AppStoreDropdownMenu(
     onStoreChange: (AppStore) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    label: String = "选择商店"
+    label: String = "选择商店",
+    // 添加 appStores 参数，带有默认值以保证向后兼容性
+    appStores: List<AppStore> = AppStore.entries 
 ) {
     var expanded by remember { mutableStateOf(false) }
-    
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it }
@@ -463,24 +464,24 @@ fun AppStoreDropdownMenu(
             value = selectedStore.displayName,
             onValueChange = {},
             label = { Text(label) },
-            trailingIcon = { 
-                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) 
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
             shape = AppShapes.medium
         )
-        
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            AppStore.entries.forEach { store ->
+            // 使用传入的 appStores 列表进行迭代
+            appStores.forEach { store ->
                 DropdownMenuItem(
-                    text = { 
+                    text = {
                         Text(
                             store.displayName,
                             style = MaterialTheme.typography.bodyMedium
-                        ) 
+                        )
                     },
                     onClick = {
                         onStoreChange(store)
@@ -532,7 +533,7 @@ fun AppStoreSelectorCard(
                     )
                 }
             }
-            
+
             // 下拉菜单
             AppStoreDropdownMenu(
                 selectedStore = selectedStore,
@@ -540,7 +541,7 @@ fun AppStoreSelectorCard(
                 enabled = enabled,
                 label = "当前商店"
             )
-            
+
             // 当前选择提示
             Text(
                 "已选择: ${selectedStore.displayName}",
@@ -555,7 +556,6 @@ fun AppStoreSelectorCard(
 // 该组件ModelList.kt的原始版本来源自 https://github.com/rikkahub/rikkahub
 // 本版本仅作简化修改适应项目实际用途
 // License: AGPLv3 (Compatible with GPLv3)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DownloadSourceDrawer(
@@ -567,7 +567,6 @@ fun DownloadSourceDrawer(
     if (show) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val scope = rememberCoroutineScope()
-
         ModalBottomSheet(
             onDismissRequest = onDismissRequest,
             sheetState = sheetState,
@@ -585,7 +584,6 @@ fun DownloadSourceDrawer(
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
