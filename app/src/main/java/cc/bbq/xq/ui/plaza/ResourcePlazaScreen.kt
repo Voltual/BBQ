@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -38,6 +37,7 @@ import coil3.request.ImageRequest
 import org.koin.androidx.compose.koinViewModel
 import cc.bbq.xq.ui.theme.AppGrid
 import cc.bbq.xq.ui.theme.AppGridItem
+import java.util.UUID
 
 @Composable
 fun ResourcePlazaScreen(
@@ -48,9 +48,13 @@ fun ResourcePlazaScreen(
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel = koinViewModel()
 ) {
-    // 使用 LaunchedEffect 确保 initialize 在参数变化时被调用
-    // 由于 initialize 是幂等的，重复调用是安全的
-    LaunchedEffect(isMyResourceMode, userId, mode) {
+
+    // 使用 remember 创建一个 UUID，确保只执行一次
+    val initializationKey = remember { UUID.randomUUID().toString() }
+
+    // 使用 LaunchedEffect 和 remember 确保 initialize 只执行一次
+    LaunchedEffect(initializationKey) {
+        Log.d("ResourcePlazaScreen", "LaunchedEffect(initializationKey) 执行，key=$initializationKey")
         viewModel.initialize(isMyResourceMode, userId, mode)
     }
 
@@ -111,11 +115,6 @@ fun ResourcePlazaContent(
             viewModel.loadMore()
         }
     }
-
-    // 移除：这个 LaunchedEffect 导致了重复初始化
-    // LaunchedEffect(Unit) {
-    //     viewModel.initialize(isMyResourceMode, userId, mode)
-    // }
 
     Column(
         modifier = modifier
@@ -253,49 +252,37 @@ private fun CategoryTabs(
     onCategorySelected: (String?) -> Unit,
     enabled: Boolean
 ) {
-    // 2. 使用 rememberSaveable() 函数调用
-    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+    var selectedTabIndex by remember(categories) { mutableIntStateOf(0) }
 
-    // 修复：只有在 categories 不为空时才显示 TabRow
-    if (categories.isNotEmpty()) {
-        // 3. 修正 LaunchedEffect 内的逻辑和类型安全
-        LaunchedEffect(categories) {
-            // 确保 selectedTabIndex 不超出新的 categories 列表范围
-            // categories.size - 1 is always >= 0 because categories is not empty here
-            val maxIndex = categories.size - 1 
-            if (selectedTabIndex > maxIndex) {
-                selectedTabIndex = maxIndex
-            }
-            // 如果 selectedTabIndex 是负数（理论上不应该发生），也修正它
-            if (selectedTabIndex < 0) {
-                selectedTabIndex = 0
-            }
-        }
-        
-        PrimaryScrollableTabRow(
-            // 4. 确保传递给 PrimaryScrollableTabRow 的索引是有效的
-            selectedTabIndex = selectedTabIndex.coerceIn(0, (categories.size - 1).coerceAtLeast(0)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            categories.forEachIndexed { index, category ->
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = {
-                        if (enabled) {
-                            selectedTabIndex = index
-                            onCategorySelected(category.id)
-                        }
-                    },
-                    text = { Text(category.name) },
-                    enabled = enabled
-                )
-            }
-        }
-    } else {
-        // 可选：显示一个占位符或空状态
+    if (categories.isEmpty()) {
         Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-            // 可以显示加载指示器或“无分类”文本
-            // Text("加载中...", style = MaterialTheme.typography.bodyMedium)
+        }
+        return
+    }
+    
+    // 移除：不应在 categories 变化时重置 selectedTabIndex
+    // LaunchedEffect(categories) {
+    //     if(categories.isNotEmpty()) {
+    //         selectedTabIndex = 0
+    //     }
+    // }
+
+    PrimaryScrollableTabRow(
+        selectedTabIndex = selectedTabIndex,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        categories.forEachIndexed { index, category ->
+            Tab(
+                selected = selectedTabIndex == index,
+                onClick = {
+                    if (enabled) {
+                        selectedTabIndex = index
+                        onCategorySelected(category.id)
+                    }
+                },
+                text = { Text(category.name) },
+                enabled = enabled
+            )
         }
     }
 }
