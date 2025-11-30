@@ -49,11 +49,8 @@ fun ResourcePlazaScreen(
     viewModel: PlazaViewModel = koinViewModel()
 ) {
 
-    // 使用 remember 创建一个 UUID，确保只执行一次
-    val initializationKey = remember { UUID.randomUUID().toString() }
-
     // 使用 LaunchedEffect 和 remember 确保 initialize 只执行一次
-    LaunchedEffect(initializationKey) {
+    LaunchedEffect() {
         viewModel.initialize(isMyResourceMode, userId, mode)
     }
 
