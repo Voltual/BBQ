@@ -55,11 +55,6 @@ fun ResourcePlazaScreen(
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel = koinViewModel()
 ) {
-    // 移除 LaunchedEffect，因为 ViewModel 已经负责状态恢复
-    // LaunchedEffect(isMyResourceMode, userId, mode) {
-    //     viewModel.initialize(isMyResourceMode, userId, mode)
-    // }
-
     ResourcePlazaContent(
         modifier = modifier,
         viewModel = viewModel,

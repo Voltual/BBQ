@@ -3,6 +3,7 @@
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
 //本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
+// 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
 // 如果没有，请查阅 <http://www.gnu.org/licenses/>。
@@ -64,10 +65,14 @@ class PlazaViewModel(
     private val _autoScrollMode = MutableLiveData<Boolean>()
     val autoScrollMode: LiveData<Boolean> = _autoScrollMode
 
+    // 新增：公开 currentCategoryId
+    private val _currentCategoryId = MutableLiveData<String?>(null)
+    val currentCategoryId: LiveData<String?> = _currentCategoryId
+
     // --- 内部状态管理 ---
     private var isSearchMode = false
     private var currentQuery = ""
-    private var currentCategoryId: String? = null // 当前选中的分类 ID
+    // private var currentCategoryId: String? = null // 移除 private 属性
     private var currentUserId: String? = null
     private var isMyResourceMode: Boolean = false
     private var currentMode: String = "public"
@@ -138,10 +143,10 @@ class PlazaViewModel(
         if (isSearchMode) {
             cancelSearch()
         }
-        if (currentCategoryId == categoryId) return
+        if (_currentCategoryId.value == categoryId) return
 
-        currentCategoryId = categoryId
-        // savedCurrentCategoryId = categoryId // 移除：不再需要持久化存储分类
+        // currentCategoryId = categoryId // 移除：不再直接修改实例变量
+        _currentCategoryId.value = categoryId // 使用 LiveData 更新
         loadPage(1)
     }
 
@@ -193,7 +198,6 @@ class PlazaViewModel(
         if (!_isInitialized) {
             resetStateAndLoadCategories() // 或者直接调用 loadPage(1) 如果状态已经准备好
             // 实际上，如果参数没变，状态应该也基本准备好，直接加载第一页即可
-            // 但为了保险，还是调用 resetStateAndLoadCategories，它内部会处理
         }
     }
 
@@ -201,11 +205,8 @@ class PlazaViewModel(
     private fun resetStateAndLoadCategories() {
         Log.d("PlazaViewModel", "resetStateAndLoadCategories called")
         _isLoading.value = true
-        currentCategoryId = null
-        // 在开始新的加载流程时，重置 _isInitialized 状态
-        // 这样可以确保 loadDataIfNeeded 在下一次调用时会尝试加载
-        // 但如果这次加载成功，loadPage 会将其设为 true
-        _isInitialized = false 
+        // currentCategoryId = null // 移除：不再直接修改实例变量
+        _currentCategoryId.value = null // 使用 LiveData 更新
         
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -219,10 +220,10 @@ class PlazaViewModel(
                 }
                 
                 when (currentMode) {
-                    "my_upload" -> currentCategoryId = "-3"
-                    "my_favourite" -> currentCategoryId = "-4"
-                    "my_history" -> currentCategoryId = "-5"
-                    else -> currentCategoryId = null
+                    "my_upload" ->  _currentCategoryId.postValue("-3") //currentCategoryId = "-3"
+                    "my_favourite" -> _currentCategoryId.postValue("-4")//currentCategoryId = "-4"
+                    "my_history" -> _currentCategoryId.postValue("-5") //currentCategoryId = "-5"
+                    else -> _currentCategoryId.postValue(null) //currentCategoryId = null
                 }
                 
                 if (currentMode in listOf("my_upload", "my_favourite", "my_history")) {
@@ -237,8 +238,9 @@ class PlazaViewModel(
                         val categoryList = categoriesResult.getOrThrow()
                         _categories.postValue(categoryList)
                         
-                        if (currentCategoryId == null) {
-                            currentCategoryId = categoryList.firstOrNull()?.id
+                        if (_currentCategoryId.value == null) {
+                            // currentCategoryId = categoryList.firstOrNull()?.id // 移除
+                            _currentCategoryId.postValue(categoryList.firstOrNull()?.id) // 使用 LiveData 更新
                         }
                         
                         _isLoading.postValue(false)
@@ -262,7 +264,7 @@ class PlazaViewModel(
 
     // --- 修改：loadPage ---
     private fun loadPage(page: Int, append: Boolean = false) {
-        Log.d("PlazaViewModel", "loadPage called: page=$page, append=$append, _isInitialized=$_isInitialized, currentCategoryId=$currentCategoryId")
+        Log.d("PlazaViewModel", "loadPage called: page=$page, append=$append, _isInitialized=$_isInitialized, currentCategoryId=${_currentCategoryId.value}")
         if (_isLoading.value == true && !append) return
         
         val total = _totalPages.value ?: 1
@@ -280,7 +282,7 @@ class PlazaViewModel(
                 val result = if (isSearchMode) {
                     currentRepository.searchApps(currentQuery, page, finalUserId)
                 } else {
-                    currentRepository.getApps(currentCategoryId, page, finalUserId)
+                    currentRepository.getApps(_currentCategoryId.value, page, finalUserId) // 使用 LiveData 的值
                 }
 
                 if (result.isSuccess) {
