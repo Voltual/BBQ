@@ -170,13 +170,23 @@ fun ResourcePlazaContent(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         } else {
-            CategoryTabs(
-                categories = categories,
-                // 传递 currentCategoryId
-                selectedCategoryId = currentCategoryId,
-                onCategorySelected = { viewModel.loadCategory(it) },
-                enabled = true
-            )
+            // 修改：只有当 categories 不为空时才显示 CategoryTabs
+            if (categories.isNotEmpty()) {
+                CategoryTabs(
+                    categories = categories,
+                    // 传递 currentCategoryId
+                    selectedCategoryId = currentCategoryId,
+                    onCategorySelected = { viewModel.loadCategory(it) },
+                    enabled = true
+                )
+            } else {
+                // 可选：当 categories 为空时显示一个占位符或加载指示器
+                Text(
+                    text = "加载分类中...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
         }
 
         Box(modifier = Modifier.weight(1f)) {
@@ -265,25 +275,37 @@ private fun CategoryTabs(
 
     // 根据 currentCategoryId 计算 selectedTabIndex
     val selectedTabIndex = remember(categories, selectedCategoryId) {
-        categories.indexOfFirst { it.id == selectedCategoryId }.takeIf { it != -1 } ?: 0
+        if (categories.isEmpty()) {
+            -1 // 特殊值，表示没有可选择的 Tab
+        } else {
+            categories.indexOfFirst { it.id == selectedCategoryId }.takeIf { it != -1 } ?: 0
+        }
     }
 
-    PrimaryScrollableTabRow(
-        selectedTabIndex = selectedTabIndex,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        categories.forEachIndexed { index, category ->
-            Tab(
-                selected = selectedTabIndex == index,
-                onClick = {
-                    if (enabled) {
-                        // 使用 rememberUpdatedState 捕获的最新 lambda
-                        onCategorySelectedState.value(category.id)
-                    }
-                },
-                text = { Text(category.name) },
-                enabled = enabled
-            )
+    // 只有当 categories 不为空时才显示 TabRow
+    if (categories.isNotEmpty()) {
+        PrimaryScrollableTabRow(
+            selectedTabIndex = selectedTabIndex,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            categories.forEachIndexed { index, category ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = {
+                        if (enabled) {
+                            // 使用 rememberUpdatedState 捕获的最新 lambda
+                            onCategorySelectedState.value(category.id)
+                        }
+                    },
+                    text = { Text(category.name) },
+                    enabled = enabled
+                )
+            }
+        }
+    } else {
+        // 可选：当 categories 为空时显示一个占位符或加载指示器
+        Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
+            Text(text = "加载分类中...", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
