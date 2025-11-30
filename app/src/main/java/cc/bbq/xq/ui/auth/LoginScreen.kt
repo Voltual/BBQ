@@ -1,3 +1,4 @@
+// File: /app/src/main/java/cc/bbq/xq/ui/auth/LoginScreen.kt
 //Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
@@ -97,10 +98,13 @@ fun LoginContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 添加商店选择下拉菜单
+            // 修正：使用过滤后的 AppStore 列表
             AppStoreDropdownMenu(
                 selectedStore = selectedStore,
                 onStoreChange = { viewModel.onStoreSelected(it) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                // 传递过滤后的 AppStore 列表
+                appStores = remember { AppStore.entries.filter { it != AppStore.LOCAL } }
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -252,6 +256,65 @@ fun RegisterContent(
             if (isLoading) {
                 Spacer(modifier = Modifier.height(16.dp))
                 CircularProgressIndicator()
+            }
+        }
+    }
+}
+
+// 修改：AppStoreDropdownMenu 接收 AppStore 列表
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppStoreDropdownMenu(
+    selectedStore: AppStore,
+    onStoreChange: (AppStore) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    label: String = "选择商店",
+    appStores: List<AppStore> = AppStore.entries // 添加 appStores 参数
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it }
+    ) {
+        OutlinedTextField(
+            modifier = modifier
+                .fillMaxWidth()
+                // 使用强类型的 menuAnchor
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled),
+            readOnly = true,
+            value = selectedStore.displayName,
+            onValueChange = {},
+            label = { Text(label) },
+            trailingIcon = {
+                ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            shape = androidx.compose.material3.MaterialTheme.shapes.medium
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            // 修正：使用 appStores 参数进行迭代
+            appStores.forEach { store ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            store.displayName,
+                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    onClick = {
+                        onStoreChange(store)
+                        expanded = false
+                    },
+                    colors = MenuDefaults.itemColors(
+                        textColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+                    )
+                )
             }
         }
     }
