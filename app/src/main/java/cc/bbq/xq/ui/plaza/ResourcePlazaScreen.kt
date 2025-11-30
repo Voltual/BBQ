@@ -181,13 +181,6 @@ fun ResourcePlazaContent(
                     onCategorySelected = { viewModel.loadCategory(it) },
                     enabled = true
                 )
-            } else {
-                // 可选：当 categories 为空时显示一个占位符或加载指示器
-                Text(
-                    text = "加载分类中...",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
             }
         }
 
