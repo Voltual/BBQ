@@ -35,6 +35,8 @@ import cc.bbq.xq.ui.theme.AppStoreDropdownMenu
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import org.koin.androidx.compose.koinViewModel
+import cc.bbq.xq.ui.theme.AppGrid
+import cc.bbq.xq.ui.theme.AppGridItem
 
 @Composable
 fun ResourcePlazaScreen(
@@ -268,65 +270,6 @@ private fun CategoryTabs(
                 },
                 text = { Text(category.name) },
                 enabled = enabled
-            )
-        }
-    }
-}
-
-@Composable
-fun AppGrid(
-    apps: List<UnifiedAppItem>,
-    columns: Int,
-    onItemClick: (UnifiedAppItem) -> Unit,
-    gridState: LazyGridState
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(columns),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        state = gridState
-    ) {
-        items(apps, key = { it.uniqueId }) { app ->
-            AppGridItem(app, onClick = { onItemClick(app) })
-        }
-    }
-}
-
-@Composable
-fun AppGridItem(
-    app: UnifiedAppItem,
-    onClick: () -> Unit,
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 120.dp),
-        shape = AppShapes.medium
-    ) {
-        Column(
-            modifier = Modifier.padding(4.dp).fillMaxHeight(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(app.iconUrl)
-                    .build(),
-                contentDescription = app.name,
-                modifier = Modifier
-                    .size(56.dp)
-                    .padding(bottom = 8.dp)
-            )
-            Text(
-                text = app.name,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
-                minLines = 2,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 4.dp)
             )
         }
     }
