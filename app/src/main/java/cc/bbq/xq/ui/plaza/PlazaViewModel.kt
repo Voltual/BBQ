@@ -78,13 +78,6 @@ class PlazaViewModel(
     init {
         viewModelScope.launch {
             _autoScrollMode.postValue(readAutoScrollMode())
-            // 初始化时加载默认商店的数据
-            setAppStore(AppStore.XIAOQU_SPACE)
-
-            // 恢复状态
-            _currentPage.postValue(savedCurrentPage)
-            currentQuery = savedCurrentQuery
-            currentCategoryId = savedCurrentCategoryId
         }
     }
 
@@ -117,6 +110,14 @@ class PlazaViewModel(
             }
         }
     }
+    
+    // 根据模式设置特殊的分类ID
+        when (currentMode) {
+            "my_upload" -> currentCategoryId = "-3"
+            "my_favourite" -> currentCategoryId = "-4"
+            "my_history" -> currentCategoryId = "-5"
+            else -> currentCategoryId = null
+        }
     
     // 强制重置状态并重新加载数据
     resetStateAndLoadCategories()

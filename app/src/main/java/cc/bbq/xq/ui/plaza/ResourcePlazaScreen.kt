@@ -52,6 +52,12 @@ fun ResourcePlazaScreen(
     //     viewModel.initialize(isMyResourceMode, userId, mode)
     // }
 
+    // 使用 DisposableEffect 确保 initialize 只在必要时调用
+    DisposableEffect(isMyResourceMode, userId, mode) {
+        viewModel.initialize(isMyResourceMode, userId, mode)
+        onDispose { }
+    }
+
     ResourcePlazaContent(
         modifier = modifier,
         viewModel = viewModel,
@@ -110,10 +116,10 @@ fun ResourcePlazaContent(
         }
     }
 
-    // 新增：初始化 ViewModel
-    LaunchedEffect(Unit) {
-        viewModel.initialize(isMyResourceMode, userId, mode)
-    }
+    // 移除：这个 LaunchedEffect 导致了重复初始化
+    // LaunchedEffect(Unit) {
+    //     viewModel.initialize(isMyResourceMode, userId, mode)
+    // }
 
     Column(
         modifier = modifier
@@ -253,14 +259,9 @@ private fun CategoryTabs(
 ) {
     var selectedTabIndex by remember(categories) { mutableIntStateOf(0) }
 
-    if (categories.isEmpty()) {
-        Box(modifier = Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.Center) {
-        }
-        return
-    }
-    
+    // 修复：只在 categories 首次加载时设置 selectedTabIndex
     LaunchedEffect(categories) {
-        if(categories.isNotEmpty()) {
+        if (categories.isNotEmpty()) {
             selectedTabIndex = 0
         }
     }
