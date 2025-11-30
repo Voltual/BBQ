@@ -50,7 +50,7 @@ fun ResourcePlazaScreen(
 ) {
 
     // 使用 LaunchedEffect 和 remember 确保 initialize 只执行一次
-    LaunchedEffect() {
+    LaunchedEffect(Unit) {
         viewModel.initialize(isMyResourceMode, userId, mode)
     }
 
