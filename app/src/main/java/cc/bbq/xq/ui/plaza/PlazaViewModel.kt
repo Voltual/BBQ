@@ -87,10 +87,7 @@ class PlazaViewModel(
     }
 
     fun initialize(isMyResource: Boolean, userId: String?, mode: String = "public") {
-    if (this.isMyResourceMode == isMyResource && 
-        this.currentUserId == userId && 
-        this.currentMode == mode) return
-        
+    // 始终更新所有参数，即使它们没有改变
     this.isMyResourceMode = isMyResource
     this.currentUserId = userId
     this.currentMode = mode
@@ -103,10 +100,15 @@ class PlazaViewModel(
                 _appStore.value = AppStore.SIENE_SHOP
             }
         }
-        // 其他模式保持当前的 appStore 设置
+        else -> {
+            // 对于其他模式，使用默认的小趣空间商店
+            if (_appStore.value != AppStore.XIAOQU_SPACE) {
+                _appStore.value = AppStore.XIAOQU_SPACE
+            }
+        }
     }
     
-    // 切换商店或模式时，重新加载分类和数据
+    // 强制重置状态并重新加载数据
     resetStateAndLoadCategories()
 }
 

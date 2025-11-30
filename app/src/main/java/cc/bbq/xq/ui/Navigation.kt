@@ -193,7 +193,7 @@ object AccountProfile : AppDestination {
 data class ResourcePlaza(val isMyResource: Boolean, val userId: Long = -1L, val mode: String = "public") : AppDestination {
     override val route = "plaza?${AppDestination.ARG_IS_MY_RESOURCE}={${AppDestination.ARG_IS_MY_RESOURCE}}&${AppDestination.ARG_USER_ID}={${AppDestination.ARG_USER_ID}}&mode={mode}"
     fun createRoute() = "plaza?${AppDestination.ARG_IS_MY_RESOURCE}=$isMyResource&${AppDestination.ARG_USER_ID}=$userId&mode=$mode"
-
+    
     companion object {
         val arguments = listOf(
             navArgument(AppDestination.ARG_IS_MY_RESOURCE) { type = NavType.BoolType; defaultValue = false },
