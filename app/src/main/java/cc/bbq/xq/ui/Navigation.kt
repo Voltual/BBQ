@@ -73,10 +73,15 @@ object StoreManager : AppDestination {
     override val route = "store_manager"
 }
 
-//新增更新设置
 object UpdateSettings : AppDestination {
     override val route = "update_settings"
 }
+
+// 新增：应用更新屏幕目的地
+object Update : AppDestination {
+    override val route = "update"
+}
+
 
 // --- 社区与帖子 ---
 

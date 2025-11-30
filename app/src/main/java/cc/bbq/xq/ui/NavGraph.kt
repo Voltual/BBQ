@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import org.koin.androidx.compose.koinViewModel
 import androidx.compose.foundation.layout.padding
 import cc.bbq.xq.ui.download.DownloadScreen // 导入 DownloadScreen
+import cc.bbq.xq.ui.update.UpdateScreen // 新增导入
 import cc.bbq.xq.ui.settings.storage.StoreManagerScreen
 import org.koin.core.parameter.parametersOf
 import androidx.compose.runtime.*
@@ -32,14 +33,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import cc.bbq.xq.AuthManager
-//import cc.bbq.xq.RetrofitClient移除时代的眼泪
-import cc.bbq.xq.KtorClient // 导入 KtorClient
+import cc.bbq.xq.KtorClient
 import cc.bbq.xq.ui.auth.LoginScreen
 import cc.bbq.xq.ui.auth.LoginViewModel
 import cc.bbq.xq.ui.billing.BillingScreen
 import cc.bbq.xq.ui.billing.BillingViewModel
-//import cc.bbq.xq.ui.bot.BotSettingsScreen
-// import cc.bbq.xq.ui.bot.BotSettingsViewModel
 import cc.bbq.xq.ui.community.*
 import cc.bbq.xq.ui.community.compose.BaseComposeListScreen
 import cc.bbq.xq.ui.community.compose.PostDetailScreen
@@ -149,8 +147,13 @@ fun AppNavHost(
                 modifier = Modifier.fillMaxSize() // 添加 modifier
             )
         }
+        //新增更新屏幕
+        composable(route = Update.route) {
+            UpdateScreen(
+                modifier = Modifier.fillMaxSize() // 添加 modifier 以填充屏幕
+            )
+        }
 
-        // 在 NavGraph.kt 中更新主题定制屏幕的调用
         composable(route = ThemeCustomize.route) {
             ThemeCustomizeScreen(
                 modifier = Modifier.fillMaxSize() // 添加 modifier

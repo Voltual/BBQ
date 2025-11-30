@@ -1,3 +1,4 @@
+// File: /app/src/main/java/cc/bbq/xq/ui/home/HomeScreen.kt
 //Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
@@ -72,14 +73,15 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.navigation.NavController
 import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.launch
-import cc.bbq.xq.SineShopClient 
+import cc.bbq.xq.SineShopClient
+import cc.bbq.xq.ui.Update // 导入 Update 导航目标
 
 @Composable
 fun HomeScreen(
     state: HomeState,
     sineShopUserInfo: SineShopClient.SineShopUserInfo?,
     sineShopLoginPrompt: Boolean,
-    onSineShopLoginClick: () -> Unit, 
+    onSineShopLoginClick: () -> Unit,
     onAvatarClick: () -> Unit,
     onAvatarLongClick: () -> Unit,
     onMessageCenterClick: () -> Unit,
@@ -95,8 +97,9 @@ fun HomeScreen(
     onPaymentCenterClick: () -> Unit,
     onSignClick: () -> Unit,
     onRecalculateDays: () -> Unit,
-    onAboutClick: () -> Unit, 
-    onAccountProfileClick: () -> Unit, 
+    onAboutClick: () -> Unit,
+    onAccountProfileClick: () -> Unit,
+    onNavigateToUpdate: () -> Unit, // 新增：导航到更新屏幕的回调
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
     snackbarHostState: SnackbarHostState,
@@ -147,7 +150,7 @@ fun HomeScreen(
                     SineShopProfileScreen(
                         userInfo = sineShopUserInfo,
                         modifier = Modifier.fillMaxSize(),
-                        onNavigateToResourcePlaza = { mode -> 
+                        onNavigateToResourcePlaza = { mode ->
                             // 根据模式导航到不同的资源广场
                             when (mode) {
                                 "my_upload" -> {
@@ -167,7 +170,8 @@ fun HomeScreen(
                                     navController.navigate(ResourcePlaza(false).createRoute())
                                 }
                             }
-                        }
+                        },
+                        onNavigateToUpdate = onNavigateToUpdate // 传递导航回调
                     )
                 }
             }
@@ -707,7 +711,7 @@ private fun Divider(
 
 data class HomeState(
     val showLoginPrompt: Boolean = true,
-    val isLoading: Boolean = false,
+    valisLoading: Boolean = false,
     val avatarUrl: String? = null,
     val nickname: String = "BBQ用户",
     val level: String = "LV0",
