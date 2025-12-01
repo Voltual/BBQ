@@ -10,8 +10,9 @@ package cc.bbq.xq.ui
 
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import android.net.Uri // 添加导入
+import android.net.Uri
 import java.net.URLEncoder
+import cc.bbq.xq.AppStore
 import java.nio.charset.StandardCharsets
 
 /**
@@ -159,13 +160,13 @@ data class ImagePreview(val imageUrl: String) : AppDestination {
 
 // --- 用户相关 ---
 
-data class UserDetail(val userId: Long) : AppDestination {
-    override val route = "user_detail/{${AppDestination.ARG_USER_ID}}"
-    fun createRoute() = "user_detail/$userId"
-
+data class UserDetail(val userId: Long, val store: AppStore = AppStore.XIAOQU_SPACE) : AppDestination {
+    override val route = "user_detail/{${AppDestination.ARG_USER_ID}}/{store}"
+    fun createRoute() = "user_detail/$userId/${store.name}"
     companion object {
         val arguments = listOf(
-            navArgument(AppDestination.ARG_USER_ID) { type = NavType.LongType }
+            navArgument(AppDestination.ARG_USER_ID) { type = NavType.LongType },
+            navArgument("store") { type = NavType.StringType; defaultValue = AppStore.XIAOQU_SPACE.name }
         )
     }
 }

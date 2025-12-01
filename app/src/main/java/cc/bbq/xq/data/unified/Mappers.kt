@@ -4,6 +4,10 @@ package cc.bbq.xq.data.unified
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.SineShopClient
+import cc.bbq.xq.KtorClient.*
+import cc.bbq.xq.SineShopClient.*
+import cc.bbq.xq.data.unified.*
+
 
 // --- KtorClient (小趣空间) Mappers ---
 
@@ -174,5 +178,55 @@ fun SineShopClient.SineShopUserInfo.toUnifiedUser(): UnifiedUser {
         id = this.id.toString(),
         displayName = this.displayName,
         avatarUrl = this.userAvatar
+    )
+}
+
+// 在文件末尾添加 KtorClient (小趣空间) 映射
+fun KtorClient.UserInformationData.toUnifiedUserDetail(): UnifiedUserDetail {
+    return UnifiedUserDetail(
+        id = this.id,
+        username = this.username,
+        displayName = this.nickname,
+        avatarUrl = this.usertx,
+        description = null,  // 小趣空间无此字段
+        hierarchy = this.hierarchy,
+        followersCount = this.fanscount,
+        fansCount = this.followerscount,
+        postCount = this.postcount,
+        likeCount = this.likecount,
+        money = this.money,
+        commentCount = this.commentcount,
+        seriesDays = this.series_days,
+        lastActivityTime = this.last_activity_time,
+        store = AppStore.XIAOQU_SPACE,
+        raw = this
+    )
+}
+
+// 在文件末尾添加 SineShopClient (弦应用商店) 映射
+fun SineShopClient.SineShopUserInfo.toUnifiedUserDetail(): UnifiedUserDetail {
+    return UnifiedUserDetail(
+        id = this.id.toLong(),
+        username = this.username,
+        displayName = this.displayName,
+        avatarUrl = this.userAvatar,
+        description = this.userDescribe,
+        userOfficial = this.userOfficial,
+        userBadge = this.userBadge,
+        userStatus = this.userStatus,
+        userStatusReason = this.userStatusReason,
+        banTime = this.banTime?.toLong(),
+        joinTime = this.joinTime,
+        userPermission = this.userPermission,
+        bindQq = this.bindQq,
+        bindEmail = this.bindEmail,
+        bindBilibili = this.bindBilibili,
+        verifyEmail = this.verifyEmail,
+        lastLoginDevice = this.lastLoginDevice,
+        lastOnlineTime = this.lastOnlineTime,
+        uploadCount = this.uploadCount,
+        replyCount = this.replyCount,
+        store = AppStore.SIENE_SHOP,
+        raw = this
     )
 }

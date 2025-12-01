@@ -20,6 +20,7 @@ import cc.bbq.xq.ui.settings.storage.StoreManagerScreen
 import org.koin.core.parameter.parametersOf
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import cc.bbq.xq.AppStore
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.ViewModel
@@ -239,38 +240,40 @@ composable(route = CreateRefundPost(0, 0, "", 0).route, arguments = CreateRefund
 
 composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { backStackEntry ->
     val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
+    val storeName = backStackEntry.arguments?.getString("store") ?: AppStore.XIAOQU_SPACE.name
+    val store = try {
+        AppStore.valueOf(storeName)
+    } catch (e: IllegalArgumentException) {
+        AppStore.XIAOQU_SPACE // 默认值
+    }
     
     // 使用 koinViewModel() 而不是 viewModel()
     val viewModel: UserDetailViewModel = koinViewModel()
-
+    
     // 简化的LaunchedEffect - 只设置用户ID
-    LaunchedEffect(userId) {
+    LaunchedEffect(userId, store) {
         if (userId != -1L) {
-            viewModel.loadUserDetails(userId)
+            viewModel.loadUserDetails(userId, store)
         }
     }
-
+    
     val userData by viewModel.userData.observeAsState()
     val isLoading by viewModel.isLoading.observeAsState(false)
     val errorMessage by viewModel.errorMessage.observeAsState()
-
+    
     UserDetailScreen(
         userData = userData,
         isLoading = isLoading,
-        snackbarHostState = snackbarHostState, // 传递 SnackbarHostState
+        snackbarHostState = snackbarHostState,
         errorMessage = errorMessage,
-//        onBackClick = { navController.popBackStack() },
-        onPostsClick = { 
-            navController.navigate(MyPosts(userId).createRoute()) 
-        },
-        onResourcesClick = { uid -> 
-            navController.navigate(ResourcePlaza(isMyResource = false, userId = uid).createRoute()) 
+        onPostsClick = { navController.navigate(MyPosts(userId).createRoute()) },
+        onResourcesClick = { uid ->
+            navController.navigate(ResourcePlaza(isMyResource = false, userId = uid).createRoute())
         },
         onImagePreview = { imageUrl ->
             navController.navigate(ImagePreview(imageUrl).createRoute())
         },
-        modifier = Modifier.fillMaxSize()//,
-     //   navController = navController
+        modifier = Modifier.fillMaxSize()
     )
 }
         composable(route = MyPosts(0).route, arguments = MyPosts.arguments) { backStackEntry ->

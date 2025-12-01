@@ -84,3 +84,45 @@ data class UnifiedDownloadSource(
     val url: String,
     val isOfficial: Boolean
 )
+
+/**
+ * 统一的用户详情模型（支持小趣空间和弦应用商店）
+ */
+data class UnifiedUserDetail(
+    val id: Long,
+    val username: String,
+    val displayName: String,
+    val avatarUrl: String?,
+    val description: String?,
+    
+    // 小趣空间特有字段
+    val hierarchy: String? = null,  // 等级
+    val followersCount: String? = null,
+    val fansCount: String? = null,
+    val postCount: String? = null,
+    val likeCount: String? = null,
+    val money: Int? = null,
+    val commentCount: Int? = null,
+    val seriesDays: Int? = null,  // 连续签到天数
+    val lastActivityTime: String? = null,
+    
+    // 弦应用商店特有字段
+    val userOfficial: String? = null,
+    val userBadge: String? = null,
+    val userStatus: Int? = null,
+    val userStatusReason: String? = null,
+    val banTime: Long? = null,
+    val joinTime: Long? = null,
+    val userPermission: Int? = null,
+    val bindQq: Long? = null,
+    val bindEmail: String? = null,
+    val bindBilibili: Int? = null,
+    val verifyEmail: Int? = null,
+    val lastLoginDevice: String? = null,
+    val lastOnlineTime: Long? = null,
+    val uploadCount: Int? = null,
+    val replyCount: Int? = null,
+    
+    val store: AppStore,
+    val raw: Any? = null
+)
