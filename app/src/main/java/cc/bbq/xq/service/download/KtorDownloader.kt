@@ -14,7 +14,6 @@ import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentLength
-import io.ktor.client.call.*
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.jvm.javaio.copyTo
@@ -259,7 +258,8 @@ class KtorDownloader {
             throw Exception("Chunk ${chunk.id} failed: ${response.status}")
         }
 
-        val channel: ByteReadChannel = response.body()
+        // 修复这里：使用 bodyAsChannel() 而不是 body()
+        val channel: ByteReadChannel = response.bodyAsChannel()
         
         withContext(Dispatchers.IO) {
             RandomAccessFile(file, "rw").use { raf ->
@@ -269,9 +269,11 @@ class KtorDownloader {
                 val buffer = ByteArray(bufferSize)
                 var bytesRead: Int
                 
-                while (channel.isClosedForRead.not() && chunk.current <= chunk.end) {
+                // 修复这里：使用 readAvailable 的正确方式
+                while (true) {
+                    // readAvailable 返回读取的字节数，-1表示结束
                     bytesRead = channel.readAvailable(buffer, 0, bufferSize)
-                    if (bytesRead == -1) break
+                    if (bytesRead <= 0) break
                     
                     raf.write(buffer, 0, bytesRead)
                     chunk.current += bytesRead
@@ -280,6 +282,11 @@ class KtorDownloader {
                     // 检查是否被取消
                     if (!isActive) {
                         Log.d(TAG, "Chunk ${chunk.id} cancelled")
+                        break
+                    }
+                    
+                    // 检查是否已完成
+                    if (chunk.current > chunk.end) {
                         break
                     }
                 }
