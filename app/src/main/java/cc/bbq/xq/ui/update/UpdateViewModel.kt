@@ -15,9 +15,9 @@ import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.R
 import cc.bbq.xq.data.unified.UnifiedAppItem
-import cc.bbq.xq.util.PackageManagerExt.getApplicationInfoCompat
-import cc.bbq.xq.util.PackageManagerExt.getInstalledPackagesCompat
-import cc.bbq.xq.util.PackageManagerExt.isSystemApplication
+import cc.bbq.xq.util.getApplicationInfoCompat
+import cc.bbq.xq.util.getInstalledPackagesCompat
+import cc.bbq.xq.util.isSystemApplication
 import cc.bbq.xq.util.versionCodeCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
