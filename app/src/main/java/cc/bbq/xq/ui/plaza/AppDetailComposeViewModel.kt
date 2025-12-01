@@ -219,8 +219,8 @@ class AppDetailComposeViewModel(
                 // 发送 Snackbar 事件
                 _snackbarEvent.emit("开始下载: $appName")
                 
-/*                // 发送导航到下载管理界面的事件
-                _navigateToDownloadEvent.emit(true)*/
+                // 发送导航到下载管理界面的事件
+                _navigateToDownloadEvent.emit(true)
                 
             } catch (e: Exception) {
                 _errorMessage.value = "启动下载失败: ${e.message}"
