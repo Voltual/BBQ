@@ -397,6 +397,31 @@ object SineShopClient {
             }
         }
     }
+    
+    // 新增：根据用户ID获取弦应用商店用户信息方法
+suspend fun getUserInfoById(userId: Long): Result<SineShopUserInfo> {
+    val url = "/user/info"
+    val parameters = sineShopParameters {
+        append("id", userId.toString())
+    }
+    return safeApiCall<BaseResponse<SineShopUserInfo>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+            }
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response: BaseResponse<SineShopUserInfo> ->
+        if (response.code == 0) {
+            response.data ?: throw IOException("Failed to get user info: Data is null")
+        } else {
+            throw IOException("Failed to get user info: ${response.msg}")
+        }
+    }
+}
 
 // 修改：获取指定分类应用列表方法，支持关键词搜索
 suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null): Result<AppListData> {

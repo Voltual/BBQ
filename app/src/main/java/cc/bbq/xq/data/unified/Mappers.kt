@@ -168,3 +168,11 @@ fun SineShopClient.SineShopDownloadSource.toUnifiedDownloadSource(): UnifiedDown
         isOfficial = this.isExtra == 1 // 假设 1 代表官方/主要线路
     )
 }
+
+fun SineShopClient.SineShopUserInfo.toUnifiedUser(): UnifiedUser {
+    return UnifiedUser(
+        id = this.id.toString(),
+        displayName = this.displayName,
+        avatarUrl = this.userAvatar
+    )
+}
