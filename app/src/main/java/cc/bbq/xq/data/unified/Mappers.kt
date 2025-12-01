@@ -4,10 +4,18 @@ package cc.bbq.xq.data.unified
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.SineShopClient
-import cc.bbq.xq.KtorClient.*
-import cc.bbq.xq.SineShopClient.*
-import cc.bbq.xq.data.unified.*
-
+import cc.bbq.xq.KtorClient.AppItem
+import cc.bbq.xq.KtorClient.Comment
+import cc.bbq.xq.KtorClient.AppComment
+import cc.bbq.xq.KtorClient.AppDetail
+import cc.bbq.xq.KtorClient.UserInformationData
+import cc.bbq.xq.SineShopClient.SineShopApp
+import cc.bbq.xq.SineShopClient.SineShopUserInfoLite
+import cc.bbq.xq.SineShopClient.SineShopComment
+import cc.bbq.xq.SineShopClient.SineShopAppDetail
+import cc.bbq.xq.SineShopClient.AppTag
+import cc.bbq.xq.SineShopClient.SineShopDownloadSource
+import cc.bbq.xq.SineShopClient.SineShopUserInfo
 
 // --- KtorClient (小趣空间) Mappers ---
 
@@ -181,21 +189,21 @@ fun SineShopClient.SineShopUserInfo.toUnifiedUser(): UnifiedUser {
     )
 }
 
-// 在文件末尾添加 KtorClient (小趣空间) 映射
+// 修正 KtorClient (小趣空间) 映射中的类型错误
 fun KtorClient.UserInformationData.toUnifiedUserDetail(): UnifiedUserDetail {
     return UnifiedUserDetail(
         id = this.id,
         username = this.username,
         displayName = this.nickname,
         avatarUrl = this.usertx,
-        description = null,  // 小趣空间无此字段
+        description = null, // 小趣空间无此字段
         hierarchy = this.hierarchy,
         followersCount = this.fanscount,
         fansCount = this.followerscount,
         postCount = this.postcount,
         likeCount = this.likecount,
-        money = this.money,
-        commentCount = this.commentcount,
+        money = this.money, // Int 类型，正确
+        commentCount = this.commentcount?.toIntOrNull(), // 从 String? 转换为 Int?
         seriesDays = this.series_days,
         lastActivityTime = this.last_activity_time,
         store = AppStore.XIAOQU_SPACE,
@@ -203,7 +211,7 @@ fun KtorClient.UserInformationData.toUnifiedUserDetail(): UnifiedUserDetail {
     )
 }
 
-// 在文件末尾添加 SineShopClient (弦应用商店) 映射
+// 修正 SineShopClient (弦应用商店) 映射
 fun SineShopClient.SineShopUserInfo.toUnifiedUserDetail(): UnifiedUserDetail {
     return UnifiedUserDetail(
         id = this.id.toLong(),
