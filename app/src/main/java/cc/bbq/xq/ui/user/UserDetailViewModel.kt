@@ -14,7 +14,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import cc.bbq.xq.data.unified.UnifiedUserDetail
 import cc.bbq.xq.data.unified.toUnifiedUserDetail  
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
@@ -91,46 +90,40 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
         try {
             val result = when (_currentStore) {
                 AppStore.XIAOQU_SPACE -> {
-                    // 小趣空间 API：返回 Result<UserInformationResponse>
+                    // 小趣空间 API
                     apiService.getUserInformation(
                         userId = _currentUserId,
                         token = token
                     )
                 }
                 AppStore.SIENE_SHOP -> {
-                    // 弦应用商店 API：直接返回 Result<SineShopUserInfo>
+                    // 弦应用商店 API
                     SineShopClient.getUserInfoById(_currentUserId)
                 }
-                else -> {
-                    throw IllegalArgumentException("不支持的应用商店: $_currentStore")
+                AppStore.LOCAL -> {
+                    // 本地应用：暂不支持用户详情
+                    Result.failure(IllegalArgumentException("本地应用不支持用户详情"))
                 }
             }
 
-            result.onSuccess { response ->
-                when (_currentStore) {
-                    AppStore.XIAOQU_SPACE -> {
-                        // 处理小趣空间响应
-                        val xiaoquResponse = response as? KtorClient.UserInformationResponse
-                        if (xiaoquResponse?.code == 1) {
-                            _userData.postValue(xiaoquResponse.data.toUnifiedUserDetail())
-                            _errorMessage.postValue("")
-                        } else {
-                            _errorMessage.postValue("加载失败: ${xiaoquResponse?.msg ?: "未知错误"}")
-                        }
-                    }
-                    AppStore.SIENE_SHOP -> {
-                        // 处理弦应用商店响应：直接是数据
-                        val sieneData = response as? SineShopClient.SineShopUserInfo
-                        if (sieneData != null) {
-                            _userData.postValue(sieneData.toUnifiedUserDetail())
-                            _errorMessage.postValue("")
-                        } else {
-                            _errorMessage.postValue("用户数据为空")
-                        }
+            when (val response = result.getOrNull()) {
+                is KtorClient.UserInformationResponse -> {
+                    // 小趣空间响应
+                    if (response.code == 1) {
+                        _userData.postValue(response.data.toUnifiedUserDetail())
+                        _errorMessage.postValue("")
+                    } else {
+                        _errorMessage.postValue("加载失败: ${response.msg}")
                     }
                 }
-            }.onFailure { exception ->
-                _errorMessage.postValue("加载失败: ${exception.message}")
+                is SineShopClient.SineShopUserInfo -> {
+                    // 弦应用商店响应：直接是数据对象
+                    _userData.postValue(response.toUnifiedUserDetail())
+                    _errorMessage.postValue("")
+                }
+                else -> {
+                    _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message ?: "网络错误"}")
+                }
             }
         } catch (e: Exception) {
             _errorMessage.postValue("网络错误: ${e.message}")
