@@ -12,6 +12,7 @@ import cc.bbq.xq.MainActivity
 import cc.bbq.xq.R
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import android.util.Log  // 添加这行
 import java.io.File
 
 /**
