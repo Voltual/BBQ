@@ -13,6 +13,7 @@ package cc.bbq.xq.ui.update
 import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import androidx.core.graphics.drawable.toBitmap // 导入 toBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AppStore
@@ -24,6 +25,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File // 导入 File
+import java.io.FileOutputStream // 导入 FileOutputStream
 import java.util.UUID
 
 /**
@@ -139,7 +142,7 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
-    
+
     /**
      * 将 Drawable 转换为临时文件，并返回文件 URI
      */
@@ -156,3 +159,4 @@ class UpdateViewModel(application: Application) : AndroidViewModel(application) 
             null
         }
     }
+}
