@@ -117,6 +117,7 @@ class MainActivity : ComponentActivity() {
                       sinePrivacyPolicyAccepted)
                 }
             }
+            
 
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
                 Scaffold(
