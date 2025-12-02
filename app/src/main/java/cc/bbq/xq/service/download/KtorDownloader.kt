@@ -235,7 +235,7 @@ class KtorDownloader {
     }
 
 /**
- * 下载单个分块 - 修复版本
+ * 下载单个分块 - 不使用 Channels 的版本
  */
 private suspend fun downloadChunk(
     url: String,
@@ -260,19 +260,40 @@ private suspend fun downloadChunk(
         throw Exception("Chunk ${chunk.id} failed: ${response.status}")
     }
 
+    val channel = response.bodyAsChannel()
+    
     withContext(Dispatchers.IO) {
         RandomAccessFile(file, "rw").use { raf ->
             raf.seek(chunk.current)
             
-            // 将 FileChannel 转换为 OutputStream
-            val outputStream = Channels.newOutputStream(raf.channel)
+            val buffer = ByteArray(BUFFER_SIZE)
+            var totalRead = 0L
             
-            // 使用正确的 copyTo 方法（针对 OutputStream）
-            // 这个版本只接受 limit 参数，不接受回调
-            val bytesCopied = response.bodyAsChannel().copyTo(outputStream, limit = chunk.end - chunk.current + 1)
+            // 使用 readAvailable 方法（确保已正确导入）
+            while (isActive && chunk.current + totalRead <= chunk.end) {
+                ensureActive()
+                
+                // 使用 ByteReadChannel 的 readAvailable 扩展
+                val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
+                if (bytesRead <= 0) break
+                
+                // 确保不超过分块范围
+                val remaining = chunk.end - chunk.current - totalRead + 1
+                val bytesToWrite = minOf(bytesRead.toLong(), remaining).toInt()
+                
+                if (bytesToWrite > 0) {
+                    raf.write(buffer, 0, bytesToWrite)
+                    totalRead += bytesToWrite
+                    onBytesRead(bytesToWrite)
+                }
+                
+                // 如果读取的字节数小于缓冲区大小，说明已经读取完毕
+                if (bytesRead < buffer.size) {
+                    break
+                }
+            }
             
-            chunk.current += bytesCopied
-            onBytesRead(bytesCopied.toInt())
+            chunk.current += totalRead
         }
     }
     
