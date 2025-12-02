@@ -9,10 +9,11 @@
 package cc.bbq.xq.ui.theme
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier // <-- 添加此行
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -26,15 +27,13 @@ fun Modifier.roundScreenPadding(): Modifier {
 
     return if (roundScreenPaddings.enabled) {
         val density = LocalDensity.current
-        // 使用 Modifier.padding 并传入 PaddingValues
-        this.then( // 使用 then() 将 padding 修饰符链接到当前 Modifier
-            Modifier.padding(
-                PaddingValues(
-                    start = with(density) { roundScreenPaddings.left.dp },
-                    top = with(density) { roundScreenPaddings.top.dp },
-                    end = with(density) { roundScreenPaddings.right.dp },
-                    bottom = with(density) { roundScreenPaddings.bottom.dp }
-                )
+        // 直接在 this 上调用 padding 函数
+        this.padding(
+            PaddingValues(
+                start = with(density) { roundScreenPaddings.left.dp },
+                top = with(density) { roundScreenPaddings.top.dp },
+                end = with(density) { roundScreenPaddings.right.dp },
+                bottom = with(density) { roundScreenPaddings.bottom.dp }
             )
         )
     } else {
