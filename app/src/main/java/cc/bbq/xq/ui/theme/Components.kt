@@ -337,7 +337,7 @@ fun BBQSnackbar(
 ) {
     Snackbar(
         snackbarData = snackbarData,
-        modifier = modifier.roundScreenPadding() 
+        modifier = modifier.roundScreenPadding(), 
         actionOnNewLine = actionOnNewLine,
         shape = shape,
         containerColor = containerColor,
