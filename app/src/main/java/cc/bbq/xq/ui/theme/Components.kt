@@ -428,9 +428,10 @@ fun BBQSnackbarHost(
         BBQSnackbar(snackbarData)
     }
 ) {
+    // 直接应用圆屏内边距修饰符
     SnackbarHost(
         hostState = hostState,
-        modifier = modifier,
+        modifier = modifier.roundScreenPadding(), 
         snackbar = snackbar
     )
 }
