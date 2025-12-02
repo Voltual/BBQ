@@ -10,13 +10,31 @@ package cc.bbq.xq.ui.theme
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import cc.bbq.xq.ui.theme.ThemeColorStore
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun Modifier.roundScreenPadding(): Modifier {
     val context = LocalContext.current
-    val padding by ThemeColorStore.getRoundScreenPaddingFlow(context).collectAsState(initial = PaddingValues(0.dp))
-    return this.padding(padding)
+    val roundScreenPaddings by ThemeColorStore.getRoundScreenPaddingFlow(context).collectAsState(
+        initial = ThemeColorStore.RoundScreenPaddings(false, 0f, 0f, 0f, 0f)
+    )
+
+    return if (roundScreenPaddings.enabled) {
+        val density = LocalDensity.current
+        Modifier.padding(
+            PaddingValues(
+                start = with(density) { roundScreenPaddings.left.dp },
+                top = with(density) { roundScreenPaddings.top.dp },
+                end = with(density) { roundScreenPaddings.right.dp },
+                bottom = with(density) { roundScreenPaddings.bottom.dp }
+            )
+        )
+    } else {
+        this // 不启用时返回原始 Modifier
+    }
 }
