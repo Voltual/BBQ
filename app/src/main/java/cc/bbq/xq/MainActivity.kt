@@ -120,7 +120,7 @@ class MainActivity : ComponentActivity() {
 
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
                 Scaffold(
-                    snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState) },
+                    snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState,modifier = modifier.roundScreenPadding()) },
                     modifier = Modifier.fillMaxSize(),
                     content = { innerPadding ->
                         Surface(
