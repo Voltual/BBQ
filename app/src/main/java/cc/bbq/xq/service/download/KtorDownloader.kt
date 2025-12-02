@@ -16,10 +16,12 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentLength
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.core.*
 import io.ktor.utils.io.jvm.javaio.copyTo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,6 +42,8 @@ class KtorDownloader {
         private const val CONNECTION_TIMEOUT = 30_000L
         private const val SOCKET_TIMEOUT = 60_000L
         private const val REQUEST_TIMEOUT = Long.MAX_VALUE  // 大文件下载不超时
+        private const val BUFFER_SIZE = 8192
+        private const val PACKET_SIZE = 16384  // Larger packet for efficiency
     }
 
     private val _status = MutableStateFlow<DownloadStatus>(DownloadStatus.Idle)
@@ -231,7 +235,7 @@ class KtorDownloader {
     }
 
     /**
-     * 下载单个分块（支持断点续传的核心方法）
+     * 下载单个分块（支持断点续传的核心方法） - FIXED: 使用 readPacket + readAvailable
      */
     private suspend fun downloadChunk(
         url: String,
@@ -258,40 +262,46 @@ class KtorDownloader {
             throw Exception("Chunk ${chunk.id} failed: ${response.status}")
         }
 
-        // 修复这里：使用 bodyAsChannel() 而不是 body()
         val channel: ByteReadChannel = response.bodyAsChannel()
         
         withContext(Dispatchers.IO) {
             RandomAccessFile(file, "rw").use { raf ->
-                raf.seek(chunk.start)
+                raf.seek(chunk.current)  // Seek to current position for resume
                 
-                val bufferSize = 8192
-                val buffer = ByteArray(bufferSize)
-                var bytesRead: Int
-                
-                // 修复这里：使用 readAvailable 的正确方式
-                while (true) {
-                    // readAvailable 返回读取的字节数，-1表示结束
-                    bytesRead = channel.readAvailable(buffer, 0, bufferSize)
-                    if (bytesRead <= 0) break
+                val buffer = ByteArray(BUFFER_SIZE)
+                while (isActive) {
+                    ensureActive()  // Cancellation check
                     
-                    raf.write(buffer, 0, bytesRead)
-                    chunk.current += bytesRead
-                    onBytesRead(bytesRead)
-                    
-                    // 检查是否被取消
-                    if (!isActive) {
-                        Log.d(TAG, "Chunk ${chunk.id} cancelled")
+                    val packet = channel.readPacket(PACKET_SIZE)
+                    if (packet.isEmpty) {
                         break
                     }
                     
-                    // 检查是否已完成
+                    try {
+                        var bytesRead = packet.readAvailable(buffer)
+                        while (bytesRead > 0) {
+                            raf.write(buffer, 0, bytesRead)
+                            chunk.current += bytesRead
+                            onBytesRead(bytesRead)
+                            
+                            if (chunk.current > chunk.end) {
+                                break
+                            }
+                            
+                            bytesRead = packet.readAvailable(buffer)
+                        }
+                    } finally {
+                        packet.release()
+                    }
+                    
                     if (chunk.current > chunk.end) {
                         break
                     }
                 }
             }
         }
+        
+        Log.d(TAG, "Chunk ${chunk.id} completed at ${chunk.current}")
     }
 
     /**
@@ -344,18 +354,18 @@ class KtorDownloader {
     }
 
     /**
-     * 取消下载
+     * 取消下载（不关闭client，允许重用）
      */
     fun cancel() {
-        client.close()
         _status.value = DownloadStatus.Idle
+        Log.d(TAG, "Download cancelled")
     }
 
     /**
      * 清理资源
      */
     fun close() {
-        cancel()
+        client.close()
     }
 }
 
