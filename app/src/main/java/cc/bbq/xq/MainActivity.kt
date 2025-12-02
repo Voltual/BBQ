@@ -117,17 +117,16 @@ class MainActivity : ComponentActivity() {
                       sinePrivacyPolicyAccepted)
                 }
             }
-            
 
             BBQTheme(appDarkTheme = ThemeManager.isAppDarkTheme) {
                 Scaffold(
                     snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState) },
                     modifier = Modifier.fillMaxSize(),
-                    .roundScreenPadding()  // 新增：圆屏 padding
                     content = { innerPadding ->
                         Surface(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .roundScreenPadding()  // 新增：圆屏 padding
                                 .padding(innerPadding),
                             color = MaterialTheme.colorScheme.background
                         ) {
