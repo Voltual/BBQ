@@ -234,8 +234,8 @@ class KtorDownloader {
         _status.value = DownloadStatus.Success(file)
     }
 
-    /**
- * 下载单个分块（支持断点续传的核心方法）- 使用流式复制
+/**
+ * 下载单个分块 - 修复版本
  */
 private suspend fun downloadChunk(
     url: String,
@@ -264,19 +264,15 @@ private suspend fun downloadChunk(
         RandomAccessFile(file, "rw").use { raf ->
             raf.seek(chunk.current)
             
-            // 获取写入通道
-            val outputChannel = raf.channel
+            // 将 FileChannel 转换为 OutputStream
+            val outputStream = Channels.newOutputStream(raf.channel)
             
-            // 使用流式复制（类似官方示例）
-            response.bodyAsChannel().copyTo(outputChannel) { bytesCopied ->
-                chunk.current += bytesCopied
-                onBytesRead(bytesCopied.toInt())
-                
-                // 如果超过分块大小，停止复制
-                if (chunk.current > chunk.end) {
-                    throw CancellationException("Chunk limit reached")
-                }
-            }
+            // 使用正确的 copyTo 方法（针对 OutputStream）
+            // 这个版本只接受 limit 参数，不接受回调
+            val bytesCopied = response.bodyAsChannel().copyTo(outputStream, limit = chunk.end - chunk.current + 1)
+            
+            chunk.current += bytesCopied
+            onBytesRead(bytesCopied.toInt())
         }
     }
     
