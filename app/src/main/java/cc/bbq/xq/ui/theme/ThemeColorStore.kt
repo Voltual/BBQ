@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.toArgb
 import android.net.Uri
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.preferencesDataStore 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -140,8 +141,6 @@ object ThemeColorStore {
 
     private val GLOBAL_BACKGROUND_URI_KEY = stringPreferencesKey("global_background_uri")
 
-    // 新增：是否启用自定义 DPI 的 DataStore 键
-    private val CUSTOM_DPI_ENABLED_KEY = booleanPreferencesKey("custom_dpi_enabled")
 
     suspend fun saveGlobalBackgroundUri(context: Context, uri: String?) {
         context.themeSettingsDataStore.edit { preferences ->
