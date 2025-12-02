@@ -327,7 +327,7 @@ fun ImagePreviewItem(
 @Composable
 fun BBQSnackbar(
     snackbarData: SnackbarData,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = modifier = modifier.roundScreenPadding(),
     actionOnNewLine: Boolean = false,
     shape: Shape = MaterialTheme.shapes.medium,
     containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
