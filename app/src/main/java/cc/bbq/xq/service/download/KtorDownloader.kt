@@ -235,7 +235,7 @@ class KtorDownloader {
     }
 
 /**
- * 下载单个分块 - 基于流式上传的经验
+ * 下载单个分块 - 使用 Ktor 的内置 copyTo 方法
  */
 private suspend fun downloadChunk(
     url: String,
@@ -245,13 +245,10 @@ private suspend fun downloadChunk(
 ) {
     Log.d(TAG, "Downloading chunk ${chunk.id}: ${chunk.start}-${chunk.end}")
     
-    if (chunk.current > chunk.end) {
-        Log.d(TAG, "Chunk ${chunk.id} already completed")
-        return
-    }
+    if (chunk.current > chunk.end) return
 
     val response = client.get(url) {
-        if (chunk.start > 0 || chunk.end < Long.MAX_VALUE) {
+        if (chunk.start > 0) {
             header(HttpHeaders.Range, "bytes=${chunk.start}-${chunk.end}")
         }
     }
@@ -260,52 +257,35 @@ private suspend fun downloadChunk(
         throw Exception("Chunk ${chunk.id} failed: ${response.status}")
     }
 
-    // 借鉴流式上传的经验，使用流式下载
+    // 使用临时文件，然后合并
+    val tempFile = File(file.parent, "${file.name}.part${chunk.id}")
+    
     withContext(Dispatchers.IO) {
+        tempFile.outputStream().use { output ->
+            // 使用 Ktor 的内置 copyTo 方法
+            response.bodyAsChannel().copyTo(output)
+        }
+        
+        // 将临时文件内容复制到正确位置
         RandomAccessFile(file, "rw").use { raf ->
             raf.seek(chunk.current)
-            
-            // 创建输出流（类似上传中的输入流）
-            val outputStream = object : OutputStream() {
-                override fun write(b: Int) {
-                    raf.write(b)
-                }
-                
-                override fun write(b: ByteArray, off: Int, len: Int) {
-                    raf.write(b, off, len)
-                }
-            }
-            
-            // 将响应体转换为输入流，然后流式复制
-            response.bodyAsChannel().toInputStream().use { inputStream ->
+            tempFile.inputStream().use { input ->
                 val buffer = ByteArray(BUFFER_SIZE)
-                var totalRead = 0L
+                var bytesRead: Int
+                var total = 0L
                 
-                while (isActive && totalRead <= chunk.end - chunk.start) {
-                    ensureActive()
-                    
-                    // 确保不超过分块限制
-                    val remaining = chunk.end - chunk.start - totalRead + 1
-                    val maxToRead = minOf(buffer.size.toLong(), remaining).toInt()
-                    
-                    val bytesRead = inputStream.read(buffer, 0, maxToRead)
-                    if (bytesRead == -1) break
-                    
-                    outputStream.write(buffer, 0, bytesRead)
-                    totalRead += bytesRead
+                while (input.read(buffer).also { bytesRead = it } != -1) {
+                    raf.write(buffer, 0, bytesRead)
+                    total += bytesRead
                     onBytesRead(bytesRead)
-                    
-                    // 如果读取的字节数小于请求的大小，说明已经读取完毕
-                    if (bytesRead < maxToRead) {
-                        break
-                    }
                 }
-                
-                chunk.current = chunk.start + totalRead
             }
         }
+        
+        tempFile.delete()
     }
     
+    chunk.current = chunk.start + tempFile.length()
     Log.d(TAG, "Chunk ${chunk.id} completed at ${chunk.current}")
 }
 
