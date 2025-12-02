@@ -68,6 +68,14 @@ fun ThemeCustomizeScreen(
 
     // 新增：是否启用自定义 DPI 的状态
     var customDpiEnabled by remember { mutableStateOf(ThemeColorStore.loadCustomDpiEnabled(context)) }
+    
+    val roundScreenPaddings = remember { ThemeColorStore.loadRoundScreenPaddings(context) }
+var roundScreenEnabled by remember { mutableStateOf(roundScreenPaddings.enabled) }
+var roundLeft by remember { mutableStateOf(roundScreenPaddings.left) }
+var roundTop by remember { mutableStateOf(roundScreenPaddings.top) }
+var roundRight by remember { mutableStateOf(roundScreenPaddings.right) }
+var roundBottom by remember { mutableStateOf(roundScreenPaddings.bottom) }
+
 
     // 翻译状态
     var translate by remember { mutableStateOf(false) }
@@ -248,6 +256,50 @@ fun ThemeCustomizeScreen(
                     )
                 }
                 item {
+    SwitchWithText(
+        text = "启用圆屏适配",
+        checked = roundScreenEnabled,
+        onCheckedChange = { roundScreenEnabled = it },
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    )
+}
+item {
+    OutlinedTextField(
+        value = roundLeft.toString(),
+        onValueChange = { roundLeft = it.toFloatOrNull() ?: roundLeft },
+        label = { Text("左内边距 (dp)") },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        enabled = roundScreenEnabled
+    )
+}
+item {
+    OutlinedTextField(
+        value = roundTop.toString(),
+        onValueChange = { roundTop = it.toFloatOrNull() ?: roundTop },
+        label = { Text("上内边距 (dp)") },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        enabled = roundScreenEnabled
+    )
+}
+item {
+    OutlinedTextField(
+        value = roundRight.toString(),
+        onValueChange = { roundRight = it.toFloatOrNull() ?: roundRight },
+        label = { Text("右内边距 (dp)") },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        enabled = roundScreenEnabled
+    )
+}
+item {
+    OutlinedTextField(
+        value = roundBottom.toString(),
+        onValueChange = { roundBottom = it.toFloatOrNull() ?: roundBottom },
+        label = { Text("下内边距 (dp)") },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        enabled = roundScreenEnabled
+    )
+}
+                item {
                     SwitchWithText(
                         text = "启用自定义屏幕密度和字体大小",
                         checked = customDpiEnabled,
@@ -406,7 +458,12 @@ fun ThemeCustomizeScreen(
                     colors = CustomColorSet(lightColors, darkColors),
                     dpi = dpi,
                     fontScale = fontSize,
-                    customDpiEnabled = customDpiEnabled // 保存是否启用自定义 DPI 的状态
+                    customDpiEnabled = customDpiEnabled,
+                    roundScreenEnabled = roundScreenEnabled,  // 新增
+    roundLeft = roundLeft,                   // 新增
+    roundTop = roundTop,                     // 新增
+    roundRight = roundRight,                 // 新增
+    roundBottom = roundBottom                // 新增
                 )
                 showSavedMessage = true
             },
@@ -487,7 +544,12 @@ private fun saveThemeAndRestart(
     colors: CustomColorSet,
     dpi: Float,
     fontScale: Float,
-    customDpiEnabled: Boolean // 新增：是否启用自定义 DPI 的参数
+    customDpiEnabled: Boolean,
+    roundScreenEnabled: Boolean,  // 新增
+    roundLeft: Float,             // 新增
+    roundTop: Float,              // 新增
+    roundRight: Float,            // 新增
+    roundBottom: Float            // 新增
 ) {
     val scope = (context as? androidx.lifecycle.LifecycleOwner)?.lifecycleScope ?: kotlinx.coroutines.MainScope()
     scope.launch {
@@ -499,6 +561,7 @@ private fun saveThemeAndRestart(
         ThemeColorStore.saveDpi(context, dpi)
         ThemeColorStore.saveFontSize(context, fontScale)
         ThemeColorStore.saveCustomDpiEnabled(context, customDpiEnabled) // 保存是否启用自定义 DPI 的状态
+        ThemeColorStore.saveRoundScreenPaddings(context, roundScreenEnabled, roundLeft, roundTop, roundRight, roundBottom)
 
         withContext(Dispatchers.Main) {
             ThemeManager.applyCustomColors(context) // 应用颜色

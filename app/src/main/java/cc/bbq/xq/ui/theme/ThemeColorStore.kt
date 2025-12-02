@@ -18,6 +18,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import androidx.compose.foundation.layout.PaddingValues
 import kotlinx.coroutines.runBlocking
 
 private val Context.themeSettingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "theme_settings")
@@ -140,7 +141,12 @@ object ThemeColorStore {
     private val DRAWER_HEADER_DARK_BG_URI_KEY = stringPreferencesKey("drawer_header_dark_bg_uri")
     
     private val GLOBAL_BACKGROUND_URI_KEY = stringPreferencesKey("global_background_uri")
-    
+    private val ROUND_SCREEN_ENABLED_KEY = booleanPreferencesKey("round_screen_enabled")
+private val ROUND_SCREEN_LEFT_PADDING_KEY = floatPreferencesKey("round_screen_left_padding")
+private val ROUND_SCREEN_TOP_PADDING_KEY = floatPreferencesKey("round_screen_top_padding")
+private val ROUND_SCREEN_RIGHT_PADDING_KEY = floatPreferencesKey("round_screen_right_padding")
+private val ROUND_SCREEN_BOTTOM_PADDING_KEY = floatPreferencesKey("round_screen_bottom_padding")
+
     // 新增：是否启用自定义 DPI 的 DataStore 键
     private val CUSTOM_DPI_ENABLED_KEY = booleanPreferencesKey("custom_dpi_enabled")
     
@@ -154,6 +160,70 @@ object ThemeColorStore {
     fun getGlobalBackgroundUriFlow(context: Context): Flow<String?> {
         return context.themeSettingsDataStore.data.map { it[GLOBAL_BACKGROUND_URI_KEY] }
     }
+    
+    // 保存圆屏 padding
+suspend fun saveRoundScreenPaddings(
+    context: Context,
+    enabled: Boolean,
+    left: Float,
+    top: Float,
+    right: Float,
+    bottom: Float
+) {
+    context.themeSettingsDataStore.edit { prefs ->
+        prefs[ROUND_SCREEN_ENABLED_KEY] = enabled
+        prefs[ROUND_SCREEN_LEFT_PADDING_KEY] = left
+        prefs[ROUND_SCREEN_TOP_PADDING_KEY] = top
+        prefs[ROUND_SCREEN_RIGHT_PADDING_KEY] = right
+        prefs[ROUND_SCREEN_BOTTOM_PADDING_KEY] = bottom
+    }
+}
+
+// 加载圆屏 padding（同步，用于初始化）
+data class RoundScreenPaddings(
+    val enabled: Boolean,
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float
+)
+
+fun loadRoundScreenPaddings(context: Context): RoundScreenPaddings {
+    return runBlocking {
+        val prefs = context.themeSettingsDataStore.data.first()
+        RoundScreenPaddings(
+            enabled = prefs[ROUND_SCREEN_ENABLED_KEY] ?: false,
+            left = prefs[ROUND_SCREEN_LEFT_PADDING_KEY] ?: 0f,
+            top = prefs[ROUND_SCREEN_TOP_PADDING_KEY] ?: 0f,
+            right = prefs[ROUND_SCREEN_RIGHT_PADDING_KEY] ?: 0f,
+            bottom = prefs[ROUND_SCREEN_BOTTOM_PADDING_KEY] ?: 0f
+        )
+    }
+}
+
+// Flow：实时获取 PaddingValues（仅 enabled 时非零）
+fun getRoundScreenPaddingFlow(context: Context): Flow<PaddingValues> {
+    return context.themeSettingsDataStore.data.map { prefs ->
+        val enabled = prefs[ROUND_SCREEN_ENABLED_KEY] ?: false
+        if (!enabled) PaddingValues(0.dp) else PaddingValues(
+            start = (prefs[ROUND_SCREEN_LEFT_PADDING_KEY] ?: 0f).dp,
+            top = (prefs[ROUND_SCREEN_TOP_PADDING_KEY] ?: 0f).dp,
+            end = (prefs[ROUND_SCREEN_RIGHT_PADDING_KEY] ?: 0f).dp,
+            bottom = (prefs[ROUND_SCREEN_BOTTOM_PADDING_KEY] ?: 0f).dp
+        )
+    }
+}
+
+// 重置函数（新增到 reset 逻辑中）
+suspend fun resetRoundScreenPaddings(context: Context) {
+    context.themeSettingsDataStore.edit { prefs ->
+        prefs.remove(ROUND_SCREEN_ENABLED_KEY)
+        prefs.remove(ROUND_SCREEN_LEFT_PADDING_KEY)
+        prefs.remove(ROUND_SCREEN_TOP_PADDING_KEY)
+        prefs.remove(ROUND_SCREEN_RIGHT_PADDING_KEY)
+        prefs.remove(ROUND_SCREEN_BOTTOM_PADDING_KEY)
+    }
+}
 
     suspend fun saveColors(context: Context, colors: CustomColorSet) {
         context.themeSettingsDataStore.edit { preferences ->

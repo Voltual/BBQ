@@ -47,6 +47,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import cc.bbq.xq.ui.CrashLogActivity
+import cc.bbq.xq.ui.theme.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import cc.bbq.xq.data.db.LogEntry
@@ -121,6 +122,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     snackbarHost = { BBQSnackbarHost(hostState = snackbarHostState) },
                     modifier = Modifier.fillMaxSize(),
+                    .roundScreenPadding()  // 新增：圆屏 padding
                     content = { innerPadding ->
                         Surface(
                             modifier = Modifier
