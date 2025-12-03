@@ -281,7 +281,7 @@ private fun SieneShopProfileContent(
                 InfoItem(label = "加入时间:", value = userData.joinTime?.let { formatTimestamp(it) } ?: "无")
                 InfoItem(label = "上次登录设备:", value = userData.lastLoginDevice ?: "无")
                 InfoItem(label = "上次在线:", value = userData.lastOnlineTime?.let { formatTimestamp(it) } ?: "无")                                
-                InfoItem(label = "绑定QQ:", value = userData.bindQq ?: "无")
+                InfoItem(label = "绑定QQ:", value = userData.bindQq?.toString() ?: "无")
                 InfoItem(label = "状态:", value = userData.userStatus?.toString() ?: "无")
                 InfoItem(label = "状态原因:", value = userData.userStatusReason ?: "无")                                
             }
