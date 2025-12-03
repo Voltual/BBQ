@@ -663,10 +663,20 @@ fun AppGridItem(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 120.dp),
-        shape = AppShapes.medium
+        shape = AppShapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 1.dp,
+            pressedElevation = 2.dp
+        )
     ) {
         Column(
-            modifier = Modifier.padding(4.dp).fillMaxHeight(),
+            modifier = Modifier
+                .padding(4.dp)
+                .fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -677,11 +687,15 @@ fun AppGridItem(
                 contentDescription = app.name,
                 modifier = Modifier
                     .size(56.dp)
-                    .padding(bottom = 8.dp)
+                    .padding(bottom = 8.dp),
+                colorFilter = if (app.iconUrl == null) ColorFilter.tint(
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                ) else null
             )
             Text(
                 text = app.name,
                 style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 minLines = 2,
                 textAlign = TextAlign.Center,
@@ -704,7 +718,9 @@ fun AppGrid(
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(columns),
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),

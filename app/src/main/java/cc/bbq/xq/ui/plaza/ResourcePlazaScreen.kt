@@ -86,12 +86,19 @@ fun ResourcePlazaContent(
     val totalPages by viewModel.totalPages.observeAsState(1)
     val autoScrollMode by viewModel.autoScrollMode.observeAsState(false)
     val errorMessage by viewModel.errorMessage.observeAsState()
+
     // 新增：从 ViewModel 获取 currentCategoryId
     val currentCategoryId by viewModel.currentCategoryId.observeAsState()
 
-    val isSearchMode by remember(searchState) { derivedStateOf { searchState.isNotEmpty() } }
+    val isSearchMode by remember(searchState) {
+        derivedStateOf {
+            searchState.isNotEmpty()
+        }
+    }
+
     var searchQuery by remember { mutableStateOf("") }
     var showPageDialog by remember { mutableStateOf(false) }
+
     val dialogShape = remember { RoundedCornerShape(4.dp) }
     val gridState = rememberLazyGridState()
     val focusRequester = remember { FocusRequester() }
@@ -123,14 +130,14 @@ fun ResourcePlazaContent(
         viewModel.initialize(isMyResourceMode, userId, mode, storeName)
     }
 
-
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 8.dp)
     ) {
         // 修正：仅在非“我的资源”模式下显示商店切换菜单
-        if (!isMyResourceMode) {
+        // 修改：在特定模式下也隐藏商店切换菜单
+        if (!isMyResourceMode && mode == "public") {
             // 修正：使用过滤后的 AppStore 列表
             AppStoreDropdownMenu(
                 selectedStore = selectedAppStore,
@@ -141,7 +148,8 @@ fun ResourcePlazaContent(
         }
 
         // 修正：仅在非“我的资源”模式下显示搜索框
-        if (!isMyResourceMode) {
+        // 修改：在特定模式下也隐藏搜索框
+        if (!isMyResourceMode && mode == "public") {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -153,29 +161,32 @@ fun ResourcePlazaContent(
                 label = { Text("搜索...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
-                     if (searchQuery.isNotEmpty()) {
-                         IconButton(onClick = { 
-                             searchQuery = ""
-                             viewModel.cancelSearch()
-                         }) {
-                             Icon(Icons.Default.Clear, contentDescription = "Clear search")
-                         }
-                     }
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = {
+                            searchQuery = ""
+                            viewModel.cancelSearch()
+                        }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                        }
+                    }
                 },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { viewModel.search(searchQuery) }),
+                keyboardActions = KeyboardActions(onSearch = {
+                    viewModel.search(searchQuery)
+                }),
                 singleLine = true
             )
         }
 
         // 分类标签
+        // 修改：在特定模式下隐藏分类标签
         if (isSearchMode) {
-             Text(
+            Text(
                 text = "搜索结果",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
-        } else {
+        } else if (mode == "public") { // 修改：只有在 public 模式下才显示分类标签
             // 修改：只有当 categories 不为空时才显示 CategoryTabs
             if (categories.isNotEmpty()) {
                 CategoryTabs(
@@ -193,8 +204,12 @@ fun ResourcePlazaContent(
                 AppGrid(
                     apps = itemsToShow,
                     columns = if (isMyResourceMode) 4 else 3,
-                    onItemClick = { app -> 
-                        navigateToAppDetail(app.navigationId, app.navigationVersionId, app.store.name) 
+                    onItemClick = { app ->
+                        navigateToAppDetail(
+                            app.navigationId,
+                            app.navigationVersionId,
+                            app.store.name
+                        )
                     },
                     gridState = gridState
                 )
