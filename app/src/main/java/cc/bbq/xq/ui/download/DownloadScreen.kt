@@ -28,6 +28,7 @@ import cc.bbq.xq.ui.theme.BBQCard
 import cc.bbq.xq.ui.theme.BBQIconButton
 // 关键：导入 FileActionUtil
 import cc.bbq.xq.util.FileActionUtil
+import androidx.compose.foundation.shape.CircleShape // 添加 CircleShape 的导入
 
 @Composable
 fun DownloadScreen(
