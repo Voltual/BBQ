@@ -62,6 +62,7 @@ fun ResourcePlazaScreen(
         isMyResourceMode = isMyResourceMode,
         navigateToAppDetail = navigateToAppDetail,
         userId = userId, // 传递 userId
+        storeName = storeName,// 新增参数
         mode = mode // 传递 mode
     )
 }
