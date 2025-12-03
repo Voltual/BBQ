@@ -241,21 +241,25 @@ fun SelectionTopBar(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
                     onClick = onSelectAll,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp),
+                    containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
                     Icon(Icons.Default.SelectAll, "全选")
                 }
                 Spacer(Modifier.width(8.dp))
                 IconButton(
                     onClick = onInvertSelection,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(32.dp),
+                    containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
                     Icon(Icons.Default.SyncAlt, "反选")
                 }
             }
         }
     }
-}
+}q
 
 // 将 LogListItem 移到文件级别，移除 private 修饰符
 @OptIn(ExperimentalFoundationApi::class)
