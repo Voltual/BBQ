@@ -554,7 +554,7 @@ fun AppStoreSelectorCard(
     }
 }
 
-// 该组件ModelList.kt的原始版本来源自 https://github.com/rikkahub/rikkahub
+// 该组件ModelList.kt（下载列表）的原始版本来源自 https://github.com/rikkahub/rikkahub
 // 本版本仅作简化修改适应项目实际用途
 // License: AGPLv3 (Compatible with GPLv3)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -563,6 +563,7 @@ fun DownloadSourceDrawer(
     show: Boolean,
     onDismissRequest: () -> Unit,
     sources: List<UnifiedDownloadSource>,
+    shape: Shape = AppShapes.medium,
     onSourceSelected: (UnifiedDownloadSource) -> Unit
 ) {
     if (show) {

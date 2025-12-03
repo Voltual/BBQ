@@ -142,7 +142,8 @@ fun LogScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp),
-                containerColor = MaterialTheme.colorScheme.primaryContainer
+                containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
                 Icon(Icons.Default.Menu, "操作菜单")
             }
