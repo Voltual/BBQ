@@ -105,7 +105,7 @@ object SineShopClient {
         @SerialName("user_badge") val userBadge: String?,
         @SerialName("user_status") val userStatus: Int,
         @SerialName("user_status_reason") val userStatusReason: String?,
-        @SerialName("ban_time") val banTime: Int,
+        @SerialName("ban_time") val banTime: Long,
         @SerialName("join_time") val joinTime: Long,
         @SerialName("user_permission") val userPermission: Int,
         @SerialName("bind_qq") val bindQq: Long?,

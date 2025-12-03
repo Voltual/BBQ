@@ -276,14 +276,14 @@ private fun SieneShopProfileContent(
                 }
 
                 // 其他信息
-                InfoItem(label = "等级:", value = userData.userOfficial ?: "无")
-                InfoItem(label = "徽章:", value = userData.userBadge ?: "无")
-                InfoItem(label = "状态:", value = userData.userStatus?.toString() ?: "无")
-                InfoItem(label = "状态原因:", value = userData.userStatusReason ?: "无")
-                InfoItem(label = "加入时间:", value = userData.joinTime?.let { formatTimestamp(it) } ?: "无")
-                InfoItem(label = "上次在线:", value = userData.lastOnlineTime?.let { formatTimestamp(it) } ?: "无")
                 InfoItem(label = "上传数量:", value = userData.uploadCount?.toString() ?: "0")
                 InfoItem(label = "评论数量:", value = userData.replyCount?.toString() ?: "0")
+                InfoItem(label = "加入时间:", value = userData.joinTime?.let { formatTimestamp(it) } ?: "无")
+                InfoItem(label = "上次登录设备:", value = userData.lastLoginDevice ?: "无")
+                InfoItem(label = "上次在线:", value = userData.lastOnlineTime?.let { formatTimestamp(it) } ?: "无")                                
+                InfoItem(label = "绑定QQ:", value = userData.bindQq ?: "无")
+                InfoItem(label = "状态:", value = userData.userStatus?.toString() ?: "无")
+                InfoItem(label = "状态原因:", value = userData.userStatusReason ?: "无")                                
             }
         }
 
