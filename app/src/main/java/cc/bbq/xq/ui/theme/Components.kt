@@ -665,8 +665,8 @@ fun AppGridItem(
             .heightIn(min = 120.dp),
         shape = AppShapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 1.dp,
