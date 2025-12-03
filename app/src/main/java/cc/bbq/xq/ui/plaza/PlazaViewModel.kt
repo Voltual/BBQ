@@ -263,6 +263,7 @@ class PlazaViewModel(
     }
 
     // --- 修改：loadPage ---
+    // --- 修改：loadPage ---
     private fun loadPage(page: Int, append: Boolean = false) {
         Log.d("PlazaViewModel", "loadPage called: page=$page, append=$append, _isInitialized=$_isInitialized, currentCategoryId=${_currentCategoryId.value}")
         if (_isLoading.value == true && !append) return
@@ -275,9 +276,12 @@ class PlazaViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val finalUserId = currentUserId ?: if (isMyResourceMode) {
-                    AuthManager.getCredentials(getApplication()).first()?.userId?.toString()
-                } else null
+                //val finalUserId = currentUserId ?: if (isMyResourceMode) {
+                //    AuthManager.getCredentials(getApplication()).first()?.userId?.toString()
+                //} else null
+                // 移除上面这段，强制使用 currentUserId
+
+                val finalUserId = currentUserId
 
                 val result = if (isSearchMode) {
                     currentRepository.searchApps(currentQuery, page, finalUserId)

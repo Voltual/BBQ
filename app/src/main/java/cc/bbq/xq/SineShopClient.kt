@@ -423,12 +423,12 @@ suspend fun getUserInfoById(userId: Long): Result<SineShopUserInfo> {
     }
 }
 
-// 修改：获取指定分类应用列表方法，支持关键词搜索
-suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null): Result<AppListData> {
+suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null, userId: Int? = null): Result<AppListData> {
     val url = "/app/list"
     val parameters = sineShopParameters {
         tag?.let { append("tag", it.toString()) }
         keyword?.let { append("keyword", it) }
+        userId?.let { append("userid", it.toString()) }
         append("page", page.toString())
     }
     return safeApiCall<BaseResponse<AppListData>> {

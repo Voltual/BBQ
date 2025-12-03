@@ -32,12 +32,16 @@ class SineShopRepository : IAppStoreRepository {
 
     override suspend fun getApps(categoryId: String?, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>> {
     return try {
-        val result = when (categoryId) {
-            "-1" -> SineShopClient.getLatestAppsList(page = page)
-            "-2" -> SineShopClient.getMostDownloadedAppsList(page = page)
-            "-3" -> SineShopClient.getMyUploadAppsList(page = page)      // 我的上传
-            "-4" -> SineShopClient.getMyFavouriteAppsList(page = page)  // 我的收藏
-            "-5" -> SineShopClient.getMyHistoryAppsList(page = page)     // 我的历史足迹
+        val result = when {
+            userId != null -> {
+                // 获取指定用户上传的应用列表
+                SineShopClient.getAppsList(userId = userId.toInt(), page = page)
+            }
+            categoryId == "-1" -> SineShopClient.getLatestAppsList(page = page)
+            categoryId == "-2" -> SineShopClient.getMostDownloadedAppsList(page = page)
+            categoryId == "-3" -> SineShopClient.getMyUploadAppsList(page = page)      // 我的上传
+            categoryId == "-4" -> SineShopClient.getMyFavouriteAppsList(page = page)  // 我的收藏
+            categoryId == "-5" -> SineShopClient.getMyHistoryAppsList(page = page)     // 我的历史足迹
             else -> SineShopClient.getAppsList(tag = categoryId?.toIntOrNull(), page = page)
         }
         result.map { appListData ->
