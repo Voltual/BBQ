@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import cc.bbq.xq.ui.Download // 确保导入 Download
+import cc.bbq.xq.AppStore
 
 @OptIn(ExperimentalMaterialApi::class) // 保留 ExperimentalMaterialApi 注解
 @Composable
@@ -324,7 +325,10 @@ fun AppDetailContent(
                         .clickable {
                             val userId = appDetail.user.id.toLongOrNull()
                             if (userId != null) {
-                                navController.navigate(UserDetail(userId).createRoute())
+                                // 获取当前appDetail的store
+                                val store = appDetail.store
+
+                                navController.navigate(UserDetail(userId, store).createRoute())
                             }
                         },
                     verticalAlignment = Alignment.CenterVertically
@@ -358,7 +362,12 @@ fun AppDetailContent(
                     onLongClick = { onCommentLongClick(comment.id) },
                     onUserClick = {
                         val userId = comment.sender.id.toLongOrNull()
-                        if (userId != null) navController.navigate(UserDetail(userId).createRoute())
+                        if (userId != null) {
+                            // 获取当前appDetail的store
+                            val store = appDetail.store
+
+                            navController.navigate(UserDetail(userId, store).createRoute())
+                        }
                     }
                 )
             }
