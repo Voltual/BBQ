@@ -196,18 +196,29 @@ object AccountProfile : AppDestination {
 
 // --- 资源广场与应用 ---
 
-data class ResourcePlaza(val isMyResource: Boolean, val userId: Long = -1L, val mode: String = "public") : AppDestination {
-    override val route = "plaza?${AppDestination.ARG_IS_MY_RESOURCE}={${AppDestination.ARG_IS_MY_RESOURCE}}&${AppDestination.ARG_USER_ID}={${AppDestination.ARG_USER_ID}}&mode={mode}"
-    fun createRoute() = "plaza?${AppDestination.ARG_IS_MY_RESOURCE}=$isMyResource&${AppDestination.ARG_USER_ID}=$userId&mode=$mode"
+data class ResourcePlaza(
+    val isMyResource: Boolean, 
+    val userId: Long = -1L, 
+    val mode: String = "public",
+    val storeName: String = AppStore.XIAOQU_SPACE.name // 新增 storeName 参数
+) : AppDestination {
+    // 更新 route 定义，增加 store 参数
+    override val route = "plaza?${AppDestination.ARG_IS_MY_RESOURCE}={${AppDestination.ARG_IS_MY_RESOURCE}}&${AppDestination.ARG_USER_ID}={${AppDestination.ARG_USER_ID}}&mode={mode}&store={store}"
+    
+    // 更新 createRoute
+    fun createRoute() = "plaza?${AppDestination.ARG_IS_MY_RESOURCE}=$isMyResource&${AppDestination.ARG_USER_ID}=$userId&mode=$mode&store=$storeName"
     
     companion object {
         val arguments = listOf(
             navArgument(AppDestination.ARG_IS_MY_RESOURCE) { type = NavType.BoolType; defaultValue = false },
             navArgument(AppDestination.ARG_USER_ID) { type = NavType.LongType; defaultValue = -1L },
-            navArgument("mode") { type = NavType.StringType; defaultValue = "public" }
+            navArgument("mode") { type = NavType.StringType; defaultValue = "public" },
+            navArgument("store") { type = NavType.StringType; defaultValue = AppStore.XIAOQU_SPACE.name } // 新增参数定义
         )
     }
 }
+
+// ... (保留后面的代码)
 
 data class AppDetail(val appId: String, val versionId: Long, val storeName: String) : AppDestination {
     override val route = "app_detail/{${AppDestination.ARG_APP_ID}}/{${AppDestination.ARG_VERSION_ID}}/{storeName}"

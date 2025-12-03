@@ -262,20 +262,21 @@ composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { back
     val errorMessage by viewModel.errorMessage.observeAsState()
     
     UserDetailScreen(
-        userData = userData,
-        isLoading = isLoading,
-        snackbarHostState = snackbarHostState,
-        errorMessage = errorMessage,
-        onPostsClick = { navController.navigate(MyPosts(userId).createRoute()) },
-        onResourcesClick = { uid ->
-            navController.navigate(ResourcePlaza(isMyResource = false, userId = uid).createRoute())
-        },
-        onImagePreview = { imageUrl ->
-            navController.navigate(ImagePreview(imageUrl).createRoute())
-        },
-        modifier = Modifier.fillMaxSize()
-    )
-}
+                userData = userData,
+                isLoading = isLoading,
+                snackbarHostState = snackbarHostState,
+                errorMessage = errorMessage,
+                onPostsClick = { navController.navigate(MyPosts(userId).createRoute()) },
+                onResourcesClick = { uid, store -> // 接收 store 参数
+                    // 传递 store.name 到 ResourcePlaza
+                    navController.navigate(ResourcePlaza(isMyResource = false, userId = uid, storeName = store.name).createRoute())
+                },
+                onImagePreview = { imageUrl ->
+                    navController.navigate(ImagePreview(imageUrl).createRoute())
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
         composable(route = MyPosts(0).route, arguments = MyPosts.arguments) { backStackEntry ->
     val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
     MyPostsScreen(
@@ -343,20 +344,22 @@ composable(route = FanList.route) {
 
         // --- 资源广场 ---
 composable(route = ResourcePlaza(false).route, arguments = ResourcePlaza.arguments) { backStackEntry ->
-    val isMyResource = backStackEntry.arguments?.getBoolean(AppDestination.ARG_IS_MY_RESOURCE) ?: false
-    val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
-    val mode = backStackEntry.arguments?.getString("mode") ?: "public"
+            val isMyResource = backStackEntry.arguments?.getBoolean(AppDestination.ARG_IS_MY_RESOURCE) ?: false
+            val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
+            val mode = backStackEntry.arguments?.getString("mode") ?: "public"
+            val storeName = backStackEntry.arguments?.getString("store") ?: AppStore.XIAOQU_SPACE.name // 获取 storeName
 
-    ResourcePlazaScreen(
-        isMyResourceMode = isMyResource,
-        mode = mode, // 传递模式参数
-        navigateToAppDetail = { appId, versionId, storeName -> // 接收三个参数
-            navController.navigate(AppDetail(appId, versionId, storeName).createRoute())
-        },
-        userId = if (userId != -1L) userId.toString() else null,
-        modifier = Modifier.fillMaxSize()
-    )
-}
+            ResourcePlazaScreen(
+                isMyResourceMode = isMyResource,
+                mode = mode,
+                storeName = storeName, // 传递 storeName
+                navigateToAppDetail = { appId, versionId, store ->
+                    navController.navigate(AppDetail(appId, versionId, store).createRoute())
+                },
+                userId = if (userId != -1L) userId.toString() else null,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         // --- 应用详情页 ---
         composable(route = AppDetail("", 0, "").route, arguments = AppDetail.arguments) { backStackEntry ->

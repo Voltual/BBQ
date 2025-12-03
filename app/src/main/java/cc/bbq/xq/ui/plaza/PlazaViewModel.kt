@@ -55,6 +55,8 @@ class PlazaViewModel(
 
     private val _searchResults = MutableLiveData<List<UnifiedAppItem>>(emptyList())
     val searchResults: LiveData<List<UnifiedAppItem>> = _searchResults
+    
+    private var _currentStoreNameState: String = AppStore.XIAOQU_SPACE.name
 
     private val _currentPage = MutableLiveData(1)
     val currentPage: LiveData<Int> = _currentPage
@@ -102,14 +104,14 @@ class PlazaViewModel(
     /**
      * 初始化方法：参考旧版本逻辑，只有参数真正变化时才重置并重新加载
      */
-    fun initialize(isMyResource: Boolean, userId: String?, mode: String = "public") {
-        Log.d("PlazaViewModel", "initialize called: isMyResource=$isMyResource, userId=$userId, mode=$mode")
-        Log.d("PlazaViewModel", "Current tracked state: _isInitialized=$_isInitialized, _currentIsMyResourceMode=$_currentIsMyResourceMode, _currentUserIdState=$_currentUserIdState, _currentModeState=$_currentModeState")
-
-        // 只有当模式、用户ID或模式真正改变时才重新初始化
+    fun initialize(isMyResource: Boolean, userId: String?, mode: String = "public", storeName: String = AppStore.XIAOQU_SPACE.name) {
+        Log.d("PlazaViewModel", "initialize called: isMyResource=$isMyResource, userId=$userId, mode=$mode, store=$storeName")
+        
+        // 只有当模式、用户ID、模式或商店真正改变时才重新初始化
         val needsReinit = _currentIsMyResourceMode != isMyResource ||
                           _currentUserIdState != userId ||
-                          _currentModeState != mode
+                          _currentModeState != mode ||
+                          _currentStoreNameState != storeName
         
         if (needsReinit) {
             Log.d("PlazaViewModel", "参数变化，重新初始化...")
@@ -117,18 +119,29 @@ class PlazaViewModel(
             _currentIsMyResourceMode = isMyResource
             _currentUserIdState = userId
             _currentModeState = mode
-            _isInitialized = false  // 重置初始化标志
+            _currentStoreNameState = storeName
+            _isInitialized = false
             
             // 更新内部状态
             this.isMyResourceMode = isMyResource
             this.currentUserId = userId
             this.currentMode = mode
             
+            // 设置商店
+            val targetStore = try {
+                AppStore.valueOf(storeName)
+            } catch (e: Exception) {
+                AppStore.XIAOQU_SPACE
+            }
+            // 立即设置商店，确保后续加载使用正确的仓库
+            if (_appStore.value != targetStore) {
+                _appStore.value = targetStore
+            }
+            
             // 重置数据状态并加载
             resetStateAndLoadCategories()
         } else {
-            Log.d("PlazaViewModel", "参数未变化，确保数据已加载... _isInitialized=$_isInitialized")
-            // 参数未变化，确保数据已加载（参考旧版本）
+            Log.d("PlazaViewModel", "参数未变化，确保数据已加载...")
             loadDataIfNeeded()
         }
     }

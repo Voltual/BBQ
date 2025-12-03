@@ -68,7 +68,7 @@ fun UserDetailScreen(
     isLoading: Boolean,
     errorMessage: String?,
     onPostsClick: () -> Unit,
-    onResourcesClick: (Long) -> Unit,
+    onResourcesClick: (Long, AppStore) -> Unit, // 修改：增加 AppStore 参数
     onImagePreview: (String) -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState
@@ -115,7 +115,7 @@ private fun ScreenContent(
     isLoading: Boolean,
     errorMessage: String?,
     onPostsClick: () -> Unit,
-    onResourcesClick: (Long) -> Unit,
+    onResourcesClick: (Long, AppStore) -> Unit, // 修改：增加 AppStore 参数: (Long) -> Unit,
     onImagePreview: (String) -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
@@ -155,7 +155,7 @@ private fun ScreenContent(
 private fun XiaoQuProfileContent( // 使用 UnifiedUserDetail
     userData: UnifiedUserDetail,
     onPostsClick: () -> Unit,
-    onResourcesClick: (Long) -> Unit,
+    onResourcesClick: (Long, AppStore) -> Unit, // 修改：增加 AppStore 参数: (Long) -> Unit,
     onImagePreview: (String) -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
@@ -193,7 +193,7 @@ private fun XiaoQuProfileContent( // 使用 UnifiedUserDetail
 @Composable
 private fun SieneShopProfileContent(
     userData: UnifiedUserDetail,
-    onResourcesClick: (Long) -> Unit,
+    onResourcesClick: (Long, AppStore) -> Unit, // 修改：增加 AppStore 参数: (Long) -> Unit,
     onImagePreview: (String) -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
@@ -289,7 +289,7 @@ private fun SieneShopProfileContent(
 
         // "XXX 的资源" 按钮
         BBQOutlinedButton(
-            onClick = { onResourcesClick(userData.id) },
+            onClick = { onResourcesClick(userData.id, userData.store) }, // 传递 store
             modifier = Modifier.fillMaxWidth(),
             text = { Text("${userData.displayName}的资源") }
         )

@@ -52,6 +52,7 @@ fun ResourcePlazaScreen(
     mode: String = "public", // 新增模式参数
     navigateToAppDetail: (String, Long, String) -> Unit,
     userId: String? = null,
+    storeName: String = AppStore.XIAOQU_SPACE.name, // 新增参数
     modifier: Modifier = Modifier,
     viewModel: PlazaViewModel = koinViewModel()
 ) {
@@ -72,7 +73,8 @@ fun ResourcePlazaContent(
     isMyResourceMode: Boolean,
     navigateToAppDetail: (String, Long, String) -> Unit,
     userId: String?, // 新增 userId 参数
-    mode: String // 新增 mode 参数
+    mode: String, // 新增 mode 参数
+    storeName: String // 新增参数
 ) {
     val selectedAppStore by viewModel.appStore.observeAsState(AppStore.XIAOQU_SPACE)
     val categories by viewModel.categories.observeAsState(emptyList())
@@ -115,10 +117,11 @@ fun ResourcePlazaContent(
         }
     }
 
-    // 新增：初始化 ViewModel（确保只执行一次）
-    LaunchedEffect(isMyResourceMode, userId, mode) {
-        viewModel.initialize(isMyResourceMode, userId, mode)
+    // 修改：初始化 ViewModel，传入 storeName
+    LaunchedEffect(isMyResourceMode, userId, mode, storeName) {
+        viewModel.initialize(isMyResourceMode, userId, mode, storeName)
     }
+
 
     Column(
         modifier = modifier
