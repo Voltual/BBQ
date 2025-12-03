@@ -177,7 +177,7 @@ private fun XiaoQuProfileContent( // 使用 UnifiedUserDetail
 
         ActionButtonsRow(
             userData = userData,
-            onResourcesClick: (Long, AppStore) -> Unit, // 修改：增加 AppStore 参数: (Long) -> Unit,
+            onResourcesClick = { onResourcesClick(userData.id, userData.store) }, // 传递 store
             snackbarHostState = snackbarHostState
         )
 
