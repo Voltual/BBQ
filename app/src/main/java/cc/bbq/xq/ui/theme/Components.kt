@@ -687,10 +687,7 @@ fun AppGridItem(
                 contentDescription = app.name,
                 modifier = Modifier
                     .size(56.dp)
-                    .padding(bottom = 8.dp),
-                colorFilter = if (app.iconUrl == null) ColorFilter.tint(
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                ) else null
+                    .padding(bottom = 8.dp)
             )
             Text(
                 text = app.name,
