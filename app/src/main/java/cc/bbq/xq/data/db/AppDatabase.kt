@@ -1,12 +1,4 @@
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
-
+// 文件路径: cc/bbq/xq/data/db/AppDatabase.kt
 package cc.bbq.xq.data.db
 
 import android.content.Context
@@ -15,15 +7,20 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import cc.bbq.xq.service.download.DownloadTask
 import cc.bbq.xq.ui.community.BrowseHistory
 
-@Database(entities = [LogEntry::class, BrowseHistory::class, NetworkCacheEntry::class, PostDraft::class], version = 4, exportSchema = false)
+@Database(
+    entities = [LogEntry::class, BrowseHistory::class, NetworkCacheEntry::class, PostDraft::class, DownloadTask::class],
+    version = 5, // 增加数据库版本号
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
-
     abstract fun logDao(): LogDao
     abstract fun browseHistoryDao(): BrowseHistoryDao
     abstract fun networkCacheDao(): NetworkCacheDao
     abstract fun postDraftDao(): PostDraftDao
+    abstract fun downloadTaskDao(): DownloadTaskDao // 添加 DownloadTaskDao 抽象方法
 
     companion object {
         @Volatile
@@ -54,6 +51,15 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // 添加新的迁移脚本，用于创建 download_tasks 表
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `download_tasks` (`url` TEXT NOT NULL, `fileName` TEXT NOT NULL, `savePath` TEXT NOT NULL, `totalBytes` INTEGER NOT NULL, `downloadedBytes` INTEGER NOT NULL, `status` TEXT NOT NULL, `progress` REAL NOT NULL, PRIMARY KEY(`url`))"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -61,8 +67,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "qubot_database"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
-                .build()
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5) // 添加新的迁移脚本
+                    .build()
                 INSTANCE = instance
                 instance
             }

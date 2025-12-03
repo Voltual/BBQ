@@ -1,7 +1,8 @@
 // 文件路径: cc/bbq/xq/service/download/DownloadModels.kt
 package cc.bbq.xq.service.download
 
-import kotlinx.serialization.Serializable
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
 /**
  * 下载状态密封接口，用于 UI 响应式更新
@@ -42,3 +43,17 @@ internal data class Chunk(
     val size: Long get() = end - start + 1
     val isComplete: Boolean get() = current > end
 }
+
+/**
+ * 下载任务实体类，用于 Room 数据库持久化存储
+ */
+@Entity(tableName = "download_tasks")
+data class DownloadTask(
+    @PrimaryKey val url: String, // 使用 URL 作为主键，保证唯一性
+    val fileName: String,
+    val savePath: String,
+    val totalBytes: Long,
+    val downloadedBytes: Long,
+    val status: String, // 使用字符串存储下载状态，方便转换
+    val progress: Float
+)

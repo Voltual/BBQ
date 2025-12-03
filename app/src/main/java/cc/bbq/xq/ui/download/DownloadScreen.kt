@@ -5,32 +5,13 @@ import android.content.Context
 import android.text.format.Formatter
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cc.bbq.xq.service.download.DownloadStatus
+import cc.bbq.xq.service.download.DownloadTask
 import cc.bbq.xq.ui.theme.AppShapes
 import cc.bbq.xq.ui.theme.BBQButton
 import cc.bbq.xq.ui.theme.BBQCard
@@ -53,6 +35,8 @@ fun DownloadScreen(
     viewModel: DownloadViewModel = viewModel()
 ) {
     val status by viewModel.downloadStatus.collectAsState()
+    // 从 ViewModel 获取所有下载任务
+    val downloadTasks by viewModel.downloadTasks.collectAsState()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -65,29 +49,70 @@ fun DownloadScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-/*MainActivuty已处理标题此处重复了所以注释掉            Text(
-                text = "下载管理",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(bottom = 24.dp)
-            )*/
-
-            AnimatedContent(targetState = status, label = "DownloadStatus") { currentStatus ->
-                when (currentStatus) {
-                    is DownloadStatus.Idle -> EmptyDownloadState()
-                    is DownloadStatus.Pending -> PendingDownloadState()
-                    is DownloadStatus.Downloading -> DownloadingState(
-                        status = currentStatus,
-                        onCancel = { viewModel.cancelDownload() }
-                    )
-                    is DownloadStatus.Paused -> PausedState(currentStatus)
-                    is DownloadStatus.Success -> SuccessState(currentStatus)
-                    is DownloadStatus.Error -> ErrorState(currentStatus)
+            // 如果没有下载任务，则显示当前下载状态
+            if (downloadTasks.isEmpty()) {
+                AnimatedContent(targetState = status, label = "DownloadStatus") { currentStatus ->
+                    when (currentStatus) {
+                        is DownloadStatus.Idle -> EmptyDownloadState()
+                        is DownloadStatus.Pending -> PendingDownloadState()
+                        is DownloadStatus.Downloading -> DownloadingState(
+                            status = currentStatus,
+                            onCancel = { viewModel.cancelDownload() }
+                        )
+                        is DownloadStatus.Paused -> PausedState(currentStatus)
+                        is DownloadStatus.Success -> SuccessState(currentStatus)
+                        is DownloadStatus.Error -> ErrorState(currentStatus)
+                    }
+                }
+            } else {
+                // 如果有下载任务，则显示下载任务列表
+                LazyColumn {
+                    items(downloadTasks) { task ->
+                        DownloadTaskItem(task = task, viewModel = viewModel)
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun DownloadTaskItem(
+    task: DownloadTask,
+    viewModel: DownloadViewModel
+) {
+    val context = LocalContext.current
+    val status = when (task.status) {
+        DownloadStatus.Idle::class.java.simpleName -> DownloadStatus.Idle
+        DownloadStatus.Pending::class.java.simpleName -> DownloadStatus.Pending
+        DownloadStatus.Downloading::class.java.simpleName -> DownloadStatus.Downloading(
+            progress = task.progress,
+            downloadedBytes = task.downloadedBytes,
+            totalBytes = task.totalBytes,
+            speed = "" // 速度信息在数据库中没有存储，需要从服务中获取
+        )
+        DownloadStatus.Paused::class.java.simpleName -> DownloadStatus.Paused(
+            downloadedBytes = task.downloadedBytes,
+            totalBytes = task.totalBytes
+        )
+        DownloadStatus.Success::class.java.simpleName -> {
+            val file = java.io.File(task.savePath, task.fileName)
+            DownloadStatus.Success(file = file)
+        }
+        DownloadStatus.Error::class.java.simpleName -> DownloadStatus.Error(message = "未知错误")
+        else -> DownloadStatus.Idle
+    }
+
+    when (status) {
+        is DownloadStatus.Idle -> EmptyDownloadState()
+        is DownloadStatus.Pending -> PendingDownloadState()
+        is DownloadStatus.Downloading -> DownloadingState(
+            status = status,
+            onCancel = { viewModel.cancelDownload() }
+        )
+        is DownloadStatus.Paused -> PausedState(status)
+        is DownloadStatus.Success -> SuccessState(status)
+        is DownloadStatus.Error -> ErrorState(status)
     }
 }
 
@@ -139,7 +164,6 @@ fun DownloadingState(
     onCancel: () -> Unit
 ) {
     val context = LocalContext.current
-
     BBQCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -161,7 +185,6 @@ fun DownloadingState(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-
                 BBQIconButton(
                     onClick = onCancel,
                     icon = Icons.Default.Close,
@@ -170,9 +193,7 @@ fun DownloadingState(
                     tint = MaterialTheme.colorScheme.error
                 )
             }
-
             Spacer(modifier = Modifier.height(12.dp))
-
             LinearProgressIndicator(
                 progress = { status.progress },
                 modifier = Modifier
@@ -182,9 +203,7 @@ fun DownloadingState(
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.primaryContainer,
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -261,9 +280,7 @@ fun SuccessState(status: DownloadStatus.Success) {
                     )
                 }
             }
-
             Spacer(modifier = Modifier.height(16.dp))
-
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 BBQButton(
                     onClick = {

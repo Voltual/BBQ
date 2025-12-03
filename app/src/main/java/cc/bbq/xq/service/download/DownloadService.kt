@@ -10,21 +10,20 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import cc.bbq.xq.MainActivity
 import cc.bbq.xq.R
+import cc.bbq.xq.data.db.AppDatabase
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import android.util.Log  // 添加这行
+import android.util.Log // 添加这行
 import java.io.File
 
 /**
  * 下载服务 - 整合新版KtorDownloader
  */
 class DownloadService : Service() {
-
     companion object {
         private const val TAG = "DownloadService"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "download_channel"
-        
         // Action常量
         const val ACTION_START_DOWNLOAD = "cc.bbq.xq.action.START_DOWNLOAD"
         const val ACTION_CANCEL_DOWNLOAD = "cc.bbq.xq.action.CANCEL_DOWNLOAD"
@@ -36,26 +35,29 @@ class DownloadService : Service() {
     private val binder = DownloadBinder()
     private lateinit var downloader: KtorDownloader
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    
     // 通知相关
     private lateinit var notificationManager: NotificationManager
     private var currentDownloadConfig: DownloadConfig? = null
 
+    // 添加 AppDatabase 实例
+    private lateinit var appDatabase: AppDatabase
+    private val downloadTaskDao by lazy { appDatabase.downloadTaskDao() }
+
     inner class DownloadBinder : Binder() {
         fun getService(): DownloadService = this@DownloadService
-        
+
         /**
          * 获取下载状态Flow
          */
         fun getDownloadStatus(): StateFlow<DownloadStatus> = downloader.status
-        
+
         /**
          * 开始下载（编程方式）
          */
         fun startDownload(url: String, fileName: String) {
             this@DownloadService.startDownload(url, fileName)
         }
-        
+
         /**
          * 取消当前下载
          */
@@ -67,11 +69,13 @@ class DownloadService : Service() {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "DownloadService created")
-        
         downloader = KtorDownloader()
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel()
-        
+
+        // 初始化 AppDatabase
+        appDatabase = AppDatabase.getDatabase(this)
+
         // 监听下载状态并更新通知
         setupStatusObserver()
     }
@@ -83,13 +87,11 @@ class DownloadService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "onStartCommand: ${intent?.action}")
-        
         intent?.let { handleIntent(it) }
-        
         // 如果不是通过intent启动，保持服务运行
         return START_STICKY
     }
-    
+
     /**
      * 处理Intent命令
      */
@@ -99,14 +101,11 @@ class DownloadService : Service() {
                 val url = intent.getStringExtra(EXTRA_URL) ?: return
                 val fileName = intent.getStringExtra(EXTRA_FILE_NAME) ?: "download_file"
                 val savePath = intent.getStringExtra(EXTRA_SAVE_PATH)
-                
                 startDownload(url, fileName, savePath)
             }
-            
             ACTION_CANCEL_DOWNLOAD -> {
                 downloader.cancel()
             }
-            
             // 从AppDetailComposeViewModel调用的方式
             else -> {
                 val url = intent.getStringExtra("url")
@@ -123,14 +122,12 @@ class DownloadService : Service() {
      */
     fun startDownload(url: String, fileName: String, customSavePath: String? = null) {
         Log.d(TAG, "Starting download: $fileName from $url")
-        
         // 确保不会重复下载
-        if (downloader.status.value is DownloadStatus.Downloading ||
-            downloader.status.value is DownloadStatus.Pending) {
+        if (downloader.status.value is DownloadStatus.Downloading || downloader.status.value is DownloadStatus.Pending) {
             Log.w(TAG, "Download already in progress")
             return
         }
-        
+
         // 构建下载配置
         val savePath = customSavePath ?: getDefaultDownloadPath()
         val config = DownloadConfig(
@@ -139,25 +136,36 @@ class DownloadService : Service() {
             fileName = fileName,
             threadCount = determineThreadCount(url) // 根据文件类型决定线程数
         )
-        
         currentDownloadConfig = config
-        
+
+        // 将下载任务信息保存到数据库
+        serviceScope.launch {
+            val downloadTask = DownloadTask(
+                url = url,
+                fileName = fileName,
+                savePath = savePath,
+                totalBytes = -1L, // 初始值未知
+                downloadedBytes = 0L,
+                status = DownloadStatus.Pending::class.java.simpleName,
+                progress = 0f
+            )
+            downloadTaskDao.insert(downloadTask)
+        }
+
         serviceScope.launch {
             downloader.startDownload(config)
         }
-        
         // 更新通知显示下载开始
         updateNotification(DownloadStatus.Pending, fileName)
     }
-    
+
     /**
      * 获取默认下载路径
      */
     private fun getDefaultDownloadPath(): String {
-        return getExternalFilesDir(null)?.absolutePath 
-            ?: filesDir.absolutePath + "/downloads"
+        return getExternalFilesDir(null)?.absolutePath ?: filesDir.absolutePath + "/downloads"
     }
-    
+
     /**
      * 根据URL决定线程数（大文件多线程，小文件单线程）
      */
@@ -176,16 +184,44 @@ class DownloadService : Service() {
                 Log.d(TAG, "Download status changed: $status")
                 val fileName = currentDownloadConfig?.fileName ?: "文件"
                 updateNotification(status, fileName)
-                
+
+                // 将下载状态更新到数据库
+                currentDownloadConfig?.let { config ->
+                    serviceScope.launch {
+                        val downloadTask = downloadTaskDao.getDownloadTask(config.url).firstOrNull()
+                        if (downloadTask != null) {
+                            val updatedTask = when (status) {
+                                is DownloadStatus.Idle -> downloadTask.copy(status = DownloadStatus.Idle::class.java.simpleName)
+                                is DownloadStatus.Pending -> downloadTask.copy(status = DownloadStatus.Pending::class.java.simpleName)
+                                is DownloadStatus.Downloading -> downloadTask.copy(
+                                    status = DownloadStatus.Downloading::class.java.simpleName,
+                                    downloadedBytes = status.downloadedBytes,
+                                    totalBytes = status.totalBytes,
+                                    progress = status.progress
+                                )
+                                is DownloadStatus.Paused -> downloadTask.copy(
+                                    status = DownloadStatus.Paused::class.java.simpleName,
+                                    downloadedBytes = status.downloadedBytes,
+                                    totalBytes = status.totalBytes
+                                )
+                                is DownloadStatus.Success -> downloadTask.copy(
+                                    status = DownloadStatus.Success::class.java.simpleName,
+                                    downloadedBytes = status.file.length()
+                                )
+                                is DownloadStatus.Error -> downloadTask.copy(status = DownloadStatus.Error::class.java.simpleName)
+                            }
+                            downloadTaskDao.update(updatedTask)
+                        }
+                    }
+                }
+
                 // 下载完成或出错时清理
                 when (status) {
                     is DownloadStatus.Success, is DownloadStatus.Error -> {
                         // 延迟清理，让用户看到最终状态
                         serviceScope.launch {
                             delay(5000)
-                            if (downloader.status.value is DownloadStatus.Idle ||
-                                downloader.status.value is DownloadStatus.Error ||
-                                downloader.status.value is DownloadStatus.Success) {
+                            if (downloader.status.value is DownloadStatus.Idle || downloader.status.value is DownloadStatus.Error || downloader.status.value is DownloadStatus.Success) {
                                 stopForeground(false)
                             }
                         }
@@ -234,7 +270,6 @@ class DownloadService : Service() {
      */
     private fun updateNotification(status: DownloadStatus, fileName: String) {
         val notification = buildNotification(status, fileName)
-        
         when (status) {
             is DownloadStatus.Downloading, is DownloadStatus.Pending -> {
                 startForeground(NOTIFICATION_ID, notification)
@@ -263,9 +298,8 @@ class DownloadService : Service() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             putExtra("target_fragment", "download") // 跳转到下载管理页
         }
-        
         val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent, 
+            this, 0, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -285,7 +319,6 @@ class DownloadService : Service() {
             this, 1, cancelIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        
         builder.addAction(
             NotificationCompat.Action.Builder(
                 android.R.drawable.ic_menu_close_clear_cancel,
@@ -299,25 +332,20 @@ class DownloadService : Service() {
                 builder.setContentText("准备下载: $fileName")
                     .setProgress(0, 0, true)
             }
-            
             is DownloadStatus.Downloading -> {
                 val progressPercent = (status.progress * 100).toInt()
                 val speedText = if (status.speed.isNotEmpty()) " | ${status.speed}" else ""
-                
                 builder.setContentText("下载中: $fileName")
                     .setContentInfo("$progressPercent%$speedText")
                     .setProgress(100, progressPercent, false)
-                    .setSubText(formatFileSize(status.downloadedBytes) + 
-                               " / " + formatFileSize(status.totalBytes))
+                    .setSubText(formatFileSize(status.downloadedBytes) + " / " + formatFileSize(status.totalBytes))
             }
-            
             is DownloadStatus.Paused -> {
                 builder.setContentText("已暂停: $fileName")
                     .setSmallIcon(android.R.drawable.stat_sys_warning)
                     .setOngoing(false)
                     .setProgress(0, 0, false)
             }
-            
             is DownloadStatus.Success -> {
                 builder.setContentText("下载完成: $fileName")
                     .setSmallIcon(android.R.drawable.stat_sys_download_done)
@@ -325,7 +353,6 @@ class DownloadService : Service() {
                     .setAutoCancel(true)
                     .setProgress(0, 0, false)
             }
-            
             is DownloadStatus.Error -> {
                 builder.setContentText("下载失败: ${status.message}")
                     .setSmallIcon(android.R.drawable.stat_notify_error)
@@ -333,17 +360,15 @@ class DownloadService : Service() {
                     .setAutoCancel(true)
                     .setProgress(0, 0, false)
             }
-            
             is DownloadStatus.Idle -> {
                 builder.setContentText("下载服务就绪")
                     .setOngoing(false)
                     .setProgress(0, 0, false)
             }
         }
-
         return builder.build()
     }
-    
+
     /**
      * 格式化文件大小
      */
@@ -358,14 +383,12 @@ class DownloadService : Service() {
 
     override fun onDestroy() {
         Log.d(TAG, "DownloadService destroyed")
-        
         // 清理资源
         downloader.close()
         serviceScope.cancel()
-        
         super.onDestroy()
     }
-    
+
     /**
      * 获取当前下载状态（兼容ViewModel）
      */
