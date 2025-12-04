@@ -3,6 +3,7 @@ package cc.bbq.xq.data.repository
 
 import cc.bbq.xq.SineShopClient
 import cc.bbq.xq.data.unified.*
+import java.io.File
 import kotlin.math.ceil
 
 class SineShopRepository : IAppStoreRepository {

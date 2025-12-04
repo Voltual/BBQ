@@ -16,6 +16,7 @@ import cc.bbq.xq.data.repository.SineOpenMarketRepository
 import cc.bbq.xq.data.repository.XiaoQuRepository
 import cc.bbq.xq.data.unified.UnifiedAppReleaseParams
 import cc.bbq.xq.util.ApkParser
+import io.ktor.client.call.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.utils.io.streams.asInput
@@ -250,6 +251,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     fun removeScreenshot(uri: Uri) {
         screenshotsUris.remove(uri)
         // 同步移除 tempScreenshotFiles 逻辑略复杂，建议重置或简单处理
+        tempScreenshotFiles.removeIf { it.toUri() == uri }
     }
 
     // --- 发布逻辑 ---
@@ -301,7 +303,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                     keyword = keyword.value,
                     isWearOs = isWearOs.value,
                     abi = abi.value,
-                    screenshots = tempScreenshotFiles
+                    screenshots = tempScreenshotFiles.toList()
                 )
                 
                 val result = repo.releaseApp(params)
@@ -341,7 +343,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         packageName.value = pkgNameLine?.substringAfter("包名：")?.trim() ?: ""
 
         versionName.value = appDetail.version
-        appVersion.value = appDetail.version // 小趣空间复用
+        versionCode.value = appDetail.apps_version_id // 小趣空间复用
         appSize.value = appDetail.app_size.replace("MB", "").trim()
         appIntroduce.value = appDetail.app_introduce?.replace("<br>", "\n") ?: ""
         appExplain.value = appDetail.app_explain ?: ""
@@ -377,7 +379,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             )
 
             if (response.status.isSuccess()) {
-                val responseBody: KtorClient.UploadResponse = response.body()
+                val responseBody: KtorClient.UploadResponse = response.body<KtorClient.UploadResponse>()
                 if (responseBody.code == 0 && !responseBody.downurl.isNullOrBlank()) {
                     withContext(Dispatchers.Main) {
                         _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
@@ -416,7 +418,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             )
 
             if (response.status.isSuccess()) {
-                val responseBody: KtorClient.WanyueyunUploadResponse = response.body()
+                val responseBody: KtorClient.WanyueyunUploadResponse = response.body<KtorClient.WanyueyunUploadResponse>()
                 if (responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
                     withContext(Dispatchers.Main) {
                         _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
