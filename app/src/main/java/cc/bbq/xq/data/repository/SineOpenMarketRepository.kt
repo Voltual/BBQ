@@ -6,7 +6,20 @@ import cc.bbq.xq.OpenMarketSineWorldClient
 import cc.bbq.xq.data.unified.*
 import java.io.File
 
-class SineOpenMarketRepository : IAppStoreRepository {    
+class SineOpenMarketRepository : IAppStoreRepository {
+
+    // 弦开放平台不支持这些读操作，返回空或错误
+    override suspend fun getCategories(): Result<List<UnifiedCategory>> = Result.success(emptyList())
+    override suspend fun getApps(categoryId: String?, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>> = Result.success(Pair(emptyList(), 0))
+    override suspend fun searchApps(query: String, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>> = Result.success(Pair(emptyList(), 0))
+    override suspend fun getAppDetail(appId: String, versionId: Long): Result<UnifiedAppDetail> = Result.failure(Exception("Not supported"))
+    override suspend fun getAppComments(appId: String, versionId: Long, page: Int): Result<Pair<List<UnifiedComment>, Int>> = Result.failure(Exception("Not supported"))
+    override suspend fun postComment(appId: String, versionId: Long, content: String, parentCommentId: String?, mentionUserId: String?): Result<Unit> = Result.failure(Exception("Not supported"))
+    override suspend fun deleteComment(commentId: String): Result<Unit> = Result.failure(Exception("Not supported"))
+    override suspend fun toggleFavorite(appId: String, isCurrentlyFavorite: Boolean): Result<Boolean> = Result.failure(Exception("Not supported"))
+    override suspend fun deleteApp(appId: String, versionId: Long): Result<Unit> = Result.failure(Exception("Not supported"))
+    override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> = Result.failure(Exception("Not supported"))
+    
     // 不需要单独的图片上传接口，图片随表单一起提交
     override suspend fun uploadImage(file: File, type: String): Result<String> = Result.success(file.absolutePath)
     override suspend fun uploadApk(file: File, serviceType: String): Result<String> = Result.success(file.absolutePath)
