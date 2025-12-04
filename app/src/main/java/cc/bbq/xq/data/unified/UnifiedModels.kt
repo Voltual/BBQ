@@ -2,6 +2,7 @@
 package cc.bbq.xq.data.unified
 
 import cc.bbq.xq.AppStore
+import java.io.File
 
 /**
  * 统一的用户信息模型
@@ -125,4 +126,49 @@ data class UnifiedUserDetail(
     
     val store: AppStore,
     val raw: Any? = null
+)
+/**
+ * 统一的发布应用参数
+ * 包含两个平台所需的所有字段，使用可空类型处理差异
+ */
+data class UnifiedAppReleaseParams(
+    val store: AppStore,
+    // 通用字段
+    val appName: String,
+    val packageName: String,
+    val versionName: String,
+    val versionCode: Long,
+    val sizeInMb: Double,
+    val iconFile: File?, // 本地文件
+    val iconUrl: String?, // 网络URL (小趣空间用)
+    val apkFile: File?,   // 本地文件 (弦开放平台用)
+    val apkUrl: String?,  // 网络URL (小趣空间用)
+    
+    // 小趣空间特有
+    val introduce: String? = null, // 资源介绍
+    val explain: String? = null,   // 适配说明
+    val introImages: List<String>? = null, // 介绍图URL列表
+    val categoryId: Int? = null,
+    val subCategoryId: Int? = null,
+    val isPay: Int? = null,
+    val payMoney: String? = null,
+    val isUpdate: Boolean = false,
+    val appId: Long? = null, // 更新时需要
+    val appVersionId: Long? = null, // 更新/删除时需要
+
+    // 弦开放平台特有
+    val appTypeId: Int? = null,
+    val appVersionTypeId: Int? = null,
+    val appTags: String? = null, // ID字符串
+    val sdkMin: Int? = null,
+    val sdkTarget: Int? = null,
+    val developer: String? = null,
+    val source: String? = null,
+    val describe: String? = null, // 应用描述
+    val updateLog: String? = null,
+    val uploadMessage: String? = null,
+    val keyword: String? = null,
+    val isWearOs: Int? = null,
+    val abi: Int? = null,
+    val screenshots: List<File>? = null // 本地截图文件列表
 )
