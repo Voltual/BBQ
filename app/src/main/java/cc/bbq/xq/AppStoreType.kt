@@ -12,5 +12,6 @@ package cc.bbq.xq
 enum class AppStore(val displayName: String) {
     XIAOQU_SPACE("小趣空间"),
     SIENE_SHOP("弦应用商店"),
-    LOCAL("本地应用") // 新增：表示本地安装的应用
+    SINE_OPEN_MARKET("弦-开放平台"), // 新增：弦-开放平台
+    LOCAL("本地应用")
 }
