@@ -206,7 +206,22 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
             Result.failure(e)
         }
     }
-    
+
+    override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> {
+        return try {
+            val result = getAppDetail(appId, versionId)
+            result.map { detail ->
+                if (detail.downloadUrl != null) {
+                    listOf(UnifiedDownloadSource(name = "默认下载", url = detail.downloadUrl, isOfficial = true))
+                } else {
+                    emptyList()
+                }
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun releaseApp(params: UnifiedAppReleaseParams): Result<Unit> {
         return try {
             val token = getToken()
@@ -258,8 +273,6 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
     }
 
     override suspend fun uploadImage(file: File, type: String): Result<String> {
-        // 复用 KtorClient 中的上传逻辑 (这里简化，实际应从 ViewModel 迁移过来)
-        // 假设 type="icon" 或 "intro"
         return try {
              val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
                 url = "api.php",
@@ -278,20 +291,6 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
     }
 
     override suspend fun uploadApk(file: File, serviceType: String): Result<String> {
-        // 占位，实际逻辑在 ViewModel 中通过 KtorClient 直接调用了，
-        // 为了完全抽象，应该把 uploadToKeyun/Wanyueyun 移到这里。
-        // 暂时返回失败以提示需要在 ViewModel 中处理或迁移代码。
         return Result.failure(Exception("请使用 ViewModel 中的上传逻辑"))
-    }
-}
-
-    override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> {
-        return getAppDetail(appId, versionId).map { detail ->
-            if (detail.downloadUrl != null) {
-                listOf(UnifiedDownloadSource(name = "默认下载", url = detail.downloadUrl, isOfficial = true))
-            } else {
-                emptyList()
-            }
-        }
     }
 }
