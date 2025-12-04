@@ -16,7 +16,6 @@ import cc.bbq.xq.data.repository.SineOpenMarketRepository
 import cc.bbq.xq.data.repository.XiaoQuRepository
 import cc.bbq.xq.data.unified.UnifiedAppReleaseParams
 import cc.bbq.xq.util.ApkParser
-import io.ktor.client.call.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.utils.io.streams.asInput
@@ -28,6 +27,7 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import androidx.core.net.toUri // 导入 toUri 扩展函数
 
 // 小趣空间分类模型
 data class AppCategory(
