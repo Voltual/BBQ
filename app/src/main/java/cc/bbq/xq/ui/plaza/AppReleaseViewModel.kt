@@ -114,12 +114,15 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     // --- 弦开放平台特定状态 ---
     // 应用类型
     val appTypeOptions = listOf("手表应用", "手机应用", "大屏应用", "TV应用", "WearOS应用")
-    val selectedAppTypeIndex = mutableStateOf(1) // 手机应用 (默认)
-    val appTypeId: Int get() = selectedAppTypeIndex.value +1
+    // val selectedAppTypeIndex = mutableStateOf(1) // 手机应用 (默认)
+    // val appTypeId: Int get() = selectedAppTypeIndex.value + 1
+    val appTypeId = mutableStateOf(2) // 手机应用 (默认 ID 为 2)
+
     // 版本类型
     val versionTypeOptions = listOf("官方版", "正式版", "测试版", "公测版", "美化版", "破解版", "修改版", "免费版", "定制版", "手表版")
-    val selectedVersionTypeIndex = mutableStateOf(1) // 正式版 (默认)
-     val appVersionTypeId: Int get() = selectedVersionTypeIndex.value+1
+    // val selectedVersionTypeIndex = mutableStateOf(1) // 正式版 (默认)
+    // val appVersionTypeId: Int get() = selectedVersionTypeIndex.value + 1
+    val appVersionTypeId = mutableStateOf(2) // 正式版 (默认 ID 为 2)
 
     // 应用标签 (从API获取，这里简化)
     val tagOptions = listOf(
@@ -127,8 +130,9 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         "教育学习", "输入法", "WearOS", "文本编辑", "文件管理", "图像处理", "浏览器", "厂商提取", "系统优化", "启动器",
         "生活便利", "表盘", "音乐播放", "地图导航", "图文阅读"
     )
-    val selectedTagIndex = mutableStateOf(3) // 实用工具 (默认)
-    val appTags: String get() = (selectedTagIndex.value).toString() // 将索引转换为字符串
+    // val selectedTagIndex = mutableStateOf(3) // 实用工具 (默认)
+    // val appTags: String get() = (selectedTagIndex.value).toString() // 将索引转换为字符串
+    val appTags = mutableStateOf(3) // 实用工具 (默认 ID 为 3)
 
     val sdkMin = mutableStateOf(21)
     val sdkTarget = mutableStateOf(33)
@@ -404,7 +408,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                     // 弦开放平台
                     appTypeId = appTypeId.value,
                     appVersionTypeId = appVersionTypeId.value,
-                    appTags = appTags.value,
+                    appTags = appTags.value.toString(), // 转换为字符串
                     sdkMin = sdkMin.value,
                     sdkTarget = sdkTarget.value,
                     developer = developer.value,
@@ -471,5 +475,18 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         appDetail.app_introduction_image_array?.let {
             introductionImageUrls.addAll(it)
         }
+    }
+    
+    // --- Setter 方法用于下拉菜单 ---
+    fun setAppTypeId(id: Int) {
+        appTypeId.value = id
+    }
+    
+    fun setAppVersionTypeId(id: Int) {
+        appVersionTypeId.value = id
+    }
+    
+    fun setAppTags(id: Int) {
+        appTags.value = id
     }
 }

@@ -213,17 +213,17 @@ fun AppReleaseScreen(
                     FormTextField(label = "给审核员的留言", state = viewModel.uploadMessage, singleLine = false, minLines = 2)
                 }
                 
-                // 下拉选择: 应用类型, 版本类型, 标签, ABI (这里简化为文本输入或简单的Radio，实际可用Dropdown)
-                // 为了演示，使用简单的文本输入或预设值
-                 item {
-        AppTypeDropdown(viewModel = viewModel)
-    }
-    item {
-        VersionTypeDropdown(viewModel = viewModel)
-    }
-    item {
-        TagDropdown(viewModel = viewModel)
-    }
+                // 下拉选择: 应用类型, 版本类型, 标签
+                item {
+                    AppTypeDropdown(viewModel = viewModel)
+                }
+                item {
+                    VersionTypeDropdown(viewModel = viewModel)
+                }
+                item {
+                    TagDropdown(viewModel = viewModel)
+                }
+                
                 item {
                     Column {
                         Text("2. 添加应用截图 (发布时上传)", style = MaterialTheme.typography.titleMedium)
@@ -286,26 +286,71 @@ fun AppReleaseScreen(
     }
 }
 
-// ... (保留 ApkUploadServiceDropdown, PaymentSettings, CategoryDropdown, FormTextField 等辅助组件) ...
+// --- 辅助 Composable 函数 ---
+
+@Composable
+fun FormTextField(
+    label: String,
+    state: MutableState<String>,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    singleLine: Boolean = false,
+    minLines: Int = 1,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+) {
+    OutlinedTextField(
+        value = state.value,
+        onValueChange = { state.value = it },
+        label = { Text(label) },
+        modifier = modifier.fillMaxWidth(),
+        enabled = enabled,
+        singleLine = singleLine,
+        minLines = minLines,
+        keyboardOptions = keyboardOptions
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppTypeDropdown(viewModel: AppReleaseViewModel) {
+fun PaymentSettings(viewModel: AppReleaseViewModel) {
+    Column {
+        Text("付费设置", style = MaterialTheme.typography.titleMedium)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(selected = viewModel.isPay.value == 0, onClick = { viewModel.isPay.value = 0 })
+            Text("免费")
+            Spacer(modifier = Modifier.width(16.dp))
+            RadioButton(selected = viewModel.isPay.value == 1, onClick = { viewModel.isPay.value = 1 })
+            Text("付费")
+        }
+        if (viewModel.isPay.value == 1) {
+            FormTextField(
+                label = "价格 (整数)",
+                state = viewModel.payMoney,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CategoryDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
-    val appTypeOptions = viewModel.appTypeOptions
-    val selectedAppTypeIndex = viewModel.selectedAppTypeIndex.value
+    val selectedCategoryName =
+        viewModel.categories.getOrNull(viewModel.selectedCategoryIndex.value)?.categoryName ?: "请选择"
 
     Column {
-        Text("应用类型", style = MaterialTheme.typography.titleMedium)
+        Text("应用分类", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
         ) {
             OutlinedTextField(
-                value = appTypeOptions[selectedAppTypeIndex],
+                value = selectedCategoryName,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("选择应用类型") },
+                label = { Text("选择一个分类") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -318,11 +363,59 @@ fun AppTypeDropdown(viewModel: AppReleaseViewModel) {
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
+                viewModel.categories.forEachIndexed { index, category ->
+                    DropdownMenuItem(
+                        text = { Text(category.categoryName) },
+                        onClick = {
+                            viewModel.selectedCategoryIndex.value = index
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppTypeDropdown(viewModel: AppReleaseViewModel) {
+    var expanded by remember { mutableStateOf(false) }
+    val appTypeOptions = viewModel.appTypeOptions
+    val selectedAppTypeId = viewModel.appTypeId.value
+
+    Column {
+        Text("应用类型", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            // 找到当前选中的应用类型名称
+            val selectedAppName = appTypeOptions.getOrNull(selectedAppTypeId - 1) ?: "请选择"
+            OutlinedTextField(
+                value = selectedAppName,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("选择应用类型") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(
+                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                        enabled = true
+                    )
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
                 appTypeOptions.forEachIndexed { index, appType ->
+                    val id = index + 1 // ID 从 1 开始
                     DropdownMenuItem(
                         text = { Text(appType) },
                         onClick = {
-                            viewModel.selectedAppTypeIndex.value = index
+                            viewModel.setAppTypeId(id) // 使用 setter 方法
                             expanded = false
                         }
                     )
@@ -337,7 +430,7 @@ fun AppTypeDropdown(viewModel: AppReleaseViewModel) {
 fun VersionTypeDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
     val versionTypeOptions = viewModel.versionTypeOptions
-    val selectedVersionTypeIndex = viewModel.selectedVersionTypeIndex.value
+    val selectedVersionTypeId = viewModel.appVersionTypeId.value
 
     Column {
         Text("版本类型", style = MaterialTheme.typography.titleMedium)
@@ -346,16 +439,18 @@ fun VersionTypeDropdown(viewModel: AppReleaseViewModel) {
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
         ) {
+            // 找到当前选中的版本类型名称
+            val selectedVersionName = versionTypeOptions.getOrNull(selectedVersionTypeId - 1) ?: "请选择"
             OutlinedTextField(
-                value = versionTypeOptions[selectedVersionTypeIndex],
+                value = selectedVersionName,
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("选择版本类型") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor( // 添加这行
-                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, // 使用正确的类型
+                    .menuAnchor(
+                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
                         enabled = true
                     )
             )
@@ -364,10 +459,11 @@ fun VersionTypeDropdown(viewModel: AppReleaseViewModel) {
                 onDismissRequest = { expanded = false }
             ) {
                 versionTypeOptions.forEachIndexed { index, versionType ->
+                    val id = index + 1 // ID 从 1 开始
                     DropdownMenuItem(
                         text = { Text(versionType) },
                         onClick = {
-                            viewModel.selectedVersionTypeIndex.value = index
+                            viewModel.setAppVersionTypeId(id) // 使用 setter 方法
                             expanded = false
                         }
                     )
@@ -382,7 +478,7 @@ fun VersionTypeDropdown(viewModel: AppReleaseViewModel) {
 fun TagDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
     val tagOptions = viewModel.tagOptions
-    val selectedTagIndex = viewModel.selectedTagIndex.value
+    val selectedTagId = viewModel.appTags.value
 
     Column {
         Text("应用标签", style = MaterialTheme.typography.titleMedium)
@@ -391,16 +487,18 @@ fun TagDropdown(viewModel: AppReleaseViewModel) {
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
         ) {
+            // 找到当前选中的标签名称
+            val selectedTagName = tagOptions.getOrNull(selectedTagId) ?: "请选择"
             OutlinedTextField(
-                value = tagOptions[selectedTagIndex],
+                value = selectedTagName,
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("选择应用标签") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor( // 添加这行
-                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, // 使用正确的类型
+                    .menuAnchor(
+                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
                         enabled = true
                     )
             )
@@ -409,10 +507,11 @@ fun TagDropdown(viewModel: AppReleaseViewModel) {
                 onDismissRequest = { expanded = false }
             ) {
                 tagOptions.forEachIndexed { index, tag ->
+                    val id = index // ID 从 0 开始
                     DropdownMenuItem(
                         text = { Text(tag) },
                         onClick = {
-                            viewModel.selectedTagIndex.value = index
+                            viewModel.setAppTags(id) // 使用 setter 方法
                             expanded = false
                         }
                     )
