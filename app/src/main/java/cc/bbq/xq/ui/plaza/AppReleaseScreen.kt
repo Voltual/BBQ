@@ -28,7 +28,21 @@ import cc.bbq.xq.ui.ImagePreview
 import cc.bbq.xq.ui.theme.*
 import coil3.compose.SubcomposeAsyncImage
 import kotlinx.coroutines.launch
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import cc.bbq.xq.ui.theme.AppStoreDropdownMenu
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpOffset
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,18 +116,9 @@ fun AppReleaseScreen(
 
             // --- 公共部分：APK上传与图标 ---
             item {
-                if (selectedStore == AppStore.XIAOQU_SPACE) {
-                    ApkUploadServiceDropdown(viewModel)
-                }
-            }
 
-            item {
-                val selectedService by viewModel.selectedApkUploadService
-                val buttonText = if (selectedStore == AppStore.XIAOQU_SPACE) {
-                    if (isUpdateMode) "1. 选择新版 APK (上传至${selectedService.displayName})" else "1. 选择并上传 APK (至${selectedService.displayName})"
-                } else {
-                    "1. 选择 APK (解析并准备上传)"
-                }
+                val buttonText =  "1. 选择 APK (解析并准备上传)"
+
                 
                 BBQButton(
                     onClick = { apkLauncher.launch("application/vnd.android.package-archive") },
@@ -133,8 +138,12 @@ fun AppReleaseScreen(
                             model = model,
                             contentDescription = "应用图标",
                             modifier = Modifier.size(64.dp),
-                            loading = { CircularProgressIndicator() },
-                            error = { Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败") }
+                            loading = {
+                                CircularProgressIndicator()
+                            },
+                            error = {
+                                Icon(Icons.Filled.BrokenImage, contentDescription = "加载失败")
+                            }
                         )
                         Spacer(modifier = Modifier.width(16.dp))
                         Text(
@@ -164,7 +173,6 @@ fun AppReleaseScreen(
                             modifier = Modifier.fillMaxWidth(),
                             text = { Text("选择图片") }
                         )
-                        // 显示已上传图片预览 (复用逻辑)
                          if (viewModel.introductionImageUrls.isNotEmpty()) {
                             Row(
                                 modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -207,9 +215,15 @@ fun AppReleaseScreen(
                 
                 // 下拉选择: 应用类型, 版本类型, 标签, ABI (这里简化为文本输入或简单的Radio，实际可用Dropdown)
                 // 为了演示，使用简单的文本输入或预设值
-                item { Text("高级设置", style = MaterialTheme.typography.titleMedium) }
-                // ... (可以添加更多Dropdown来选择类型，这里暂略，使用默认值)
-
+                 item {
+        AppTypeDropdown(viewModel = viewModel)
+    }
+    item {
+        VersionTypeDropdown(viewModel = viewModel)
+    }
+    item {
+        TagDropdown(viewModel = viewModel)
+    }
                 item {
                     Column {
                         Text("2. 添加应用截图 (发布时上传)", style = MaterialTheme.typography.titleMedium)
@@ -275,23 +289,23 @@ fun AppReleaseScreen(
 // ... (保留 ApkUploadServiceDropdown, PaymentSettings, CategoryDropdown, FormTextField 等辅助组件) ...
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
+fun AppTypeDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
-    val services = ApkUploadService.values()
-    val selectedService by viewModel.selectedApkUploadService
+    val appTypeOptions = viewModel.appTypeOptions
+    val selectedAppTypeIndex = viewModel.selectedAppTypeIndex.value
 
     Column {
-        Text("APK 上传服务", style = MaterialTheme.typography.titleMedium)
+        Text("应用类型", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
         ) {
             OutlinedTextField(
-                value = selectedService.displayName,
+                value = appTypeOptions[selectedAppTypeIndex],
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("选择上传服务") },
+                label = { Text("选择应用类型") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -304,60 +318,39 @@ private fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
-                services.forEach { service ->
+                appTypeOptions.forEachIndexed { index, appType ->
                     DropdownMenuItem(
-                        text = { Text(service.displayName) },
+                        text = { Text(appType) },
                         onClick = {
-                            viewModel.selectedApkUploadService.value = service
+                            viewModel.selectedAppTypeIndex.value = index
                             expanded = false
                         }
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun PaymentSettings(viewModel: AppReleaseViewModel) {
-    Column {
-        Text("付费设置", style = MaterialTheme.typography.titleMedium)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RadioButton(selected = viewModel.isPay.value == 0, onClick = { viewModel.isPay.value = 0 })
-            Text("免费")
-            Spacer(modifier = Modifier.width(16.dp))
-            RadioButton(selected = viewModel.isPay.value == 1, onClick = { viewModel.isPay.value = 1 })
-            Text("付费")
-        }
-        if (viewModel.isPay.value == 1) {
-            FormTextField(
-                label = "价格 (整数)",
-                state = viewModel.payMoney,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CategoryDropdown(viewModel: AppReleaseViewModel) {
+fun VersionTypeDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedCategoryName =
-        viewModel.categories.getOrNull(viewModel.selectedCategoryIndex.value)?.categoryName ?: "请选择"
+    val versionTypeOptions = viewModel.versionTypeOptions
+    val selectedVersionTypeIndex = viewModel.selectedVersionTypeIndex.value
 
     Column {
-        Text("应用分类", style = MaterialTheme.typography.titleMedium)
+        Text("版本类型", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded }
         ) {
             OutlinedTextField(
-                value = selectedCategoryName,
+                value = versionTypeOptions[selectedVersionTypeIndex],
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("选择一个分类") },
+                label = { Text("选择版本类型") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -370,11 +363,11 @@ private fun CategoryDropdown(viewModel: AppReleaseViewModel) {
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
-                viewModel.categories.forEachIndexed { index, category ->
+                versionTypeOptions.forEachIndexed { index, versionType ->
                     DropdownMenuItem(
-                        text = { Text(category.categoryName) },
+                        text = { Text(versionType) },
                         onClick = {
-                            viewModel.selectedCategoryIndex.value = index
+                            viewModel.selectedVersionTypeIndex.value = index
                             expanded = false
                         }
                     )
@@ -384,24 +377,47 @@ private fun CategoryDropdown(viewModel: AppReleaseViewModel) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FormTextField(
-    label: String,
-    state: MutableState<String>,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    singleLine: Boolean = false,
-    minLines: Int = 1,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
-) {
-    OutlinedTextField(
-        value = state.value,
-        onValueChange = { state.value = it },
-        label = { Text(label) },
-        modifier = modifier.fillMaxWidth(),
-        enabled = enabled,
-        singleLine = singleLine,
-        minLines = minLines,
-        keyboardOptions = keyboardOptions
-    )
+fun TagDropdown(viewModel: AppReleaseViewModel) {
+    var expanded by remember { mutableStateOf(false) }
+    val tagOptions = viewModel.tagOptions
+    val selectedTagIndex = viewModel.selectedTagIndex.value
+
+    Column {
+        Text("应用标签", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = tagOptions[selectedTagIndex],
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("选择应用标签") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor( // 添加这行
+                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, // 使用正确的类型
+                        enabled = true
+                    )
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                tagOptions.forEachIndexed { index, tag ->
+                    DropdownMenuItem(
+                        text = { Text(tag) },
+                        onClick = {
+                            viewModel.selectedTagIndex.value = index
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
 }

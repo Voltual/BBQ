@@ -12,11 +12,11 @@ import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.data.repository.IAppStoreRepository
-import io.ktor.client.call.*
 import cc.bbq.xq.data.repository.SineOpenMarketRepository
 import cc.bbq.xq.data.repository.XiaoQuRepository
 import cc.bbq.xq.data.unified.UnifiedAppReleaseParams
 import cc.bbq.xq.util.ApkParser
+import io.ktor.client.call.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.utils.io.streams.asInput
@@ -112,9 +112,24 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
      .sortedBy { it.categoryName }
 
     // --- 弦开放平台特定状态 ---
-    val appTypeId = mutableStateOf(1) // 1: 手机应用 (默认)
-    val appVersionTypeId = mutableStateOf(1) // 1: 正式版
-    val appTags = mutableStateOf("3") // 默认实用工具
+    // 应用类型
+    val appTypeOptions = listOf("手表应用", "手机应用", "大屏应用", "TV应用", "WearOS应用")
+    val selectedAppTypeIndex = mutableStateOf(1) // 手机应用 (默认)
+    val appTypeId: Int get() = selectedAppTypeIndex.value +1
+    // 版本类型
+    val versionTypeOptions = listOf("官方版", "正式版", "测试版", "公测版", "美化版", "破解版", "修改版", "免费版", "定制版", "手表版")
+    val selectedVersionTypeIndex = mutableStateOf(1) // 正式版 (默认)
+     val appVersionTypeId: Int get() = selectedVersionTypeIndex.value+1
+
+    // 应用标签 (从API获取，这里简化)
+    val tagOptions = listOf(
+        "星标应用", "弦-应用", "应用商店", "实用工具", "视频播放", "通讯社交", "游戏", "搞怪整活", "数字消费", "搞机刷机",
+        "教育学习", "输入法", "WearOS", "文本编辑", "文件管理", "图像处理", "浏览器", "厂商提取", "系统优化", "启动器",
+        "生活便利", "表盘", "音乐播放", "地图导航", "图文阅读"
+    )
+    val selectedTagIndex = mutableStateOf(3) // 实用工具 (默认)
+    val appTags: String get() = (selectedTagIndex.value).toString() // 将索引转换为字符串
+
     val sdkMin = mutableStateOf(21)
     val sdkTarget = mutableStateOf(33)
     val developer = mutableStateOf("")
@@ -137,7 +152,24 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     val processFeedback = _processFeedback.asStateFlow()
     
     private val MAX_INTRO_IMAGES = 3
-
+// 弦开放平台：选择截图（保存本地URI，发布时一起上传）
+    fun addScreenshots(uris: List<Uri>) {
+        if (_selectedStore.value != AppStore.SINE_OPEN_MARKET) return
+        screenshotsUris.addAll(uris)
+        // 可以在这里异步将 URI 转为 File 存入 tempScreenshotFiles
+        viewModelScope.launch(Dispatchers.IO) {
+            uris.forEach { uri ->
+                val file = uriToTempFile(context, uri, "screenshot_${System.currentTimeMillis()}.png")
+                file?.let { tempScreenshotFiles.add(it) }
+            }
+        }
+    }
+    
+    fun removeScreenshot(uri: Uri) {
+        screenshotsUris.remove(uri)
+        // 同步移除 tempScreenshotFiles 逻辑略复杂，建议重置或简单处理
+        tempScreenshotFiles.removeIf { it.toUri() == uri }
+    }
     // --- APK 解析 ---
     fun parseAndUploadApk(uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -231,28 +263,107 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             isIntroImagesUploading.value = false
         }
     }
+
+    private fun createStreamInputProvider(file: File): InputProvider {
+        return InputProvider { file.inputStream().asInput() }
+    }
     
-    // 弦开放平台：选择截图（保存本地URI，发布时一起上传）
-    fun addScreenshots(uris: List<Uri>) {
-        if (_selectedStore.value != AppStore.SINE_OPEN_MARKET) return
-        screenshotsUris.addAll(uris)
-        // 可以在这里异步将 URI 转为 File 存入 tempScreenshotFiles
-        viewModelScope.launch(Dispatchers.IO) {
-            uris.forEach { uri ->
-                val file = uriToTempFile(context, uri, "screenshot_${System.currentTimeMillis()}.png")
-                file?.let { tempScreenshotFiles.add(it) }
+    private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
+        try {
+            val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
+                url = "api.php",
+                formData = formData {
+                    append("file", createStreamInputProvider(file), Headers.build {
+                        append(HttpHeaders.ContentType, mediaType)
+                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                    })
+                }
+            )
+
+            if (response.status.isSuccess()) {
+                val responseBody: KtorClient.UploadResponse = response.body<KtorClient.UploadResponse>()
+                if (responseBody.code == 0 && !responseBody.downurl.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) {
+                        _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
+                        onSuccess(responseBody.downurl)
+                    }
+                } else {
+                    withContext(Dispatchers.Main){
+                        _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${responseBody.msg}"))
+                    }
+                }
+            } else {
+                withContext(Dispatchers.Main){
+                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 网络错误 ${response.status}"))
+                }
             }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main){
+                                _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${e.message}"))
+            }
+        } finally {
+            // file.delete() // 暂时注释掉，因为可能需要复用
         }
     }
 
+    private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
+        try {
+            val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
+                url = "upload",
+                formData = formData {
+                    append("Api", "小趣API")
+                    append("file", createStreamInputProvider(file), Headers.build {
+                        append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                    })
+                }
+            )
+
+            if (response.status.isSuccess()) {
+                val responseBody: KtorClient.WanyueyunUploadResponse = response.body<KtorClient.WanyueyunUploadResponse>()
+                if (responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) {
+                        _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
+                        onSuccess(responseBody.data)
+                    }
+                } else {
+                    withContext(Dispatchers.Main){
+                        _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${responseBody.msg}"))
+                    }
+                }
+            } else {
+                withContext(Dispatchers.Main){
+                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): 网络错误 ${response.status}"))
+                }
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main){
+                _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${e.message}"))
+            }
+        } finally {
+             // file.delete()
+        }
+    }
+
+    fun clearProcessFeedback() {
+        _processFeedback.value = null
+    }
+
+    private fun uriToTempFile(context: Context, uri: Uri, fileName: String): File? {
+        return try {
+            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+            val file = File(context.cacheDir, fileName)
+            file.outputStream().use { outputStream ->
+                inputStream.use { it.copyTo(outputStream) }
+            }
+            file
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
     fun removeIntroductionImage(url: String) {
         introductionImageUrls.remove(url)
-    }
-    
-    fun removeScreenshot(uri: Uri) {
-        screenshotsUris.remove(uri)
-        // 同步移除 tempScreenshotFiles 逻辑略复杂，建议重置或简单处理
-        tempScreenshotFiles.removeIf { it.toUri() == uri }
     }
 
     // --- 发布逻辑 ---
@@ -359,106 +470,6 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         introductionImageUrls.clear()
         appDetail.app_introduction_image_array?.let {
             introductionImageUrls.addAll(it)
-        }
-    }
-    
-    // ... (uploadToKeyun, uploadToWanyueyun, uriToTempFile 等保持不变) ...
-     private fun createStreamInputProvider(file: File): InputProvider {
-        return InputProvider { file.inputStream().asInput() }
-    }
-    
-    private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
-        try {
-            val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
-                url = "api.php",
-                formData = formData {
-                    append("file", createStreamInputProvider(file), Headers.build {
-                        append(HttpHeaders.ContentType, mediaType)
-                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                    })
-                }
-            )
-
-            if (response.status.isSuccess()) {
-                val responseBody: KtorClient.UploadResponse = response.body<KtorClient.UploadResponse>()
-                if (responseBody.code == 0 && !responseBody.downurl.isNullOrBlank()) {
-                    withContext(Dispatchers.Main) {
-                        _processFeedback.value = Result.success("$contextMessage (氪云): ${responseBody.msg}")
-                        onSuccess(responseBody.downurl)
-                    }
-                } else {
-                    withContext(Dispatchers.Main){
-                        _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${responseBody.msg}"))
-                    }
-                }
-            } else {
-                withContext(Dispatchers.Main){
-                    _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): 网络错误 ${response.status}"))
-                }
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main){
-                                _processFeedback.value = Result.failure(Throwable("$contextMessage (氪云): ${e.message}"))
-            }
-        } finally {
-            // file.delete() // 暂时注释掉，因为可能需要复用
-        }
-    }
-
-    private suspend fun uploadToWanyueyun(file: File, onSuccess: (String) -> Unit) {
-        try {
-            val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
-                url = "upload",
-                formData = formData {
-                    append("Api", "小趣API")
-                    append("file", createStreamInputProvider(file), Headers.build {
-                        append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
-                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
-                    })
-                }
-            )
-
-            if (response.status.isSuccess()) {
-                val responseBody: KtorClient.WanyueyunUploadResponse = response.body<KtorClient.WanyueyunUploadResponse>()
-                if (responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
-                    withContext(Dispatchers.Main) {
-                        _processFeedback.value = Result.success("APK (挽悦云): ${responseBody.msg}")
-                        onSuccess(responseBody.data)
-                    }
-                } else {
-                    withContext(Dispatchers.Main){
-                        _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${responseBody.msg}"))
-                    }
-                }
-            } else {
-                withContext(Dispatchers.Main){
-                    _processFeedback.value = Result.failure(Throwable("APK (挽悦云): 网络错误 ${response.status}"))
-                }
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main){
-                _processFeedback.value = Result.failure(Throwable("APK (挽悦云): ${e.message}"))
-            }
-        } finally {
-             // file.delete()
-        }
-    }
-
-    fun clearProcessFeedback() {
-        _processFeedback.value = null
-    }
-
-    private fun uriToTempFile(context: Context, uri: Uri, fileName: String): File? {
-        return try {
-            val inputStream = context.contentResolver.openInputStream(uri) ?: return null
-            val file = File(context.cacheDir, fileName)
-            file.outputStream().use { outputStream ->
-                inputStream.use { it.copyTo(outputStream) }
-            }
-            file
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
         }
     }
 }
