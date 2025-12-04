@@ -100,30 +100,36 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
                     // 弦应用商店 API
                     SineShopClient.getUserInfoById(_currentUserId)
                 }
-                AppStore.LOCAL -> {
-                    // 本地应用：暂不支持用户详情
-                    Result.failure(IllegalArgumentException("本地应用不支持用户详情"))
+                else -> {
+                    // 其他应用商店：不支持用户详情，直接返回失败
+                    Result.failure(IllegalArgumentException("当前应用商店不支持用户详情"))
                 }
             }
 
-            when (val response = result.getOrNull()) {
-                is KtorClient.UserInformationResponse -> {
-                    // 小趣空间响应
-                    if (response.code == 1) {
-                        _userData.postValue(response.data.toUnifiedUserDetail())
+            // 只有在前两个分支时才处理响应
+            if (_currentStore == AppStore.XIAOQU_SPACE || _currentStore == AppStore.SIENE_SHOP) {
+                when (val response = result.getOrNull()) {
+                    is KtorClient.UserInformationResponse -> {
+                        // 小趣空间响应
+                        if (response.code == 1) {
+                            _userData.postValue(response.data.toUnifiedUserDetail())
+                            _errorMessage.postValue("")
+                        } else {
+                            _errorMessage.postValue("加载失败: ${response.msg}")
+                        }
+                    }
+                    is SineShopClient.SineShopUserInfo -> {
+                        // 弦应用商店响应：直接是数据对象
+                        _userData.postValue(response.toUnifiedUserDetail())
                         _errorMessage.postValue("")
-                    } else {
-                        _errorMessage.postValue("加载失败: ${response.msg}")
+                    }
+                    else -> {
+                        _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message ?: "网络错误"}")
                     }
                 }
-                is SineShopClient.SineShopUserInfo -> {
-                    // 弦应用商店响应：直接是数据对象
-                    _userData.postValue(response.toUnifiedUserDetail())
-                    _errorMessage.postValue("")
-                }
-                else -> {
-                    _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message ?: "网络错误"}")
-                }
+            } else {
+                // 其他商店的情况
+                _errorMessage.postValue("当前应用商店不支持用户详情")
             }
         } catch (e: Exception) {
             _errorMessage.postValue("网络错误: ${e.message}")
