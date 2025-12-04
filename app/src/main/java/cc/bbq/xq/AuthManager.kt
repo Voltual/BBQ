@@ -72,16 +72,27 @@ object AuthManager {
             .setUserId(userId)
             .setDeviceId(currentCredentials?.deviceId?.ifEmpty { generateDeviceId() } ?: generateDeviceId())
             .setSineMarketToken(currentCredentials?.sineMarketToken ?: "") // 保留现有的弦应用商店token
+            .setSineOpenMarketToken(currentCredentials?.sineOpenMarketToken ?: "") // 保留现有的弦应用商店开放平台token
             .build()
         
         writeCredentials(context, newCredentials)
     }
 
-    // --- 新增：保存弦应用商店token ---
+    // --- 新增：保存弦应用商店token（api.market.sineworld.cn）---
     suspend fun saveSineMarketToken(context: Context, token: String) {
         val currentCredentials = readCredentials(context) ?: UserCredentials.getDefaultInstance()
         val newCredentials = currentCredentials.toBuilder()
             .setSineMarketToken(token)
+            .build()
+        
+        writeCredentials(context, newCredentials)
+    }
+
+    // --- 新增：保存弦应用商店开放平台token（open.market.sineworld.cn）---
+    suspend fun saveSineOpenMarketToken(context: Context, token: String) {
+        val currentCredentials = readCredentials(context) ?: UserCredentials.getDefaultInstance()
+        val newCredentials = currentCredentials.toBuilder()
+            .setSineOpenMarketToken(token)
             .build()
         
         writeCredentials(context, newCredentials)
@@ -94,10 +105,17 @@ object AuthManager {
         }
     }
 
-    // 新增方法：获取弦应用商店token
+    // 获取弦应用商店token（api.market.sineworld.cn）
     fun getSineMarketToken(context: Context): Flow<String> {
         return getCredentials(context).map { userCredentials ->
             userCredentials?.sineMarketToken ?: ""
+        }
+    }
+
+    // 新增方法：获取弦应用商店开放平台token（open.market.sineworld.cn）
+    fun getSineOpenMarketToken(context: Context): Flow<String> {
+        return getCredentials(context).map { userCredentials ->
+            userCredentials?.sineOpenMarketToken ?: ""
         }
     }
 
@@ -215,6 +233,7 @@ object AuthManager {
                 .setUserId(userId)
                 .setDeviceId(deviceId)
                 .setSineMarketToken("")
+                .setSineOpenMarketToken("")
                 .build()
             
             writeCredentials(context, credentials)
