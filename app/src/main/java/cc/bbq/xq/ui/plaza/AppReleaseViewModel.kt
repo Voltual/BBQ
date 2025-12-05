@@ -29,6 +29,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import androidx.core.net.toUri // 导入 toUri 扩展函数
+import androidx.compose.runtime.mutableIntStateOf
+import cc.bbq.xq.SineShopClient
 
 // 小趣空间分类模型
 data class AppCategory(
@@ -125,11 +127,11 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     val appVersionTypeId = mutableStateOf(2) // 正式版 (默认 ID 为 2)
 
     // 应用标签 (从API获取，这里简化)
-    val tagOptions = listOf(
-        "星标应用", "弦-应用", "应用商店", "实用工具", "视频播放", "通讯社交", "游戏", "搞怪整活", "数字消费", "搞机刷机",
-        "教育学习", "输入法", "WearOS", "文本编辑", "文件管理", "图像处理", "浏览器", "厂商提取", "系统优化", "启动器",
-        "生活便利", "表盘", "音乐播放", "地图导航", "图文阅读"
-    )
+    //val tagOptions = listOf(
+    //    "星标应用", "弦-应用", "应用商店", "实用工具", "视频播放", "通讯社交", "游戏", "搞怪整活", "数字消费", "搞机刷机",
+    //    "教育学习", "输入法", "WearOS", "文本编辑", "文件管理", "图像处理", "浏览器", "厂商提取", "系统优化", "启动器",
+    //    "生活便利", "表盘", "音乐播放", "地图导航", "图文阅读"
+    //)
     // val selectedTagIndex = mutableStateOf(3) // 实用工具 (默认)
     // val appTags: String get() = (selectedTagIndex.value).toString() // 将索引转换为字符串
     val appTags = mutableStateOf(3) // 实用工具 (默认 ID 为 3)
@@ -146,6 +148,11 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     val abi = mutableStateOf(0) // 0: 不限
     val screenshotsUris = mutableStateListOf<Uri>() // 本地截图URI
     val tempScreenshotFiles = mutableListOf<File>()
+    private val _tagOptions = MutableStateFlow<List<String>>(emptyList())
+    val tagOptions: StateFlow<List<String>> = _tagOptions.asStateFlow()
+
+    // 新增：选中的标签索引
+    val selectedTagIndex = mutableIntStateOf(0)
 
     // --- 进度状态 ---
     val isApkUploading = mutableStateOf(false)
@@ -156,24 +163,28 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     val processFeedback = _processFeedback.asStateFlow()
     
     private val MAX_INTRO_IMAGES = 3
-// 弦开放平台：选择截图（保存本地URI，发布时一起上传）
-    fun addScreenshots(uris: List<Uri>) {
-        if (_selectedStore.value != AppStore.SINE_OPEN_MARKET) return
-        screenshotsUris.addAll(uris)
-        // 可以在这里异步将 URI 转为 File 存入 tempScreenshotFiles
-        viewModelScope.launch(Dispatchers.IO) {
-            uris.forEach { uri ->
-                val file = uriToTempFile(context, uri, "screenshot_${System.currentTimeMillis()}.png")
-                file?.let { tempScreenshotFiles.add(it) }
+
+    init {
+        loadAppTags()
+    }
+
+    // 新增：加载应用标签
+    private fun loadAppTags() {
+        viewModelScope.launch {
+            try {
+                val result = SineShopClient.getAppTagList()
+                if (result.isSuccess) {
+                    val tags = result.getOrNull()?.map { it.name } ?: emptyList()
+                    _tagOptions.value = tags
+                } else {
+                    _processFeedback.value = Result.failure(Throwable("加载标签失败: ${result.exceptionOrNull()?.message}"))
+                }
+            } catch (e: Exception) {
+                _processFeedback.value = Result.failure(Throwable("加载标签时发生异常: ${e.message}"))
             }
         }
     }
-    
-    fun removeScreenshot(uri: Uri) {
-        screenshotsUris.remove(uri)
-        // 同步移除 tempScreenshotFiles 逻辑略复杂，建议重置或简单处理
-        tempScreenshotFiles.removeIf { it.toUri() == uri }
-    }
+
     // --- APK 解析 ---
     fun parseAndUploadApk(uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -200,7 +211,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                 // 自动填充字段
                 appExplain.value = "适配性能描述 •\n包名：${parsedInfo.packageName}\n版本：${parsedInfo.versionName}"
                 
-                // 如果是弦平台，自动填充 SDK 信息 (ApkParser 需要升级支持读取 SDK，这里暂用默认或解析结果)
+                // 如果是弦平台，自动填充 SDK 信息 (ApkParser 未来支持 minSdk/targetSdk)
                 // 假设 ApkParser 未来支持 minSdk/targetSdk
             }
 
@@ -267,9 +278,101 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             isIntroImagesUploading.value = false
         }
     }
+    
+    // 弦开放平台：选择截图（保存本地URI，发布时一起上传）
+    fun addScreenshots(uris: List<Uri>) {
+        if (_selectedStore.value != AppStore.SINE_OPEN_MARKET) return
+        screenshotsUris.addAll(uris)
+        // 可以在这里异步将 URI 转为 File 存入 tempScreenshotFiles
+        viewModelScope.launch(Dispatchers.IO) {
+            uris.forEach { uri ->
+                val file = uriToTempFile(context, uri, "screenshot_${System.currentTimeMillis()}.png")
+                file?.let { tempScreenshotFiles.add(it) }
+            }
+        }
+    }
+
+    fun removeIntroductionImage(url: String) {
+        introductionImageUrls.remove(url)
+    }
+    
+    fun removeScreenshot(uri: Uri) {
+        screenshotsUris.remove(uri)
+        // 同步移除 tempScreenshotFiles 逻辑略复杂，建议重置或简单处理
+        tempScreenshotFiles.removeIf { it.toUri() == uri }
+    }
 
     private fun createStreamInputProvider(file: File): InputProvider {
         return InputProvider { file.inputStream().asInput() }
+    }
+    
+     // --- 发布逻辑 ---
+    
+    fun releaseApp(onSuccess: () -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            isReleasing.value = true
+            _processFeedback.value = Result.success("正在准备发布...")
+            
+            try {
+                val repo = getCurrentRepo()
+                
+                // 构建参数
+                val params = UnifiedAppReleaseParams(
+                    store = _selectedStore.value,
+                    appName = appName.value,
+                    packageName = packageName.value,
+                    versionName = versionName.value,
+                    versionCode = versionCode.value,
+                    sizeInMb = appSize.value.toDoubleOrNull() ?: 0.0,
+                    iconFile = tempIconFile.value,
+                    iconUrl = iconUrl.value,
+                    apkFile = tempApkFile.value,
+                    apkUrl = apkDownloadUrl.value,
+                    
+                    // 小趣空间
+                    introduce = appIntroduce.value,
+                    explain = appExplain.value,
+                    introImages = introductionImageUrls.toList(),
+                    categoryId = categories.getOrNull(selectedCategoryIndex.value)?.categoryId,
+                    subCategoryId = categories.getOrNull(selectedCategoryIndex.value)?.subCategoryId,
+                    isPay = isPay.value,
+                    payMoney = if (isPay.value == 1) payMoney.value else "",
+                    isUpdate = isUpdateMode.value,
+                    appId = appId,
+                    appVersionId = appVersionId,
+                    
+                    // 弦开放平台
+                    appTypeId = appTypeId.value,
+                    appVersionTypeId = appVersionTypeId.value,
+                    appTags = tagOptions.value.getOrNull(selectedTagIndex.intValue) ?: "3",
+                    sdkMin = sdkMin.value,
+                    sdkTarget = sdkTarget.value,
+                    developer = developer.value,
+                    source = source.value,
+                    describe = describe.value,
+                    updateLog = updateLog.value,
+                    uploadMessage = uploadMessage.value,
+                    keyword = keyword.value,
+                    isWearOs = isWearOs.value,
+                    abi = abi.value,
+                    screenshots = tempScreenshotFiles.toList()
+                )
+                
+                val result = repo.releaseApp(params)
+                
+                if (result.isSuccess) {
+                    _processFeedback.value = Result.success("发布成功！")
+                    withContext(Dispatchers.Main) { onSuccess() }
+                } else {
+                    _processFeedback.value = Result.failure(result.exceptionOrNull() ?: Exception("发布失败"))
+                }
+                
+            } catch (e: Exception) {
+                _processFeedback.value = Result.failure(e)
+            } finally {
+                isReleasing.value = false
+            }
+        }
     }
     
     private suspend fun uploadToKeyun(file: File, mediaType: String = "application/octet-stream", contextMessage: String = "文件", onSuccess: (String) -> Unit) {
@@ -366,117 +469,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             null
         }
     }
-    fun removeIntroductionImage(url: String) {
-        introductionImageUrls.remove(url)
-    }
 
-    // --- 发布逻辑 ---
-    
-    fun releaseApp(onSuccess: () -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            isReleasing.value = true
-            _processFeedback.value = Result.success("正在准备发布...")
-            
-            try {
-                val repo = getCurrentRepo()
-                
-                // 构建参数
-                val params = UnifiedAppReleaseParams(
-                    store = _selectedStore.value,
-                    appName = appName.value,
-                    packageName = packageName.value,
-                    versionName = versionName.value,
-                    versionCode = versionCode.value,
-                    sizeInMb = appSize.value.toDoubleOrNull() ?: 0.0,
-                    iconFile = tempIconFile.value,
-                    iconUrl = iconUrl.value,
-                    apkFile = tempApkFile.value,
-                    apkUrl = apkDownloadUrl.value,
-                    
-                    // 小趣空间
-                    introduce = appIntroduce.value,
-                    explain = appExplain.value,
-                    introImages = introductionImageUrls.toList(),
-                    categoryId = categories.getOrNull(selectedCategoryIndex.value)?.categoryId,
-                    subCategoryId = categories.getOrNull(selectedCategoryIndex.value)?.subCategoryId,
-                    isPay = isPay.value,
-                    payMoney = if (isPay.value == 1) payMoney.value else "",
-                    isUpdate = isUpdateMode.value,
-                    appId = appId,
-                    appVersionId = appVersionId,
-                    
-                    // 弦开放平台
-                    appTypeId = appTypeId.value,
-                    appVersionTypeId = appVersionTypeId.value,
-                    appTags = appTags.value.toString(), // 转换为字符串
-                    sdkMin = sdkMin.value,
-                    sdkTarget = sdkTarget.value,
-                    developer = developer.value,
-                    source = source.value,
-                    describe = describe.value,
-                    updateLog = updateLog.value,
-                    uploadMessage = uploadMessage.value,
-                    keyword = keyword.value,
-                    isWearOs = isWearOs.value,
-                    abi = abi.value,
-                    screenshots = tempScreenshotFiles.toList()
-                )
-                
-                val result = repo.releaseApp(params)
-                
-                if (result.isSuccess) {
-                    _processFeedback.value = Result.success("发布成功！")
-                    withContext(Dispatchers.Main) { onSuccess() }
-                } else {
-                    _processFeedback.value = Result.failure(result.exceptionOrNull() ?: Exception("发布失败"))
-                }
-                
-            } catch (e: Exception) {
-                _processFeedback.value = Result.failure(e)
-            } finally {
-                isReleasing.value = false
-            }
-        }
-    }
-
-    // --- 辅助方法 ---
-    // (保留原有的 populateFromAppDetail, deleteApp, uploadToKeyun, uploadToWanyueyun, uriToTempFile, createStreamInputProvider 等方法)
-    // 为节省篇幅，这里假设它们未变动，实际代码中需完整保留
-    
-    fun populateFromAppDetail(appDetail: KtorClient.AppDetail) {
-        // 仅支持小趣空间回填
-        if (_selectedStore.value != AppStore.XIAOQU_SPACE) return
-        
-        isUpdateMode.value = true
-        appId = appDetail.id
-        appVersionId = appDetail.apps_version_id
-
-        appName.value = appDetail.appname
-        apkDownloadUrl.value = appDetail.download ?: ""
-
-        val explainLines = appDetail.app_explain?.split("\n")
-        val pkgNameLine = explainLines?.find { it.startsWith("包名：") }
-        packageName.value = pkgNameLine?.substringAfter("包名：")?.trim() ?: ""
-
-        versionName.value = appDetail.version
-        versionCode.value = appDetail.apps_version_id // 小趣空间复用
-        appSize.value = appDetail.app_size.replace("MB", "").trim()
-        appIntroduce.value = appDetail.app_introduce?.replace("<br>", "\n") ?: ""
-        appExplain.value = appDetail.app_explain ?: ""
-        isPay.value = appDetail.is_pay
-        payMoney.value = if (appDetail.pay_money > 0) appDetail.pay_money.toString() else ""
-        selectedCategoryIndex.value = categories.indexOfFirst {
-            it.categoryId == appDetail.category_id && it.subCategoryId == appDetail.sub_category_id
-        }.takeIf { it != -1 } ?: 0
-
-        iconUrl.value = appDetail.app_icon
-        localIconUri.value = null
-        introductionImageUrls.clear()
-        appDetail.app_introduction_image_array?.let {
-            introductionImageUrls.addAll(it)
-        }
-    }
-    
     // --- Setter 方法用于下拉菜单 ---
     fun setAppTypeId(id: Int) {
         appTypeId.value = id
@@ -488,5 +481,9 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     
     fun setAppTags(id: Int) {
         appTags.value = id
+    }
+
+    fun removeIntroductionImage(url: String) {
+        introductionImageUrls.remove(url)
     }
 }

@@ -476,7 +476,7 @@ fun VersionTypeDropdown(viewModel: AppReleaseViewModel) {
 @Composable
 fun TagDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
-    val tagOptions = viewModel.tagOptions
+    val tagOptions = viewModel.tagOptions.collectAsState().value
     val selectedTagIndex = viewModel.appTags.value
 
     Column {
@@ -506,11 +506,11 @@ fun TagDropdown(viewModel: AppReleaseViewModel) {
                 onDismissRequest = { expanded = false }
             ) {
                 tagOptions.forEachIndexed { index, tag ->
-                    val id = index // ID 从 0 开始
+                    //val id = index // ID 从 0 开始
                     DropdownMenuItem(
                         text = { Text(tag) },
                         onClick = {
-                            viewModel.appTags.value = id // 使用 setter 方法
+                            viewModel.appTags.value = index // 使用 setter 方法
                             expanded = false
                         }
                     )
@@ -522,7 +522,7 @@ fun TagDropdown(viewModel: AppReleaseViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
+private fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
     val services = ApkUploadService.values()
     val selectedService by viewModel.selectedApkUploadService
