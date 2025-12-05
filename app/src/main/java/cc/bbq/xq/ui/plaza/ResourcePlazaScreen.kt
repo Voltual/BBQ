@@ -134,12 +134,12 @@ fun ResourcePlazaContent(
     ) {
         // 修正：仅在非“我的资源”模式 且 非“查看特定用户”模式 下显示商店切换菜单
         if (!isMyResourceMode && !isUserSpecificMode) {
-            // 修正：使用过滤后的 AppStore 列表
+            // 修改：使用过滤后的 AppStore 列表，同时过滤掉 LOCAL 和 SINE_OPEN_MARKET
             AppStoreDropdownMenu(
                 selectedStore = selectedAppStore,
                 onStoreChange = { viewModel.setAppStore(it) },
                 modifier = Modifier.fillMaxWidth(),
-                appStores = remember { AppStore.entries.filter { it != AppStore.LOCAL } }
+                appStores = remember { AppStore.entries.filter { it != AppStore.LOCAL && it != AppStore.SINE_OPEN_MARKET } }
             )
         }
 

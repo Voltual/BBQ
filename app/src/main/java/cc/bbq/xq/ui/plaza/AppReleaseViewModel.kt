@@ -136,7 +136,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         loadTagOptions()
     }
     
-    private fun loadTagOptions() {
+    fun loadTagOptions() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 // 调用 SineShopClient 获取标签列表
