@@ -141,7 +141,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                 // 调用 SineShopClient 获取标签列表
                 val tagListResult = SineShopClient.getAppTagList()
                 if (tagListResult.isSuccess) {
-                    val tagList = tagListResult.getOrNull()?.list ?: emptyList()
+                    val tagList = tagListResult.getOrNull() ?: emptyList() // 直接获取列表
                     // 将标签名称添加到列表中
                     tagOptions.clear()
                     tagOptions.addAll(tagList.map { it.name })
