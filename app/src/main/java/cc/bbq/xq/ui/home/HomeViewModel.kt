@@ -151,7 +151,6 @@ class HomeViewModel : ViewModel() {
         }
     }
     
-
     // 新增：加载弦应用商店用户信息
     private fun loadSineShopUserInfo(context: Context) {
         viewModelScope.launch {
