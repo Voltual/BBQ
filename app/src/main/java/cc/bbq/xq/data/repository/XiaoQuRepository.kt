@@ -206,22 +206,7 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
             Result.failure(e)
         }
     }
-
-    override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> {
-        return try {
-            val result = getAppDetail(appId, versionId)
-            result.map { detail ->
-                if (detail.downloadUrl != null) {
-                    listOf(UnifiedDownloadSource(name = "默认下载", url = detail.downloadUrl, isOfficial = true))
-                } else {
-                    emptyList()
-                }
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
+    
     override suspend fun releaseApp(params: UnifiedAppReleaseParams): Result<Unit> {
         return try {
             val token = getToken()
@@ -273,8 +258,9 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
     }
 
     override suspend fun uploadImage(file: File, type: String): Result<String> {
+        // 复用 KtorClient 中的上传逻辑
         return try {
-             val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
+            val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
                 url = "api.php",
                 formData = formData {
                     append("file", InputProvider { file.inputStream().asInput() }, Headers.build {
@@ -283,14 +269,96 @@ class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStore
                     })
                 }
             )
-            // 解析响应逻辑... (为了简洁省略具体解析，需参考原 ViewModel)
-            Result.success("http://example.com/fake_url.jpg") // 占位
+            
+            if (response.status.isSuccess()) {
+                val responseBody: KtorClient.UploadResponse = response.body()
+                if (responseBody.code == 0 && !responseBody.downurl.isNullOrBlank()) {
+                    Result.success(responseBody.downurl)
+                } else {
+                    Result.failure(Exception(responseBody.msg))
+                }
+            } else {
+                Result.failure(Exception("网络错误 ${response.status}"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
     override suspend fun uploadApk(file: File, serviceType: String): Result<String> {
-        return Result.failure(Exception("请使用 ViewModel 中的上传逻辑"))
+        return try {
+            when (serviceType) {
+                "KEYUN" -> uploadToKeyun(file)
+                "WANYUEYUN" -> uploadToWanyueyun(file)
+                else -> Result.failure(Exception("不支持的上传服务类型: $serviceType"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    private suspend fun uploadToKeyun(file: File): Result<String> {
+        try {
+            val response = KtorClient.uploadHttpClient.submitFormWithBinaryData(
+                url = "api.php",
+                formData = formData {
+                    append("file", InputProvider { file.inputStream().asInput() }, Headers.build {
+                        append(HttpHeaders.ContentType, "application/octet-stream")
+                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                    })
+                }
+            )
+
+            if (response.status.isSuccess()) {
+                val responseBody: KtorClient.UploadResponse = response.body()
+                if (responseBody.code == 0 && !responseBody.downurl.isNullOrBlank()) {
+                    return Result.success(responseBody.downurl)
+                } else {
+                    return Result.failure(Exception(responseBody.msg))
+                }
+            } else {
+                return Result.failure(Exception("网络错误 ${response.status}"))
+            }
+        } catch (e: Exception) {
+            return Result.failure(e)
+        }
+    }
+
+    private suspend fun uploadToWanyueyun(file: File): Result<String> {
+        try {
+            val response = KtorClient.wanyueyunUploadHttpClient.submitFormWithBinaryData(
+                url = "upload",
+                formData = formData {
+                    append("Api", "小趣API")
+                    append("file", InputProvider { file.inputStream().asInput() }, Headers.build {
+                        append(HttpHeaders.ContentType, "application/vnd.android.package-archive")
+                        append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                    })
+                }
+            )
+
+            if (response.status.isSuccess()) {
+                val responseBody: KtorClient.WanyueyunUploadResponse = response.body()
+                if (responseBody.code == 200 && !responseBody.data.isNullOrBlank()) {
+                    return Result.success(responseBody.data)
+                } else {
+                    return Result.failure(Exception(responseBody.msg))
+                }
+            } else {
+                return Result.failure(Exception("网络错误 ${response.status}"))
+            }
+        } catch (e: Exception) {
+            return Result.failure(e)
+        }
+    }
+
+    override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> {
+        return getAppDetail(appId, versionId).map { detail ->
+            if (detail.downloadUrl != null) {
+                listOf(UnifiedDownloadSource(name = "默认下载", url = detail.downloadUrl, isOfficial = true))
+            } else {
+                emptyList()
+            }
+        }
     }
 }

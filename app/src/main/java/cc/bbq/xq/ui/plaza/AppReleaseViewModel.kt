@@ -11,7 +11,6 @@ import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
-import cc.bbq.xq.SineShopClient
 import cc.bbq.xq.data.repository.IAppStoreRepository
 import cc.bbq.xq.data.repository.SineOpenMarketRepository
 import cc.bbq.xq.data.repository.XiaoQuRepository
@@ -183,14 +182,31 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     private val _processFeedback = MutableStateFlow<Result<String>?>(null)
     val processFeedback = _processFeedback.asStateFlow()
     
-    private val MAX_INTRO_IMAGES = 3
+    // 根据商店类型定义不同的最大图片数量
+    private val MAX_INTRO_IMAGES_XIAOQU = 3
+    private val MAX_INTRO_IMAGES_SINE_OPEN = 5
+    
 // 弦开放平台：选择截图（保存本地URI，发布时一起上传）
     fun addScreenshots(uris: List<Uri>) {
         if (_selectedStore.value != AppStore.SINE_OPEN_MARKET) return
-        screenshotsUris.addAll(uris)
+        
+        // 检查当前数量是否已达到上限
+        if (screenshotsUris.size >= MAX_INTRO_IMAGES_SINE_OPEN) {
+            // 可以通过 Snackbar 或其他方式提示用户
+            // 这里为了简化，直接返回
+            return
+        }
+        
+        // 计算还能添加多少张
+        val currentCount = screenshotsUris.size
+        val remainingSlots = MAX_INTRO_IMAGES_SINE_OPEN - currentCount
+        val urisToUpload = uris.take(remainingSlots)
+        
+        screenshotsUris.addAll(urisToUpload)
+        
         // 可以在这里异步将 URI 转为 File 存入 tempScreenshotFiles
         viewModelScope.launch(Dispatchers.IO) {
-            uris.forEach { uri ->
+            urisToUpload.forEach { uri ->
                 val file = uriToTempFile(context, uri, "screenshot_${System.currentTimeMillis()}.png")
                 file?.let { tempScreenshotFiles.add(it) }
             }
@@ -238,9 +254,17 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
 
                 uploadJobs += launch {
                     isApkUploading.value = true
-                    when (selectedApkUploadService.value) {
-                        ApkUploadService.KEYUN -> uploadToKeyun(parsedInfo.tempApkFile) { url -> apkDownloadUrl.value = url }
-                        ApkUploadService.WANYUEYUN -> uploadToWanyueyun(parsedInfo.tempApkFile) { url -> apkDownloadUrl.value = url }
+                    val serviceType = when (selectedApkUploadService.value) {
+                        ApkUploadService.KEYUN -> "KEYUN"
+                        ApkUploadService.WANYUEYUN -> "WANYUEYUN"
+                    }
+                    val apkResult = xiaoQuRepo.uploadApk(parsedInfo.tempApkFile, serviceType)
+                    apkResult.onSuccess { url ->
+                        apkDownloadUrl.value = url
+                    }.onFailure { e ->
+                        withContext(Dispatchers.Main) {
+                            _processFeedback.value = Result.failure(e)
+                        }
                     }
                     isApkUploading.value = false
                 }
@@ -248,8 +272,13 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                 parsedInfo.tempIconFile?.let { iconFile ->
                     uploadJobs += launch {
                         isIconUploading.value = true
-                        uploadToKeyun(iconFile, "image/*", "图标") { url ->
+                        val imageResult = xiaoQuRepo.uploadImage(iconFile, "icon")
+                        imageResult.onSuccess { url ->
                             iconUrl.value = url
+                        }.onFailure { e ->
+                            withContext(Dispatchers.Main) {
+                                _processFeedback.value = Result.failure(e)
+                            }
                         }
                         isIconUploading.value = false
                     }
@@ -260,8 +289,6 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
-
-    // --- 图片处理 ---
     
     // 小趣空间：上传介绍图到图床
     fun uploadIntroductionImages(uris: List<Uri>) {
@@ -269,13 +296,14 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         
         viewModelScope.launch(Dispatchers.IO) {
             val currentCount = introductionImageUrls.size
-            if (currentCount >= MAX_INTRO_IMAGES) {
-                _processFeedback.value = Result.failure(Throwable("最多只能上传 $MAX_INTRO_IMAGES 张介绍图"))
+            if (currentCount >= MAX_INTRO_IMAGES_XIAOQU) {
+                _processFeedback.value = Result.failure(Throwable("最多只能上传 $MAX_INTRO_IMAGES_XIAOQU 张介绍图"))
                 return@launch
             }
 
             isIntroImagesUploading.value = true
-            val remainingSlots = MAX_INTRO_IMAGES - currentCount
+            // 使用小趣空间的最大图片数量
+            val remainingSlots = MAX_INTRO_IMAGES_XIAOQU - currentCount
             val urisToUpload = uris.take(remainingSlots)
 
             val uploadJobs = urisToUpload.map { uri ->
@@ -283,9 +311,14 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                     val tempFileName = "intro_${System.currentTimeMillis()}.jpg"
                     val tempFile = uriToTempFile(context, uri, tempFileName)
                     tempFile?.let {
-                        uploadToKeyun(it, "image/*", "介绍图") { url ->
-                            if (introductionImageUrls.size < MAX_INTRO_IMAGES) {
+                        val imageResult = xiaoQuRepo.uploadImage(it, "intro")
+                        imageResult.onSuccess { url ->
+                            if (introductionImageUrls.size < MAX_INTRO_IMAGES_XIAOQU) {
                                 introductionImageUrls.add(url)
+                            }
+                        }.onFailure { e ->
+                            withContext(Dispatchers.Main) {
+                                _processFeedback.value = Result.failure(e)
                             }
                         }
                     }
@@ -468,7 +501,7 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     // --- 辅助方法 ---
-    // (保留原有的 populateFromAppDetail, deleteApp, uploadToKeyun, uploadToWanyueyun, uriToTempFile, createStreamInputProvider 等方法)
+    // (保留原有的 populateFromAppDetail, deleteApp, uriToTempFile, createStreamInputProvider 等方法)
     // 为节省篇幅，这里假设它们未变动，实际代码中需完整保留
     
     fun populateFromAppDetail(appDetail: KtorClient.AppDetail) {
