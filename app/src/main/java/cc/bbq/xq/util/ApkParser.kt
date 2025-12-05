@@ -82,10 +82,10 @@ object ApkParser {
                 packageInfo.versionCode.toLong()
             }
             
-            // **新增**：解析 minSdkVersion 和 targetSdkVersion
-            // 注意：这些信息可能在某些 API 级别下为 0，表示未指定
-            val minSdkVersion = packageInfo.applicationInfo.minSdkVersion
-            val targetSdkVersion = packageInfo.applicationInfo.targetSdkVersion
+            // **修复**：使用安全调用符 ?. 来访问 minSdkVersion 和 targetSdkVersion
+            // 如果 applicationInfo 为 null，则使用默认值 0
+            val minSdkVersion = packageInfo.applicationInfo?.minSdkVersion ?: 0
+            val targetSdkVersion = packageInfo.applicationInfo?.targetSdkVersion ?: 0
 
             // Load the drawable, but only to save it to a file. Do not pass it on.
             val iconDrawable = appInfo.loadIcon(pm)
