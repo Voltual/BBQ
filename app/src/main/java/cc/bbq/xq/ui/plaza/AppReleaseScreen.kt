@@ -156,6 +156,7 @@ fun AppReleaseScreen(
 
             // --- 小趣空间表单 ---
             if (selectedStore == AppStore.XIAOQU_SPACE) {
+                item { ApkUploadServiceDropdown(viewModel) }
                 item { FormTextField(label = "应用名称", state = viewModel.appName) }
                 item { FormTextField(label = "APK 下载链接 (自动填充)", state = viewModel.apkDownloadUrl, singleLine = true) }
                 item { FormTextField(label = "包名 (自动填充)", state = viewModel.packageName, enabled = !isUpdateMode) }
@@ -196,6 +197,15 @@ fun AppReleaseScreen(
 
             // --- 弦开放平台表单 ---
             if (selectedStore == AppStore.SINE_OPEN_MARKET) {
+                 item {
+        AppTypeDropdown(viewModel = viewModel)
+    }
+    item {
+        VersionTypeDropdown(viewModel = viewModel)
+    }
+    item {
+        TagDropdown(viewModel = viewModel)
+    }
                 item { FormTextField(label = "应用名称", state = viewModel.appName) }
                 item { FormTextField(label = "包名", state = viewModel.packageName) }
                 item { FormTextField(label = "版本名", state = viewModel.versionName) }
@@ -211,17 +221,6 @@ fun AppReleaseScreen(
                 }
                 item {
                     FormTextField(label = "给审核员的留言", state = viewModel.uploadMessage, singleLine = false, minLines = 2)
-                }
-                
-                // 下拉选择: 应用类型, 版本类型, 标签
-                item {
-                    AppTypeDropdown(viewModel = viewModel)
-                }
-                item {
-                    VersionTypeDropdown(viewModel = viewModel)
-                }
-                item {
-                    TagDropdown(viewModel = viewModel)
                 }
                 
                 item {
@@ -415,7 +414,7 @@ fun AppTypeDropdown(viewModel: AppReleaseViewModel) {
                     DropdownMenuItem(
                         text = { Text(appType) },
                         onClick = {
-                            viewModel.setAppTypeId(id) // 使用 setter 方法
+                            viewModel.appTypeId.value = id // 使用 setter 方法
                             expanded = false
                         }
                     )
@@ -463,7 +462,7 @@ fun VersionTypeDropdown(viewModel: AppReleaseViewModel) {
                     DropdownMenuItem(
                         text = { Text(versionType) },
                         onClick = {
-                            viewModel.setAppVersionTypeId(id) // 使用 setter 方法
+                            viewModel.appVersionTypeId.value = id // 使用 setter 方法
                             expanded = false
                         }
                     )
@@ -478,7 +477,7 @@ fun VersionTypeDropdown(viewModel: AppReleaseViewModel) {
 fun TagDropdown(viewModel: AppReleaseViewModel) {
     var expanded by remember { mutableStateOf(false) }
     val tagOptions = viewModel.tagOptions
-    val selectedTagId = viewModel.appTags.value
+    val selectedTagIndex = viewModel.appTags.value
 
     Column {
         Text("应用标签", style = MaterialTheme.typography.titleMedium)
@@ -488,7 +487,7 @@ fun TagDropdown(viewModel: AppReleaseViewModel) {
             onExpandedChange = { expanded = !expanded }
         ) {
             // 找到当前选中的标签名称
-            val selectedTagName = tagOptions.getOrNull(selectedTagId) ?: "请选择"
+            val selectedTagName = tagOptions.getOrNull(selectedTagIndex) ?: "请选择"
             OutlinedTextField(
                 value = selectedTagName,
                 onValueChange = {},
@@ -511,7 +510,7 @@ fun TagDropdown(viewModel: AppReleaseViewModel) {
                     DropdownMenuItem(
                         text = { Text(tag) },
                         onClick = {
-                            viewModel.setAppTags(id) // 使用 setter 方法
+                            viewModel.appTags.value = id // 使用 setter 方法
                             expanded = false
                         }
                     )
