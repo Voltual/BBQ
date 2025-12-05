@@ -148,9 +148,6 @@ class HomeViewModel : ViewModel() {
                     dataLoadState = DataLoadState.Error
                 )
             }
-
-            // 加载弦应用商店用户信息
-            loadSineShopUserInfo(context)
         }
     }
 

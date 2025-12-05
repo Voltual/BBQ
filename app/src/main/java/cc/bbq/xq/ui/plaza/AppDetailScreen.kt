@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import cc.bbq.xq.ui.Download // 确保导入 Download
 import cc.bbq.xq.AppStore
+import cc.bbq.xq.ui.theme.*
 
 @OptIn(ExperimentalMaterialApi::class) // 保留 ExperimentalMaterialApi 注解
 @Composable
@@ -370,62 +371,6 @@ fun AppDetailContent(
                         }
                     }
                 )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun UnifiedCommentItem(
-    comment: UnifiedComment,
-    onReply: () -> Unit,
-    onLongClick: () -> Unit,
-    onUserClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            // 添加长按支持
-            .combinedClickable(
-                onClick = {}, // 点击事件目前没有特殊操作，留空
-                onLongClick = onLongClick
-            )
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AsyncImage(
-                    model = comment.sender.avatarUrl,
-                    contentDescription = null,
-                    modifier = Modifier.size(32.dp).clip(CircleShape).clickable(onClick = onUserClick),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(comment.sender.displayName, style = MaterialTheme.typography.titleSmall)
-                Spacer(Modifier.weight(1f))
-                Text(
-                    text = "回复",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable(onClick = onReply)
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(comment.content, style = MaterialTheme.typography.bodyMedium)
-
-            if (comment.fatherReply != null) {
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(4.dp),
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                ) {
-                    Text(
-                        text = "回复 @${comment.fatherReply.sender.displayName}: ${comment.fatherReply.content}",
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
             }
         }
     }
