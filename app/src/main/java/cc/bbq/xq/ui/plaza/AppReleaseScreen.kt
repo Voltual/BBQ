@@ -519,3 +519,48 @@ fun TagDropdown(viewModel: AppReleaseViewModel) {
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ApkUploadServiceDropdown(viewModel: AppReleaseViewModel) {
+    var expanded by remember { mutableStateOf(false) }
+    val services = ApkUploadService.values()
+    val selectedService by viewModel.selectedApkUploadService
+
+    Column {
+        Text("APK 上传服务", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = selectedService.displayName,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("选择上传服务") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor( // 添加这行
+                        type = ExposedDropdownMenuAnchorType.PrimaryNotEditable, // 使用正确的类型
+                        enabled = true
+                    )
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                services.forEach { service ->
+                    DropdownMenuItem(
+                        text = { Text(service.displayName) },
+                        onClick = {
+                            viewModel.selectedApkUploadService.value = service
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
