@@ -73,6 +73,14 @@ fun AppReleaseScreen(
         }
     }
 
+    // **新增**：当选择弦开放平台时，自动加载标签
+    LaunchedEffect(selectedStore) {
+        if (selectedStore == AppStore.SINE_OPEN_MARKET) {
+            // 自动加载弦开放平台的标签
+            viewModel.loadTagOptions()
+        }
+    }
+
     val apkLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
