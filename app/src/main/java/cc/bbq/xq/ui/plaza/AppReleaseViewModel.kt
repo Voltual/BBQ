@@ -16,7 +16,7 @@ import cc.bbq.xq.data.repository.IAppStoreRepository
 import cc.bbq.xq.data.repository.SineOpenMarketRepository
 import cc.bbq.xq.data.repository.XiaoQuRepository
 import cc.bbq.xq.data.unified.UnifiedAppReleaseParams
-import cc.bbq.xq.util.ApkInfo // 导入 ApkInfo
+import cc.bbq.xq.util.ApkInfo
 import cc.bbq.xq.util.ApkParser
 import io.ktor.client.call.*
 import io.ktor.client.request.forms.*
@@ -30,7 +30,7 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import androidx.core.net.toUri // 导入 toUri 扩展函数
+import androidx.core.net.toUri
 
 // 小趣空间分类模型
 data class AppCategory(
@@ -131,11 +131,12 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     val selectedTagIndex = mutableStateOf(0)
     val appTags = mutableStateOf(0) // 默认选中第一个
     
-    // 初始化时加载标签
-    init {
-        loadTagOptions()
-    }
+    // **移除 init 块**
+    // init {
+    //     loadTagOptions()
+    // }
     
+    // **新增**：加载标签的函数，由 UI 手动调用
     fun loadTagOptions() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
