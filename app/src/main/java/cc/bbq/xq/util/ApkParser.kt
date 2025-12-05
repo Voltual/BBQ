@@ -23,11 +23,14 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import kotlin.math.roundToInt
 
+// 新增：ApkInfo 数据类，包含 SDK 信息
 data class ApkInfo(
     val appName: String,
     val packageName: String,
     val versionName: String,
     val versionCode: Long,
+    val minSdkVersion: Int,        // 新增：最小 SDK 版本
+    val targetSdkVersion: Int,    // 新增：目标 SDK 版本
     // **FIXED**: The problematic Drawable field is now completely removed.
     // val icon: Drawable?,
     val sizeInMb: Double,
@@ -79,6 +82,11 @@ object ApkParser {
                 packageInfo.versionCode.toLong()
             }
             
+            // **新增**：解析 minSdkVersion 和 targetSdkVersion
+            // 注意：这些信息可能在某些 API 级别下为 0，表示未指定
+            val minSdkVersion = packageInfo.applicationInfo.minSdkVersion
+            val targetSdkVersion = packageInfo.applicationInfo.targetSdkVersion
+
             // Load the drawable, but only to save it to a file. Do not pass it on.
             val iconDrawable = appInfo.loadIcon(pm)
             val tempIconFileName = generateUniqueFileName("icon", "png")
@@ -93,6 +101,8 @@ object ApkParser {
                 packageName = packageName,
                 versionName = versionName,
                 versionCode = versionCode,
+                minSdkVersion = minSdkVersion,      // 新增
+                targetSdkVersion = targetSdkVersion,// 新增
                 sizeInMb = sizeInMb,
                 tempApkFile = tempApkFile,
                 tempIconFile = tempIconFile,

@@ -11,10 +11,12 @@ import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
+import cc.bbq.xq.SineShopClient
 import cc.bbq.xq.data.repository.IAppStoreRepository
 import cc.bbq.xq.data.repository.SineOpenMarketRepository
 import cc.bbq.xq.data.repository.XiaoQuRepository
 import cc.bbq.xq.data.unified.UnifiedAppReleaseParams
+import cc.bbq.xq.util.ApkInfo // 导入 ApkInfo
 import cc.bbq.xq.util.ApkParser
 import io.ktor.client.call.*
 import io.ktor.client.request.forms.*
@@ -161,8 +163,10 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    // 新增：SDK 版本状态
     val sdkMin = mutableStateOf(21)
     val sdkTarget = mutableStateOf(33)
+
     val developer = mutableStateOf("")
     val source = mutableStateOf("互联网")
     val describe = mutableStateOf("介绍一下你的应用…")
@@ -185,7 +189,6 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     // 根据商店类型定义不同的最大图片数量
     private val MAX_INTRO_IMAGES_XIAOQU = 3
     private val MAX_INTRO_IMAGES_SINE_OPEN = 5
-    
 // 弦开放平台：选择截图（保存本地URI，发布时一起上传）
     fun addScreenshots(uris: List<Uri>) {
         if (_selectedStore.value != AppStore.SINE_OPEN_MARKET) return
@@ -222,7 +225,8 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
     fun parseAndUploadApk(uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             _processFeedback.value = Result.success("正在解析APK...")
-            val parsedInfo = ApkParser.parse(context, uri)
+            // **修改**：使用 ApkInfo
+            val parsedInfo: ApkInfo? = ApkParser.parse(context, uri)
 
             if (parsedInfo == null) {
                 _processFeedback.value = Result.failure(Throwable("APK 文件解析失败"))
@@ -244,8 +248,24 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
                 // 自动填充字段
                 appExplain.value = "适配性能描述 •\n包名：${parsedInfo.packageName}\n版本：${parsedInfo.versionName}"
                 
-                // 如果是弦平台，自动填充 SDK 信息 (ApkParser 需要升级支持读取 SDK，这里暂用默认或解析结果)
-                // 假设 ApkParser 未来支持 minSdk/targetSdk
+                // **新增**：如果是弦开放平台，自动填充 SDK 信息
+                if (_selectedStore.value == AppStore.SINE_OPEN_MARKET) {
+                    // 使用解析出的 SDK 信息
+                    // 注意：minSdkVersion 和 targetSdkVersion 可能为 0，表示未指定
+                    if (parsedInfo.minSdkVersion > 0) {
+                        sdkMin.value = parsedInfo.minSdkVersion
+                    } else {
+                        // 如果未指定，可以使用一个默认值
+                        sdkMin.value = 21
+                    }
+                    
+                    if (parsedInfo.targetSdkVersion > 0) {
+                        sdkTarget.value = parsedInfo.targetSdkVersion
+                    } else {
+                        // 如果未指定，可以使用一个默认值
+                        sdkTarget.value = 33
+                    }
+                }
             }
 
             // 仅小趣空间需要立即上传 APK 和图标到图床
@@ -289,7 +309,8 @@ class AppReleaseViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
-    
+
+    // --- 图片处理 ---
     
     // 小趣空间：上传介绍图到图床
     fun uploadIntroductionImages(uris: List<Uri>) {
