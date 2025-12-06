@@ -47,7 +47,6 @@ import cc.bbq.xq.util.formatTimestamp
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.ui.res.painterResource
 import cc.bbq.xq.ui.theme.AppGridItem
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
@@ -142,12 +141,15 @@ fun AppDetailScreen(
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         } else if (appDetail != null) {
+            // 修复：使用临时变量避免 smart cast 错误
+            val appDetailValue = appDetail
+            
             // 根据是否为弦应用商店和是否有版本列表决定显示什么
-            if (appDetail.store == AppStore.SIENE_SHOP && versions.isNotEmpty()) {
+            if (appDetailValue?.store == AppStore.SIENE_SHOP && versions.isNotEmpty()) {
                 // 弦应用商店且有版本列表，显示带标签页的界面
                 AppDetailWithTabs(
                     navController = navController,
-                    appDetail = appDetail!!,
+                    appDetail = appDetailValue,
                     comments = comments,
                     onCommentReply = { viewModel.openReplyDialog(it) },
                     onDownloadClick = { viewModel.handleDownloadClick() },
@@ -157,7 +159,9 @@ fun AppDetailScreen(
                     },
                     onDeleteAppClick = { showDeleteAppDialog = true },
                     onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) },
-                    versions = versions { version                        viewModel.selectVersion(version)
+                    versions = versions,
+                    onVersionSelected = { version ->
+                        viewModel.selectVersion(version)
                         showVersionListDialog = false
                     },
                     currentTab = currentTab,
@@ -167,7 +171,7 @@ fun AppDetailScreen(
                 // 其他情况显示普通详情页
                 AppDetailContent(
                     navController = navController,
-                    appDetail = appDetail!!,
+                    appDetail = appDetailValue!!,
                     comments = comments,
                     onCommentReply = { viewModel.openReplyDialog(it) },
                     onDownloadClick = { viewModel.handleDownloadClick() },
