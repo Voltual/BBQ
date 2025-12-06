@@ -25,7 +25,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Set up JDK 17
-        uses: actions/supersetup-java@v3
+        uses: actions/setup-java@v3
         with:
           java-version: "17"
           distribution: "temurin"
@@ -45,110 +45,54 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 修改1：使用 --profile 参数运行构建，并添加 always() 确保后续步骤执行
-      - name: Build with Gradle with Profile
-        id: gradle-build
-        continue-on-error: true  # 即使构建失败也继续执行，以便上传报告
+      - name: Build with Gradle
         run: |
-          ./gradlew assembleDebug --profile
-          echo "BUILD_STATUS=$?" >> $GITHUB_OUTPUT
+                             ./gradlew assembleDebug
 
       - name: Get version info
         id: version
-        if: always()  # 无论构建成功与否都执行
         run: |
           TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
           SHORT_SHA=${GITHUB_SHA:0:8}
           BUILD_NAME="auto-build-$(date +%Y%m%d_%H%M%S)-${SHORT_SHA}"
           echo "BUILD_VERSION=${BUILD_NAME}" >> $GITHUB_OUTPUT
           echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_OUTPUT
-          echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_OUTPUT
 
-      # 修改2：查找并准备 Gradle 性能报告
-      - name: Prepare Gradle Profile Report
-        if: always()  # 无论构建成功与否都执行
-        id: profile-report
-        run: |
-          # 查找最新的 profile 报告文件
-          REPORT_DIR="${{ github.workspace }}/build/reports/profile"
-          if [ -d "$REPORT_DIR" ]; then
-            REPORT_FILE=$(ls -t "$REPORT_DIR"/*.html 2>/dev/null | head -1)
-            if [ -f "$REPORT_FILE" ]; then
-              # 重命名文件以便识别
-              NEW_NAME="gradle-profile-report-${SHORT_SHA}-$(date +%Y%m%d_%H%M%S).html"
-              cp "$REPORT_FILE" "/tmp/$NEW_NAME"
-              echo "PROFILE_REPORT=/tmp/$NEW_NAME" >> $GITHUB_OUTPUT
-              echo "Found profile report: $REPORT_FILE"
-            else
-              echo "No HTML report found in $REPORT_DIR"
-            fi
-          else
-            echo "Profile report directory not found: $REPORT_DIR"
-          fi
-
-      # 修改3：根据构建状态动态生成 Release 正文
+      # 创建草稿 Release，上传 APK 和 mapping 文件
       - name: Create Draft Release and Upload Build Artifacts
-        if: |
-          always() && 
-          github.event_name == 'push' && 
-          github.ref == 'refs/heads/master' &&
-          steps.version.outputs.BUILD_VERSION != ''
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.BUILD_VERSION }}
           name: "Auto Build ${{ steps.version.outputs.BUILD_VERSION }}"
           body: |
-            # 构建报告 - ${{ steps.version.outputs.BUILD_VERSION }}
+            自动构建版本 - ${{ steps.version.outputs.BUILD_VERSION }}
             
-            ## 构建状态: ${{ steps.gradle-build.outputs.BUILD_STATUS == '0' && '✅ 成功' || '❌ 失败' }}
+            构建信息:
+            - 提交: ${{ github.sha }}
+            - 触发于: ${{ github.event.head_commit.message }}
+            - 构建时间: ${{ steps.version.outputs.TIMESTAMP }}
             
-            ### 构建信息
-            - **提交**: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-            - **触发于**: ${{ github.event.head_commit.message }}
-            - **构建时间**: ${{ steps.version.outputs.TIMESTAMP }}
-            - **短提交号**: ${{ steps.version.outputs.SHORT_SHA }}
+            包含文件:
+            - 未签名的 APK 文件
+            - ProGuard mapping 文件 (用于崩溃分析)
             
-            ### 包含文件
-            - 未签名的 APK 文件（如构建成功）
-            - Gradle 构建性能报告（见下方附件）
-            ${{ steps.gradle-build.outputs.BUILD_STATUS != '0' && '- ProGuard mapping 文件 (如构建成功)' || '' }}
+            **重要**: 下载后请手动签名 APK。
             
-            ## 📊 Gradle 构建性能报告
-            本版本附带了 Gradle 构建的性能分析报告（HTML格式）。
-            
-            **如何使用**:
-            1. 下载附件中的 `gradle-profile-report-*.html` 文件
-            2. 在浏览器中打开该文件
-            3. 查看各个任务的执行时间、依赖关系等详细信息
-            
-            **报告包含**:
-            - 构建总耗时和各阶段耗时
-            - 每个任务的执行时间
-            - 任务依赖关系图
-            - 可能存在的性能瓶颈
-            
-            ${{ steps.gradle-build.outputs.BUILD_STATUS != '0' && '## ⚠️ 构建失败说明\n此版本构建失败，但已生成性能报告供分析使用。请检查构建日志和性能报告中的异常任务。' || '' }}
-            
-            ${{ steps.gradle-build.outputs.BUILD_STATUS == '0' && '**重要**: 下载后请手动签名 APK。' || '' }}
-            
-            ${{ steps.gradle-build.outputs.BUILD_STATUS == '0' && '## 🔧 崩溃分析\n如果遇到崩溃，可以使用 mapping.txt 文件还原堆栈跟踪:\n```bash\n# 使用 retrace 工具\njava -jar retrace.jar mapping.txt crash.txt\n```' || '' }}
+            ## 崩溃分析
+            如果遇到崩溃，可以使用 mapping.txt 文件还原堆栈跟踪:
+            ```bash
+            # 使用 retrace 工具
+            java -jar retrace.jar mapping.txt crash.txt
+            ```
           draft: true
           prerelease: false
           files: |
-            ${{ steps.profile-report.outputs.PROFILE_REPORT }}
             app/build/outputs/apk/release/*.apk
             app/build/outputs/apk/debug/*.apk
-            # app/build/outputs/mapping/release/mapping.txt
+#            app/build/outputs/mapping/release/mapping.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # 修改4：可选步骤，添加失败通知
-      - name: Notify Build Status
-        if: always() && steps.gradle-build.outputs.BUILD_STATUS != '0'
-        run: |
-          echo "❌ 构建失败，但已上传性能报告到 Release"
-          echo "请检查构建日志和上传的性能报告"
-          echo "Release 标签: ${{ steps.version.outputs.BUILD_VERSION }}"
 
       - name: Save Gradle cache
         if: ${{ success() }}
