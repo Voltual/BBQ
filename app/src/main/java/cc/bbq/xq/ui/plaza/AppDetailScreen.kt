@@ -350,78 +350,75 @@ fun AppDetailContent(
                             )
                         }
                         AppStore.SIENE_SHOP -> {
-                            // 弦应用商店信息
-                            val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
-                            val deviceSdk = appDetail.raw?.app_sdk_min ?: 0
-                            val targetSdk = appDetail.raw?.app_sdk_target ?: 0
-                            val deviceInfo = getDeviceInfo(raw?.app_sdk_min ?: 0)
-                            
-                            InfoRow(
-                                label = "应用类型",
-                                value = appDetail.type
-                            )
-                            InfoRow(
-                                label = "版本类型",
-                                value = raw?.app_version_type ?: "未知"
-                            )
-                            
-                            // 支持系统信息（包含最低SDK、目标SDK和设备兼容性）
-                            val supportSystem = buildString {
-                                append("Android ${raw?.app_sdk_min ?: "未知"}")
-                                if (raw?.app_sdk_target != null && raw.app_sdk_target != raw.app_sdk_min) {
-                                    append(" (目标SDK: ${raw.app_sdk_target})")
-                                }
-                                append(" • ")
-                                append(deviceInfo)
-                            }
-                            InfoRow(
-                                label = "支持系统",
-                                value = supportSystem
-                            )
-                            
-                            if (appDetail.size != null) {
-                                InfoRow(
-                                    label = "安装包大小",
-                                    value = appDetail.size
-                                )
-                            }
-                            InfoRow(
-                                label = "下载次数",
-                                value = "${appDetail.downloadCount} 次"
-                            )
-                            InfoRow(
-                                label = "应用开发者",
-                                value = raw?.app_developer ?: "未知"
-                            )
-                            InfoRow(
-                                label = "应用来源",
-                                value = raw?.app_source ?: "未知"
-                            )
-                            InfoRow(
-                                label = "上传时间",
-                                value = if (raw?.upload_time != null) formatTimestamp(raw.upload_time) else "未知"
-                            )
-                            InfoRow(
-                                label = "资料时间",
-                                value = if (raw?.update_time != null) formatTimestamp(raw.update_time) else "未知"
-                            )
-                            
-                            // 显示应用标签
-                            if (!raw?.tags.isNullOrEmpty()) {
-                                InfoRow(
-                                    label = "应用标签",
-                                    value = raw?.tags?.joinToString(", ") { it.name } ?: ""
-                                )
-                            }
-                            
-                            // 显示审核状态（如果有审核失败的情况）
-                            if (raw?.audit_status == 0 && !raw.audit_reason.isNullOrEmpty()) {
-                                InfoRow(
-                                    label = "审核状态",
-                                    value = raw.audit_reason
-                                )
-                            }
-                        }
+    // 弦应用商店信息
+    val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
+    
+    InfoRow(
+        label = "应用类型",
+        value = appDetail.type
+    )
+    InfoRow(
+        label = "版本类型",
+        value = raw?.app_version_type ?: "未知"
+    )
+    
+    // 支持系统信息（包含最低SDK、目标SDK和设备兼容性）
+    val supportSystem = buildString {
+        append("Android ${raw?.app_sdk_min ?: "未知"}")
+        if (raw?.app_sdk_target != null && raw.app_sdk_target != raw.app_sdk_min) {
+            append(" (目标SDK: ${raw.app_sdk_target})")
+        }
+        append(" • ")
+        append(getDeviceInfo(raw?.app_sdk_min ?: 0))
+    }
+    InfoRow(
+        label = "支持系统",
+        value = supportSystem
+    )
+    
+    if (appDetail.size != null) {
+        InfoRow(
+            label = "安装包大小",
+            value = appDetail.size
+        )
+    }
+    InfoRow(
+        label = "下载次数",
+        value = "${appDetail.downloadCount} 次"
+    )
+    InfoRow(
+        label = "应用开发者",
+        value = raw?.app_developer ?: "未知"
+    )
+    InfoRow(
+        label = "应用来源",
+        value = raw?.app_source ?: "未知"
+    )
+    InfoRow(
+        label = "上传时间",
+        value = if (raw?.upload_time != null) formatTimestamp(raw.upload_time) else "未知"
+    )
+    InfoRow(
+        label = "资料时间",
+        value = if (raw?.update_time != null) formatTimestamp(raw.update_time) else "未知"
+    )
+    
+    // 显示应用标签
+    if (!raw?.tags.isNullOrEmpty()) {
+        InfoRow(
+            label = "应用标签",
+            value = raw?.tags?.joinToString(", ") { it.name } ?: ""
+        )
+    }
+    
+    // 显示审核状态（如果有审核失败的情况）
+    if (raw?.audit_status == 0 && !raw.audit_reason.isNullOrEmpty()) {
+        InfoRow(
+            label = "审核状态",
+            value = raw.audit_reason
+        )
+    }
+}
                         else -> {
                             // 其他商店的通用信息
                             InfoRow(

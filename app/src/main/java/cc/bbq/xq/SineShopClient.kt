@@ -172,7 +172,6 @@ object SineShopClient {
         @SerialName("user_avatar") val userAvatar: String?
     )
 
-    // 在 SineShopClient.kt 中修改 SineShopAppDetail 数据类
 @Serializable
 data class SineShopAppDetail(
     val id: Int,
@@ -185,6 +184,7 @@ data class SineShopAppDetail(
     @SerialName("app_version_type") val app_version_type: String,
     @SerialName("app_abi") val app_abi: Int,
     @SerialName("app_sdk_min") val app_sdk_min: Int,
+    @SerialName("app_sdk_target") val app_sdk_target: Int?, // 新增：目标SDK版本（可为空）
     @SerialName("app_previews") val app_previews: List<String>?,
     @SerialName("app_describe") val app_describe: String?,
     @SerialName("app_update_log") val app_update_log: String?,
