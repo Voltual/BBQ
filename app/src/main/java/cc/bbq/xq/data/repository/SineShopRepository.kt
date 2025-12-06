@@ -31,6 +31,7 @@ class SineShopRepository : IAppStoreRepository {
         }
     }
 
+    // 恢复原样：使用 tag 参数
     override suspend fun getApps(categoryId: String?, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>> {
         return try {
             val result = when {
@@ -44,16 +45,29 @@ class SineShopRepository : IAppStoreRepository {
                 categoryId == "-4" -> SineShopClient.getMyFavouriteAppsList(page = page)  // 我的收藏
                 categoryId == "-5" -> SineShopClient.getMyHistoryAppsList(page = page)     // 我的历史足迹
                 else -> {
-                    // 修正：对于其他情况，使用 appid 参数而不是 tag
+                    // 恢复原样：使用 tag 参数
                     if (categoryId != null && categoryId.toIntOrNull() != null) {
-                        // 使用新方法 getAppsListByAppId
-                        SineShopClient.getAppsListByAppId(appid = categoryId.toInt(), page = page)
+                        SineShopClient.getAppsList(tag = categoryId.toInt(), page = page)
                     } else {
                         // 如果 categoryId 为 null 或不是数字，返回空列表
                         Result.success(SineShopClient.AppListData(0, emptyList()))
                     }
                 }
             }
+            result.map { appListData ->
+                val unifiedItems = appListData.list.map { it.toUnifiedAppItem() }
+                val totalPages = calculateTotalPages(appListData.total)
+                Pair(unifiedItems, totalPages)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // 新增：专用的版本列表方法，使用 appid 参数
+    suspend fun getAppVersionsByAppId(appId: Int, page: Int = 1): Result<Pair<List<UnifiedAppItem>, Int>> {
+        return try {
+            val result = SineShopClient.getAppVersionsByAppId(appid = appId, page = page)
             result.map { appListData ->
                 val unifiedItems = appListData.list.map { it.toUnifiedAppItem() }
                 val totalPages = calculateTotalPages(appListData.total)

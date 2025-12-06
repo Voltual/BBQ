@@ -367,7 +367,8 @@ data class SineShopAppDetail(
         }
     }
     
-suspend fun getAppsListByAppId(appid: Int, page: Int = 1): Result<AppListData> {
+// 获取指定应用ID的版本列表（用于版本列表屏幕）
+suspend fun getAppVersionsByAppId(appid: Int, page: Int = 1): Result<AppListData> {
     val url = "/app/list"
     val parameters = sineShopParameters {
         append("appid", appid.toString())
@@ -388,7 +389,7 @@ suspend fun getAppsListByAppId(appid: Int, page: Int = 1): Result<AppListData> {
         if (response.code == 0) {
             response.data ?: AppListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 AppListData
         } else {
-            throw IOException("Failed to get app list by appid: ${response.msg}")
+            throw IOException("Failed to get app versions: ${response.msg}")
         }
     }
 }

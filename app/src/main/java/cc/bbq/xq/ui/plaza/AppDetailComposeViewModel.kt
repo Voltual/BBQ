@@ -186,31 +186,34 @@ class AppDetailComposeViewModel(
     }
 
     // 新增：加载版本列表
-    private fun loadVersionList() {
-        if (currentStore != AppStore.SIENE_SHOP) return
+private fun loadVersionList() {
+    if (currentStore != AppStore.SIENE_SHOP) return
 
-        _isVersionListLoading.value = true
-        _versionListError.value = null
+    _isVersionListLoading.value = true
+    _versionListError.value = null
 
-        viewModelScope.launch {
-            try {
-                val appId = currentAppId.toIntOrNull()
-                if (appId != null) {
-                    val result = repositories[AppStore.SIENE_SHOP]?.getApps(appId.toString(), 1, null)
-                    if (result?.isSuccess == true) {
-                        val (items, _) = result.getOrThrow()
-                        _versions.value = items
-                    } else {
-                        _versionListError.value = "加载版本列表失败"
-                    }
+    viewModelScope.launch {
+        try {
+            val appId = currentAppId.toIntOrNull()
+            if (appId != null) {
+                // 使用专用的版本列表方法
+                val result = repositories[AppStore.SIENE_SHOP]?.let {
+                    (it as? cc.bbq.xq.data.repository.SineShopRepository)?.getAppVersionsByAppId(appId, 1)
                 }
-            } catch (e: Exception) {
-                _versionListError.value = "加载版本列表失败: ${e.message}"
-            } finally {
-                _isVersionListLoading.value = false
+                if (result?.isSuccess == true) {
+                    val (items, _) = result.getOrThrow()
+                    _versions.value = items
+                } else {
+                    _versionListError.value = "加载版本列表失败"
+                }
             }
+        } catch (e: Exception) {
+            _versionListError.value = "加载版本列表失败: ${e.message}"
+        } finally {
+            _isVersionListLoading.value = false
         }
     }
+}
 
     // 新增：切换标签页
     fun switchTab(tabIndex: Int) {
