@@ -185,6 +185,7 @@ class AppDetailComposeViewModel(
         }
     }
 
+
     // 新增：加载版本列表
 private fun loadVersionList() {
     if (currentStore != AppStore.SIENE_SHOP) return
