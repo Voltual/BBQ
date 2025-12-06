@@ -85,8 +85,8 @@ fun AppDetailScreen(
     var showDeleteAppDialog by remember { mutableStateOf(false) }
 
     // 评论删除确认对话框
-    var showDeleteCommentDialog by remember { mutableStateOf<String?>(null) }
-    var commentToDeleteId by remember { mutableStateOf<String?>(null) }
+    var showDeleteCommentDialog by remember { mutableStateOf(false) }  // 修正：使用 Boolean
+    var commentToDeleteId by remember { mutableStateOf<String?>(null) } // 修正：使用 String?
 
     LaunchedEffect(appId, versionId, storeName) {
         viewModel.initializeData(appId, versionId, storeName)
@@ -390,8 +390,6 @@ fun AppDetailContent(
                         AppStore.SIENE_SHOP -> {
                             // 弦应用商店信息
                             val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
-                            val deviceSdk = appDetail.raw?.app_sdk_min ?: 0
-                            val targetSdk = appDetail.raw?.app_sdk_target ?: 0
                             val deviceInfo = getDeviceInfo(raw?.app_sdk_min ?: 0)
                             
                             InfoRow(
@@ -672,13 +670,13 @@ fun InfoRow(label: String, value: String?) {
 
 // 新增：获取设备兼容性信息
 @Composable
-fun getDeviceInfo(minSdk: Int): String {
+fun getDeviceInfo(minSdk: Int?): String {
     val context = LocalContext.current
     val deviceSdk = android.os.Build.VERSION.SDK_INT
     
     return buildString {
         append("设备: Android $deviceSdk")
-        if (deviceSdk >= minSdk) {
+        if (minSdk != null && deviceSdk >= minSdk) {
             append(" • 兼容")
         } else {
             append(" • 不兼容")
