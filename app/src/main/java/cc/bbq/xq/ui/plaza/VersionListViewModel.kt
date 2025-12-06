@@ -1,4 +1,4 @@
-// 文件路径: cc/bq/xq/ui/plaza/VersionListViewModel.kt
+// 文件路径: cc/bbq/xq/ui/plaza/VersionListViewModel.kt
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
@@ -49,8 +49,8 @@ class VersionListViewModel(
             _errorMessage.value = null
 
             try {
-                // 只有弦应用商店支持版本列表
-                val result = sineShopRepository.getApps(currentAppId.toString(), page, null)
+                // 使用专用的 getAppVersionsByAppId 方法
+                val result = sineShopRepository.getAppVersionsByAppId(currentAppId, page)
                 
                 if (result.isSuccess) {
                     val (items, totalPages) = result.getOrThrow()

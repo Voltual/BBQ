@@ -67,21 +67,21 @@ class AppDetailComposeViewModel(
     private val _openUrlEvent = MutableSharedFlow<String>()
     val openUrlEvent: SharedFlow<String> = _openUrlEvent.asSharedFlow()
 
-    // 新增：版本列表相关状态
-    private val _versions = MutableStateFlow<List<UnifiedAppItem>>(emptyList())
-    val versions: StateFlow<List<UnifiedAppItem>> = _versions.asStateFlow()
+    // 移除：版本列表相关状态
+    //private val _versions = MutableStateFlow<List<UnifiedAppItem>>(emptyList())
+    //val versions: StateFlow<List<UnifiedAppItem>> = _versions.asStateFlow()
 
-    private val _isVersionListLoading = MutableStateFlow(false)
-    val isVersionListLoading: StateFlow<Boolean> = _isVersionListLoading.asStateFlow()
+    //private val _isVersionListLoading = MutableStateFlow(false)
+    //val isVersionListLoading: StateFlow<Boolean> = _isVersionListLoading.asStateFlow()
 
-    private val _versionListError = MutableStateFlow<String?>(null)
-    val versionListError: StateFlow<String?> = _versionListError.asStateFlow()
+    //private val _versionListError = MutableStateFlow<String?>(null)
+    //val versionListError: StateFlow<String?> = _versionListError.asStateFlow()
 
     private val _currentTab = MutableStateFlow(0) // 0: 详情, 1: 版本列表
     val currentTab: StateFlow<Int> = _currentTab.asStateFlow()
 
-    private val _showVersionList = MutableStateFlow(false)
-    val showVersionList: StateFlow<Boolean> = _showVersionList.asStateFlow()
+    //private val _showVersionList = MutableStateFlow(false)
+    //val showVersionList: StateFlow<Boolean> = _showVersionList.asStateFlow()
 
     private val repository: IAppStoreRepository
         get() = repositories[currentStore] ?: throw IllegalStateException("Repository not found")
@@ -160,10 +160,10 @@ class AppDetailComposeViewModel(
                     _appDetail.value = detail
                     loadComments()
                     
-                    // 如果是弦应用商店，加载版本列表
-                    if (currentStore == AppStore.SIENE_SHOP) {
-                        loadVersionList()
-                    }
+                    // 移除：不再在此处加载版本列表
+                    //if (currentStore == AppStore.SIENE_SHOP) {
+                    //    loadVersionList()
+                    //}
                 } else {
                     _errorMessage.value = "加载详情失败: ${detailResult.exceptionOrNull()?.message}"
                 }
@@ -185,64 +185,8 @@ class AppDetailComposeViewModel(
         }
     }
 
-
-    // 新增：加载版本列表
-private fun loadVersionList() {
-    if (currentStore != AppStore.SIENE_SHOP) return
-
-    _isVersionListLoading.value = true
-    _versionListError.value = null
-
-    viewModelScope.launch {
-        try {
-            val appId = currentAppId.toIntOrNull()
-            if (appId != null) {
-                // 使用专用的版本列表方法
-                val result = repositories[AppStore.SIENE_SHOP]?.let {
-                    (it as? cc.bbq.xq.data.repository.SineShopRepository)?.getAppVersionsByAppId(appId, 1)
-                }
-                if (result?.isSuccess == true) {
-                    val (items, _) = result.getOrThrow()
-                    _versions.value = items
-                } else {
-                    _versionListError.value = "加载版本列表失败"
-                }
-            }
-        } catch (e: Exception) {
-            _versionListError.value = "加载版本列表失败: ${e.message}"
-        } finally {
-            _isVersionListLoading.value = false
-        }
-    }
-}
-
-    // 新增：切换标签页
-    fun switchTab(tabIndex: Int) {
-        _currentTab.value = tabIndex
-    }
-
-    // 新增：显示版本列表
-    fun showVersionList() {
-        if (currentStore == AppStore.SIENE_SHOP) {
-            _showVersionList.value = true
-            if (_versions.value.isEmpty() && !_isVersionListLoading.value) {
-                loadVersionList()
-            }
-        }
-    }
-
-    // 新增：隐藏版本列表
-    fun hideVersionList() {
-        _showVersionList.value = false
-    }
-
-    // 新增：选择版本
-    fun selectVersion(version: UnifiedAppItem) {
-        // 切换到详情页面并更新版本
-        _currentTab.value = 0
-        currentVersionId = version.navigationVersionId
-        loadData()
-    }
+    // 移除：加载版本列表
+    //private fun loadVersionList() { ... }
 
     fun openCommentDialog() {
         _showCommentDialog.value = true
