@@ -427,6 +427,32 @@ suspend fun getUserInfoById(userId: Long): Result<SineShopUserInfo> {
     }
 }
 
+// 获取指定应用包名的其他版本列表
+suspend fun getAppVersionsByPackage(appId: Int, page: Int = 1): Result<AppListData> {
+    val url = "/app/list"
+    val parameters = sineShopParameters {
+        append("appid", appId.toString())
+        append("page", page.toString())
+    }
+    return safeApiCall<BaseResponse<AppListData>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+            }
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response: BaseResponse<AppListData> ->
+        if (response.code == 0) {
+            response.data ?: AppListData(0, emptyList())
+        } else {
+            throw IOException("Failed to get app versions: ${response.msg}")
+        }
+    }
+}
+
 suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null, userId: Int? = null): Result<AppListData> {
     val url = "/app/list"
     val parameters = sineShopParameters {

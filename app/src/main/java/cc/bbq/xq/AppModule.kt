@@ -32,6 +32,7 @@ import cc.bbq.xq.ui.community.PostDetailViewModel
 import cc.bbq.xq.ui.rank.RankingListViewModel
 import cc.bbq.xq.ui.settings.update.UpdateSettingsViewModel
 import cc.bbq.xq.ui.home.HomeViewModel
+import cc.bbq.xq.ui.plaza.VersionListViewModel
 
 val appModule = module {
     // ViewModel definitions
@@ -66,6 +67,7 @@ val appModule = module {
     viewModel { RankingListViewModel() }
     viewModel { UpdateSettingsViewModel() }
     viewModel { HomeViewModel() }
+    viewModel { VersionListViewModel(androidApplication(), get<SineShopRepository>()) }
 
     // Singletons
     single { AuthManager }
