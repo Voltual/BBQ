@@ -470,37 +470,94 @@ fun AppDetailContent(
             }
         }
 
-        // --- 作者信息 ---
+// --- 作者信息 ---
 item {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .clickable {
-                    val userId = appDetail.user.id.toLongOrNull()
-                    if (userId != null) {
-                        navController.navigate(UserDetail(userId, appDetail.store).createRoute())
-                    }
-                },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = appDetail.user.avatarUrl,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp).clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text(appDetail.user.displayName, style = MaterialTheme.typography.titleMedium)
-                if (appDetail.store == AppStore.SIENE_SHOP) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("作者信息", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(12.dp))
+
+            when (appDetail.store) {
+                AppStore.SIENE_SHOP -> {
+                    // 弦应用商店：同时显示上传者和审核员
                     val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
-                    val auditUser = raw?.audit_user
-                    if (auditUser != null && !auditUser.displayName.isNullOrEmpty()) {
-                        Text("审核员: ${auditUser.displayName}", 
-                            style = MaterialTheme.typography.bodySmall, 
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    
+                    // 上传者信息
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable {
+                                val userId = raw?.user?.id
+                                if (userId != null) {
+                                    navController.navigate(UserDetail(userId.toLong(), appDetail.store).createRoute())
+                                }
+                            },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AsyncImage(
+                            model = raw?.user?.userAvatar,
+                            contentDescription = "上传者头像",
+                            modifier = Modifier.size(40.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Column {
+                            Text(raw?.user?.displayName ?: "未知上传者", style = MaterialTheme.typography.titleMedium)
+                            Text("上传者", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    
+                    // 审核员信息
+                    if (raw?.audit_user != null) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable {
+                                    val userId = raw.audit_user?.id
+                                    if (userId != null) {
+                                        navController.navigate(UserDetail(userId.toLong(), appDetail.store).createRoute())
+                                    }
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            AsyncImage(
+                                model = raw.audit_user?.userAvatar,
+                                contentDescription = "审核员头像",
+                                modifier = Modifier.size(40.dp).clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                            Spacer(Modifier.width(16.dp))
+                            Column {
+                                Text(raw.audit_user?.displayName ?: "未知审核员", style = MaterialTheme.typography.titleMedium)
+                                Text("审核员", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    // 其他商店（如小趣空间）只显示上传者
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .clickable {
+                                val userId = appDetail.user.id.toLongOrNull()
+                                if (userId != null) {
+                                    navController.navigate(UserDetail(userId, appDetail.store).createRoute())
+                                }
+                            },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AsyncImage(
+                            model = appDetail.user.avatarUrl,
+                            contentDescription = "上传者头像",
+                            modifier = Modifier.size(40.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Text(appDetail.user.displayName, style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }
