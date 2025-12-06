@@ -117,7 +117,6 @@ dependencies {
     implementation("io.ktor:ktor-utils:$ktor_version")
     implementation("io.ktor:ktor-io:$ktor_version")
     implementation("io.ktor:ktor-client-logging:$ktor_version")
-    implementation("io.ktor:ktor-client-auth:$ktor_version")
 
     // ===== kotlinx.serialization =====
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
@@ -128,10 +127,6 @@ dependencies {
     
     // ===== MarkDown 依赖 =====
     implementation("org.jetbrains:markdown:0.7.3")
-    //Accompanist依赖
-    val accompanist_version = "0.36.0"
-    implementation("com.google.accompanist:accompanist-pager:$accompanist_version")
-    implementation("com.google.accompanist:accompanist-pager-indicators:$accompanist_version")
 }
 
 protobuf {
