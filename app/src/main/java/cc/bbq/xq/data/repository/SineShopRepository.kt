@@ -46,19 +46,19 @@ class SineShopRepository : IAppStoreRepository {
                 else -> {
                     // 修正：对于其他情况，使用 appid 参数而不是 tag
                     if (categoryId != null && categoryId.toIntOrNull() != null) {
-                        SineShopClient.getAppsList(appid = categoryId.toInt(), page = page)
+                        // 使用新方法 getAppsListByAppId
+                        SineShopClient.getAppsListByAppId(appid = categoryId.toInt(), page = page)
                     } else {
                         // 如果 categoryId 为 null 或不是数字，返回空列表
-                        SineShopClient.AppListData(0, emptyList())
+                        Result.success(SineShopClient.AppListData(0, emptyList()))
                     }
                 }
             }
-            
-            // 直接处理 AppListData，不使用 map
-            val appListData = result
-            val unifiedItems = appListData.list.map { it.toUnifiedAppItem() }
-            val totalPages = calculateTotalPages(appListData.total)
-            Result.success(Pair(unifiedItems, totalPages))
+            result.map { appListData ->
+                val unifiedItems = appListData.list.map { it.toUnifiedAppItem() }
+                val totalPages = calculateTotalPages(appListData.total)
+                Pair(unifiedItems, totalPages)
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -67,9 +67,11 @@ class SineShopRepository : IAppStoreRepository {
     override suspend fun searchApps(query: String, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>> {
         return try {
             val result = SineShopClient.getAppsList(keyword = query, page = page)
-            val unifiedItems = result.list.map { it.toUnifiedAppItem() }
-            val totalPages = calculateTotalPages(result.total)
-            Result.success(Pair(unifiedItems, totalPages))
+            result.map { appListData ->
+                val unifiedItems = appListData.list.map { it.toUnifiedAppItem() }
+                val totalPages = calculateTotalPages(appListData.total)
+                Pair(unifiedItems, totalPages)
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -87,9 +89,11 @@ class SineShopRepository : IAppStoreRepository {
     override suspend fun getAppComments(appId: String, versionId: Long, page: Int): Result<Pair<List<UnifiedComment>, Int>> {
         return try {
             val result = SineShopClient.getSineShopAppComments(appId = appId.toInt(), page = page)
-            val unifiedComments = result.list.map { it.toUnifiedComment() }
-            val totalPages = calculateTotalPages(result.total)
-            Result.success(Pair(unifiedComments, totalPages))
+            result.map { commentData ->
+                val unifiedComments = commentData.list.map { it.toUnifiedComment() }
+                val totalPages = calculateTotalPages(commentData.total)
+                Pair(unifiedComments, totalPages)
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
