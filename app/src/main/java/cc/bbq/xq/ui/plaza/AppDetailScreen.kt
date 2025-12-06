@@ -352,6 +352,9 @@ fun AppDetailContent(
                         AppStore.SIENE_SHOP -> {
                             // 弦应用商店信息
                             val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
+                            val deviceSdk = appDetail.raw?.app_sdk_min ?: 0
+                            val targetSdk = appDetail.raw?.app_sdk_target ?: 0
+                            val deviceInfo = getDeviceInfo(raw?.app_sdk_min ?: 0)
                             
                             InfoRow(
                                 label = "应用类型",
@@ -361,10 +364,21 @@ fun AppDetailContent(
                                 label = "版本类型",
                                 value = raw?.app_version_type ?: "未知"
                             )
+                            
+                            // 支持系统信息（包含最低SDK、目标SDK和设备兼容性）
+                            val supportSystem = buildString {
+                                append("Android ${raw?.app_sdk_min ?: "未知"}")
+                                if (raw?.app_sdk_target != null && raw.app_sdk_target != raw.app_sdk_min) {
+                                    append(" (目标SDK: ${raw.app_sdk_target})")
+                                }
+                                append(" • ")
+                                append(deviceInfo)
+                            }
                             InfoRow(
                                 label = "支持系统",
-                                value = if (raw?.app_sdk_min ?: 0 > 0) "Android ${raw?.app_sdk_min}" else "未知"
+                                value = supportSystem
                             )
+                            
                             if (appDetail.size != null) {
                                 InfoRow(
                                     label = "安装包大小",
@@ -402,11 +416,11 @@ fun AppDetailContent(
                             
                             // 显示审核状态（如果有审核失败的情况）
                             if (raw?.audit_status == 0 && !raw.audit_reason.isNullOrEmpty()) {
-    InfoRow(
-        label = "审核状态",
-        value = raw.audit_reason
-    )
-}
+                                InfoRow(
+                                    label = "审核状态",
+                                    value = raw.audit_reason
+                                )
+                            }
                         }
                         else -> {
                             // 其他商店的通用信息
@@ -470,100 +484,100 @@ fun AppDetailContent(
             }
         }
 
-// --- 作者信息 ---
-item {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("作者信息", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(12.dp))
+        // --- 作者信息 ---
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("作者信息", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(12.dp))
 
-            when (appDetail.store) {
-                AppStore.SIENE_SHOP -> {
-                    // 弦应用商店：同时显示上传者和审核员
-                    val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
-                    
-                    // 上传者信息
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .clickable {
-                                val userId = raw?.user?.id
-                                if (userId != null) {
-                                    navController.navigate(UserDetail(userId.toLong(), appDetail.store).createRoute())
+                    when (appDetail.store) {
+                        AppStore.SIENE_SHOP -> {
+                            // 弦应用商店：同时显示上传者和审核员
+                            val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
+                            
+                            // 上传者信息
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clickable {
+                                        val userId = raw?.user?.id
+                                        if (userId != null) {
+                                            navController.navigate(UserDetail(userId.toLong(), appDetail.store).createRoute())
+                                        }
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AsyncImage(
+                                    model = raw?.user?.userAvatar,
+                                    contentDescription = "上传者头像",
+                                    modifier = Modifier.size(40.dp).clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(Modifier.width(16.dp))
+                                Column {
+                                    Text(raw?.user?.displayName ?: "未知上传者", style = MaterialTheme.typography.titleMedium)
+                                    Text("上传者", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                            },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AsyncImage(
-                            model = raw?.user?.userAvatar,
-                            contentDescription = "上传者头像",
-                            modifier = Modifier.size(40.dp).clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        Column {
-                            Text(raw?.user?.displayName ?: "未知上传者", style = MaterialTheme.typography.titleMedium)
-                            Text("上传者", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    
-                    // 审核员信息
-                    if (raw?.audit_user != null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clickable {
-                                    val userId = raw.audit_user?.id
-                                    if (userId != null) {
-                                        navController.navigate(UserDetail(userId.toLong(), appDetail.store).createRoute())
+                            }
+                            
+                            // 审核员信息
+                            if (raw?.audit_user != null) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                        .clickable {
+                                            val userId = raw.audit_user?.id
+                                            if (userId != null) {
+                                                navController.navigate(UserDetail(userId.toLong(), appDetail.store).createRoute())
+                                            }
+                                        },
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    AsyncImage(
+                                        model = raw.audit_user?.userAvatar,
+                                        contentDescription = "审核员头像",
+                                        modifier = Modifier.size(40.dp).clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Spacer(Modifier.width(16.dp))
+                                    Column {
+                                        Text(raw.audit_user?.displayName ?: "未知审核员", style = MaterialTheme.typography.titleMedium)
+                                        Text("审核员", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
-                                },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            AsyncImage(
-                                model = raw.audit_user?.userAvatar,
-                                contentDescription = "审核员头像",
-                                modifier = Modifier.size(40.dp).clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                            Spacer(Modifier.width(16.dp))
-                            Column {
-                                Text(raw.audit_user?.displayName ?: "未知审核员", style = MaterialTheme.typography.titleMedium)
-                                Text("审核员", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                        else -> {
+                            // 其他商店（如小趣空间）只显示上传者
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .clickable {
+                                        val userId = appDetail.user.id.toLongOrNull()
+                                        if (userId != null) {
+                                            navController.navigate(UserDetail(userId, appDetail.store).createRoute())
+                                        }
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AsyncImage(
+                                    model = appDetail.user.avatarUrl,
+                                    contentDescription = "上传者头像",
+                                    modifier = Modifier.size(40.dp).clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(Modifier.width(16.dp))
+                                Text(appDetail.user.displayName, style = MaterialTheme.typography.titleMedium)
                             }
                         }
                     }
                 }
-                else -> {
-                    // 其他商店（如小趣空间）只显示上传者
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                            .clickable {
-                                val userId = appDetail.user.id.toLongOrNull()
-                                if (userId != null) {
-                                    navController.navigate(UserDetail(userId, appDetail.store).createRoute())
-                                }
-                            },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AsyncImage(
-                            model = appDetail.user.avatarUrl,
-                            contentDescription = "上传者头像",
-                            modifier = Modifier.size(40.dp).clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(Modifier.width(16.dp))
-                        Text(appDetail.user.displayName, style = MaterialTheme.typography.titleMedium)
-                    }
-                }
             }
         }
-    }
-}
 
         // --- 评论列表 ---
         item {
@@ -615,6 +629,22 @@ fun InfoRow(label: String, value: String?) {
             )
         }
         Divider(modifier = Modifier.padding(vertical = 2.dp))
+    }
+}
+
+// 新增：获取设备兼容性信息
+@Composable
+fun getDeviceInfo(minSdk: Int): String {
+    val context = LocalContext.current
+    val deviceSdk = android.os.Build.VERSION.SDK_INT
+    
+    return buildString {
+        append("设备: Android $deviceSdk")
+        if (deviceSdk >= minSdk) {
+            append(" • 兼容")
+        } else {
+            append(" • 不兼容")
+        }
     }
 }
 

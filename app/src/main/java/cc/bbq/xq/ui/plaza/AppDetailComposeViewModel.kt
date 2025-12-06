@@ -1,7 +1,8 @@
-// 文件路径: cc/bbq/xq/ui/plaza/AppDetailComposeViewModel.kt
+// 文件路径: cc/bbq.xq.ui.plaza.AppDetailComposeViewModel.kt
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AppStore
@@ -69,6 +70,10 @@ class AppDetailComposeViewModel(
     private val repository: IAppStoreRepository
         get() = repositories[currentStore] ?: throw IllegalStateException("Repository not found")
 
+    // 新增：获取设备SDK版本
+    val deviceSdkVersion: Int
+        get() = Build.VERSION.SDK_INT
+
     fun initializeData(appId: String, versionId: Long, storeName: String) {
         val store = try {
             AppStore.valueOf(storeName)
@@ -128,7 +133,15 @@ class AppDetailComposeViewModel(
                 val detailResult = repository.getAppDetail(currentAppId, currentVersionId)
 
                 if (detailResult.isSuccess) {
-                    _appDetail.value = detailResult.getOrThrow()
+                    var detail = detailResult.getOrThrow()
+                    
+                    // 如果是弦应用商店，需要在 raw 数据中添加设备SDK信息
+                    if (currentStore == AppStore.SIENE_SHOP && detail.raw is cc.bbq.xq.SineShopClient.SineShopAppDetail) {
+                        val raw = detail.raw as cc.bbq.xq.SineShopClient.SineShopAppDetail
+                        // 这里我们不需要修改 raw 对象，因为在 Composable 中会动态计算
+                    }
+                    
+                    _appDetail.value = detail
                     loadComments()
                 } else {
                     _errorMessage.value = "加载详情失败: ${detailResult.exceptionOrNull()?.message}"
