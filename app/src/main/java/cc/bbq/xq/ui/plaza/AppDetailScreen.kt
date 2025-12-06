@@ -1,4 +1,4 @@
-// 文件路径: cc/bbq.xq.ui.plaza/AppDetailScreen.kt
+// 文件路径: cc/bbq.xq.ui.plaza.AppDetailScreen.kt
 package cc.bbq.xq.ui.plaza
 
 import android.content.Context
@@ -81,15 +81,6 @@ fun AppDetailScreen(
     val isVersionListLoading by viewModel.isVersionListLoading.collectAsState()
     val versionListError by viewModel.versionListError.collectAsState()
 
-    // 使用 HorizontalPager 的状态
-    val pagerState = rememberPagerState { 
-        if (appDetail?.store == AppStore.SIENE_SHOP && versions.isNotEmpty()) {
-            2 // 详情页 + 版本列表
-        } else {
-            1 // 只有详情页
-        }
-    }
-
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -158,10 +149,22 @@ fun AppDetailScreen(
             
             // 使用 HorizontalPager 包装内容
             Column(modifier = Modifier.fillMaxSize()) {
+                // 使用 HorizontalPager 的状态
+                val pagerState = rememberPagerState(
+                    initialPage = 0,
+                    pageCount = {
+                        if (appDetailValue?.store == AppStore.SIENE_SHOP && versions.isNotEmpty()) {
+                            2 // 详情页 + 版本列表
+                        } else {
+                            1 // 只有详情页
+                        }
+                    }
+                )
+                
                 // 标签栏（显示当前页面）
                 TopBar(
                     pagerState = pagerState,
-                    appDetail = appDetailValue, // 修复：使用非空类型
+                    appDetail = appDetailValue!!,
                     onBackClick = { navController.popBackStack() },
                     onDownloadClick = { viewModel.handleDownloadClick() },
                     onDeleteAppClick = { showDeleteAppDialog = true }
@@ -175,7 +178,7 @@ fun AppDetailScreen(
                     when (page) {
                         0 -> AppDetailContent(
                             navController = navController,
-                            appDetail = appDetailValue, // 修复：使用非空类型
+                            appDetail = appDetailValue!!,
                             comments = comments,
                             onCommentReply = { viewModel.openReplyDialog(it) },
                             onCommentLongClick = { commentId ->
@@ -331,13 +334,13 @@ fun AppDetailScreen(
 @Composable
 fun TopBar(
     pagerState: androidx.compose.foundation.pager.PagerState,
-    appDetail: UnifiedAppDetail, // 修复：参数类型为非空
+    appDetail: UnifiedAppDetail,
     onBackClick: () -> Unit,
     onDownloadClick: () -> Unit,
     onDeleteAppClick: () -> Unit
 ) {
-    // 修复：使用正确的 currentPage 访问方式
-    val currentPage by pagerState.currentPageFlow.collectAsState()
+    // 修复：正确获取当前页面
+    val currentPage by remember { derivedStateOf { pagerState.currentPage } }
     
     TopAppBar(
         title = {
@@ -381,7 +384,7 @@ fun TopBar(
 @Composable
 fun AppDetailContent(
     navController: NavController,
-    appDetail: UnifiedAppDetail, // 修复：参数类型为非空
+    appDetail: UnifiedAppDetail,
     comments: List<UnifiedComment>,
     onCommentReply: (UnifiedComment) -> Unit,
     onCommentLongClick: (String) -> Unit, // 修改参数名，更清晰
