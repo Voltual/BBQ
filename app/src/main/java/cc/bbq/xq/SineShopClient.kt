@@ -132,22 +132,39 @@ object SineShopClient {
         val name: String,
         val icon: String?
     )
-
-    // 新增：应用数据模型
-    @Serializable
-    data class SineShopApp(
-        val id: Int,
-        @SerialName("package_name") val package_name: String,
-        @SerialName("app_icon") val app_icon: String,
-        @SerialName("app_name") val app_name: String,
-        @SerialName("version_code") val version_code: Int,
-        @SerialName("version_name") val version_name: String,
-        @SerialName("app_type") val app_type: String,
-        @SerialName("app_version_type") val app_version_type: String,
-        @SerialName("app_abi") val app_abi: Int,
-        @SerialName("app_sdk_min") val app_sdk_min: Int,
-        @SerialName("version_count") val version_count: Int?  // 改为可空类型
-    )
+    // 在 SineShopClient.kt 中修改 SineShopAppDetail 数据类
+@Serializable
+data class SineShopAppDetail(
+    val id: Int,
+    @SerialName("package_name") val package_name: String,
+    @SerialName("app_name") val app_name: String,
+    @SerialName("version_code") val version_code: Int,
+    @SerialName("version_name") val version_name: String,
+    @SerialName("app_icon") val app_icon: String,
+    @SerialName("app_type") val app_type: String,
+    @SerialName("app_version_type") val app_version_type: String,
+    @SerialName("app_abi") val app_abi: Int,
+    @SerialName("app_sdk_min") val app_sdk_min: Int,
+    @SerialName("app_previews") val app_previews: List<String>?,
+    @SerialName("app_describe") val app_describe: String?,
+    @SerialName("app_update_log") val app_update_log: String?,
+    @SerialName("app_developer") val app_developer: String?,
+    @SerialName("app_source") val app_source: String?,
+    @SerialName("upload_message") val upload_message: String?,
+    @SerialName("download_size") val download_size: String?,
+    @SerialName("upload_time") val upload_time: Long,
+    @SerialName("update_time") val update_time: Long,
+    @SerialName("user") val user: SineShopUserInfoLite, // 使用 SineShopUserInfoLite
+    @SerialName("tags") val tags: List<AppTag>?,
+    @SerialName("download_count") val download_count: Int,
+    @SerialName("is_favourite") val is_favourite: Int,
+    @SerialName("favourite_count") val favourite_count: Int,
+    @SerialName("review_count") val review_count: Int,
+    // 新增：审核状态和审核原因字段
+    @SerialName("audit_status") val audit_status: Int?,
+    @SerialName("audit_reason") val audit_reason: String?
+    // 注意：这里没有评论列表，需要单独获取
+)
 
     // 为标签列表定义单独的数据模型，保持与 AppTag 一致
     @Serializable
