@@ -1,4 +1,4 @@
-// 文件路径: cc/bbq/xq.ui.plaza.AppDetailScreen.kt
+// 文件路径: cc/bbq.xq.ui.plaza/AppDetailScreen.kt
 package cc.bbq.xq.ui.plaza
 
 import android.content.Context
@@ -18,9 +18,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Comment
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,6 +48,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import cc.bbq.xq.ui.theme.AppGridItem
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Comment
+import androidx.compose.material.icons.filled.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -78,8 +80,15 @@ fun AppDetailScreen(
     val versions by viewModel.versions.collectAsState()
     val isVersionListLoading by viewModel.isVersionListLoading.collectAsState()
     val versionListError by viewModel.versionListError.collectAsState()
-    val currentTab by viewModel.currentTab.collectAsState()
-    val showVersionList by viewModel.showVersionList.collectAsState()
+
+    // 使用 HorizontalPager 的状态
+    val pagerState = rememberPagerState { 
+        if (appDetail?.store == AppStore.SIENE_SHOP && versions.isNotEmpty()) {
+            2 // 详情页 + 版本列表
+        } else {
+            1 // 只有详情页
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -147,44 +156,55 @@ fun AppDetailScreen(
             // 修复：使用临时变量避免 smart cast 错误
             val appDetailValue = appDetail
             
-            // 根据是否为弦应用商店和是否有版本列表决定显示什么
-            if (appDetailValue?.store == AppStore.SIENE_SHOP && versions.isNotEmpty()) {
-                // 弦应用商店且有版本列表，显示带标签页的界面
-                AppDetailWithTabs(
-                    navController = navController,
+            // 使用 HorizontalPager 包装内容
+            Column(modifier = Modifier.fillMaxSize()) {
+                // 标签栏（显示当前页面）
+                TopBar(
+                    pagerState = pagerState,
                     appDetail = appDetailValue,
-                    comments = comments,
-                    onCommentReply = { viewModel.openReplyDialog(it) },
+                    onBackClick = { navController.popBackStack() },
                     onDownloadClick = { viewModel.handleDownloadClick() },
-                    onCommentLongClick = { commentId ->
-                        commentToDeleteId = commentId
-                        showDeleteCommentDialog = true
-                    },
-                    onDeleteAppClick = { showDeleteAppDialog = true },
-                    onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) },
-                    versions = versions,
-                    onVersionSelected = { version ->
-                        viewModel.selectVersion(version)
-                        showVersionListDialog = false
-                    },
-                    currentTab = currentTab,
-                    onTabChanged = { viewModel.switchTab(it) }
+                    onDeleteAppClick = { showDeleteAppDialog = true }
                 )
-            } else {
-                // 其他情况显示普通详情页
-                AppDetailContent(
-                    navController = navController,
-                    appDetail = appDetailValue!!,
-                    comments = comments,
-                    onCommentReply = { viewModel.openReplyDialog(it) },
-                    onDownloadClick = { viewModel.handleDownloadClick() },
-                    onCommentLongClick = { commentId ->
-                        commentToDeleteId = commentId
-                        showDeleteCommentDialog = true
-                    },
-                    onDeleteAppClick = { showDeleteAppDialog = true },
-                    onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) }
-                )
+
+                // Pager 内容
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.weight(1f)
+                ) { page ->
+                    when (page) {
+                        0 -> AppDetailContent(
+                            navController = navController,
+                            appDetail = appDetailValue,
+                            comments = comments,
+                            onCommentReply = { viewModel.openReplyDialog(it) },
+                            onCommentLongClick = { commentId ->
+                                commentToDeleteId = commentId
+                                showDeleteCommentDialog = true
+                            },
+                            onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) },
+                            onVersionListClick = {
+                                // 如果有版本列表，跳转到版本列表页面
+                                if (pagerState.pageCount > 1) {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(1)
+                                    }
+                                }
+                            }
+                        )
+                        1 -> VersionListContent(
+                            versions = versions,
+                            onVersionSelected = { version ->
+                                viewModel.selectVersion(version)
+                                showVersionListDialog = false
+                                // 切换回详情页
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(0)
+                                }
+                            }
+                        )
+                    }
+                }
             }
         }
 
@@ -306,80 +326,55 @@ fun AppDetailScreen(
     }
 }
 
-// 新增：带标签页的应用详情组件
+// 新增：顶部栏组件
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppDetailWithTabs(
-    navController: NavController,
+fun TopBar(
+    pagerState: androidx.compose.foundation.pager.PagerState,
     appDetail: UnifiedAppDetail,
-    comments: List<UnifiedComment>,
-    onCommentReply: (UnifiedComment) -> Unit,
+    onBackClick: () -> Unit,
     onDownloadClick: () -> Unit,
-    onCommentLongClick: (String) -> Unit,
-    onDeleteAppClick: () -> Unit,
-    onImagePreview: (String) -> Unit,
-    versions: List<UnifiedAppItem>,
-    onVersionSelected: (UnifiedAppItem) -> Unit,
-    currentTab: Int,
-    onTabChanged: (Int) -> Unit
+    onDeleteAppClick: () -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        // 标签栏
-        TabRow(
-            selectedTabIndex = currentTab,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Tab(
-                selected = currentTab == 0,
-                onClick = { onTabChanged(0) },
-                text = { Text("应用详情") }
+    val currentPage by pagerState.currentPage
+    
+    TopAppBar(
+        title = {
+            Text(
+                when (currentPage) {
+                    0 -> "应用详情"
+                    1 -> "版本列表"
+                    else -> "应用详情"
+                }
             )
-            Tab(
-                selected = currentTab == 1,
-                onClick = { onTabChanged(1) },
-                text = { Text("版本列表") }
-            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.Default.ArrowBack, "返回")
+            }
+        },
+        actions = {
+            when (currentPage) {
+                0 -> {
+                    // 详情页的操作按钮
+                    IconButton(onClick = onDownloadClick) {
+                        Icon(Icons.Filled.Download, "下载")
+                    }
+                    IconButton(onClick = onDeleteAppClick) {
+                        Icon(Icons.Filled.MoreVert, "更多")
+                    }
+                }
+                1 -> {
+                    // 版本列表页的操作按钮
+                    Text(
+                        text = "共 ${pagerState.pageCount} 页",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
-
-        // 内容区域
-        when (currentTab) {
-            0 -> AppDetailContent(
-                navController = navController,
-                appDetail = appDetail,
-                comments = comments,
-                onCommentReply = onCommentReply,
-                onDownloadClick = onDownloadClick,
-                onCommentLongClick = onCommentLongClick,
-                onDeleteAppClick = onDeleteAppClick,
-                onImagePreview = onImagePreview
-            )
-            1 -> VersionListContent(
-                versions = versions,
-                onVersionSelected = onVersionSelected
-            )
-        }
-    }
-}
-
-// 新增：版本列表内容组件
-@Composable
-fun VersionListContent(
-    versions: List<UnifiedAppItem>,
-    onVersionSelected: (UnifiedAppItem) -> Unit
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(versions) { version ->
-            AppGridItem(
-                app = version,
-                onClick = { onVersionSelected(version) }
-            )
-        }
-    }
+    )
 }
 
 @Composable
@@ -388,10 +383,9 @@ fun AppDetailContent(
     appDetail: UnifiedAppDetail,
     comments: List<UnifiedComment>,
     onCommentReply: (UnifiedComment) -> Unit,
-    onDownloadClick: () -> Unit,
     onCommentLongClick: (String) -> Unit, // 修改参数名，更清晰
-    onDeleteAppClick: () -> Unit, // 修改参数名，区分删除应用和删除评论
-    onImagePreview: (String) -> Unit
+    onImagePreview: (String) -> Unit,
+    onVersionListClick: () -> Unit // 新增：版本列表点击事件
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -415,18 +409,24 @@ fun AppDetailContent(
                             Text("版本: ${appDetail.versionName}", style = MaterialTheme.typography.bodyMedium)
                             Text("大小: ${appDetail.size}", style = MaterialTheme.typography.bodyMedium)
                         }
-                        IconButton(onClick = onDeleteAppClick) {
-                            Icon(Icons.Default.MoreVert, "更多")
+                        Row {
+                            IconButton(onClick = onVersionListClick) {
+                                Icon(Icons.Filled.List, "版本列表")
+                            }
+                            IconButton(onClick = { /* 分享功能 */ }) {
+                                Icon(Icons.Filled.Share, "分享")
+                            }
                         }
                     }
                     Spacer(Modifier.height(16.dp))
                     Button(
-                        onClick = onDownloadClick,
-                        modifier = Modifier.fillMaxWidth()
+                        onClick = { /* 下载功能在 TopBar 中 */ },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = false // 下载功能在 TopBar 中
                     ) {
                         Icon(Icons.Filled.Download, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("下载应用")
+                        Text("下载应用（请使用顶部按钮）")
                     }
                 }
             }
@@ -751,6 +751,28 @@ fun AppDetailContent(
                     }
                 )
             }
+        }
+    }
+}
+
+// 新增：版本列表内容组件
+@Composable
+fun VersionListContent(
+    versions: List<UnifiedAppItem>,
+    onVersionSelected: (UnifiedAppItem) -> Unit
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(versions) { version ->
+            AppGridItem(
+                app = version,
+                onClick = { onVersionSelected(version) }
+            )
         }
     }
 }
