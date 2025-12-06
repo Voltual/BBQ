@@ -71,12 +71,6 @@ fun AppDetailScreen(
 
     val showDownloadDrawer by viewModel.showDownloadDrawer.collectAsState()
     val downloadSources by viewModel.downloadSources.collectAsState()
-    
-    // 移除：版本列表相关状态
-    //val versions by viewModel.versions.collectAsState()
-    //val isVersionListLoading by viewModel.isVersionListLoading.collectAsState()
-    //val versionListError by viewModel.versionListError.collectAsState()
-    val currentTab by viewModel.currentTab.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -142,14 +136,10 @@ fun AppDetailScreen(
             val pageCount = if (appDetail!!.store == AppStore.SIENE_SHOP) 2 else 1
             val pagerState = rememberPagerState(pageCount = { pageCount })
             
-            // 将 currentTab 状态与 pagerState 同步
-            LaunchedEffect(pagerState.currentPage) {
-                //viewModel.switchTab(pagerState.currentPage)
-            }
-            
             HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                 when (page) {
                     0 -> {
+                        // 应用详情页面
                         AppDetailContent(
                             navController = navController,
                             appDetail = appDetail!!,
@@ -165,12 +155,17 @@ fun AppDetailScreen(
                         )
                     }
                     1 -> {
-                        // 版本列表屏幕
+                        // 版本列表页面
                         if (appDetail!!.store == AppStore.SIENE_SHOP) {
                             VersionListScreen(
                                 appId = appDetail!!.id.toInt(),
                                 onVersionSelected = { version ->
-                                    //viewModel.selectVersion(version)
+                                    // 切换到详情页面并更新版本
+                                    // 这里可以调用 viewModel 的方法来切换到详情页面并更新版本
+                                    // 但由于我们已经移除了版本列表逻辑，这里暂时只显示 Snackbar
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("选择了版本: ${version.versionName}")
+                                    }
                                 },
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -570,18 +565,19 @@ fun AppDetailContent(
                                                 navController.navigate(UserDetail(userId.toLong(), appDetail.store).createRoute())
                                             }
                                         },
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                AsyncImage(
-                                    model = raw.audit_user?.userAvatar,
-                                    contentDescription = "审核员头像",
-                                    modifier = Modifier.size(40.dp).clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                                Spacer(Modifier.width(16.dp))
-                                Column {
-                                    Text(raw.audit_user?.displayName ?: "未知审核员", style = MaterialTheme.typography.titleMedium)
-                                    Text("审核员", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    AsyncImage(
+                                        model = raw.audit_user?.userAvatar,
+                                        contentDescription = "审核员头像",
+                                        modifier = Modifier.size(40.dp).clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Spacer(Modifier.width(16.dp))
+                                    Column {
+                                        Text(raw.audit_user?.displayName ?: "未知审核员", style = MaterialTheme.typography.titleMedium)
+                                        Text("审核员", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
                             }
                         }
