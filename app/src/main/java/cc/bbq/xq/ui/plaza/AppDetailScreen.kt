@@ -72,10 +72,10 @@ fun AppDetailScreen(
     val showDownloadDrawer by viewModel.showDownloadDrawer.collectAsState()
     val downloadSources by viewModel.downloadSources.collectAsState()
     
-    // 版本列表相关状态
-    val versions by viewModel.versions.collectAsState()
-    val isVersionListLoading by viewModel.isVersionListLoading.collectAsState()
-    val versionListError by viewModel.versionListError.collectAsState()
+    // 移除：版本列表相关状态
+    //val versions by viewModel.versions.collectAsState()
+    //val isVersionListLoading by viewModel.isVersionListLoading.collectAsState()
+    //val versionListError by viewModel.versionListError.collectAsState()
     val currentTab by viewModel.currentTab.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -144,7 +144,7 @@ fun AppDetailScreen(
             
             // 将 currentTab 状态与 pagerState 同步
             LaunchedEffect(pagerState.currentPage) {
-                viewModel.switchTab(pagerState.currentPage)
+                //viewModel.switchTab(pagerState.currentPage)
             }
             
             HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
@@ -170,7 +170,7 @@ fun AppDetailScreen(
                             VersionListScreen(
                                 appId = appDetail!!.id.toInt(),
                                 onVersionSelected = { version ->
-                                    viewModel.selectVersion(version)
+                                    //viewModel.selectVersion(version)
                                 },
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -570,19 +570,18 @@ fun AppDetailContent(
                                                 navController.navigate(UserDetail(userId.toLong(), appDetail.store).createRoute())
                                             }
                                         },
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    AsyncImage(
-                                        model = raw.audit_user?.userAvatar,
-                                        contentDescription = "审核员头像",
-                                        modifier = Modifier.size(40.dp).clip(CircleShape),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                    Spacer(Modifier.width(16.dp))
-                                    Column {
-                                        Text(raw.audit_user?.displayName ?: "未知审核员", style = MaterialTheme.typography.titleMedium)
-                                        Text("审核员", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AsyncImage(
+                                    model = raw.audit_user?.userAvatar,
+                                    contentDescription = "审核员头像",
+                                    modifier = Modifier.size(40.dp).clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(Modifier.width(16.dp))
+                                Column {
+                                    Text(raw.audit_user?.displayName ?: "未知审核员", style = MaterialTheme.typography.titleMedium)
+                                    Text("审核员", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }

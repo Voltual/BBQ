@@ -167,6 +167,10 @@ class HomeViewModel : ViewModel() {
                     )
                     return@launch
                 }
+                
+                if (!forceRefresh && uiState.value.dataLoadState == DataLoadState.Loaded) {
+                return@launch
+            }
 
                 val sineShopUserInfoResult = withContext(Dispatchers.IO) {
                     SineShopClient.getUserInfo()
