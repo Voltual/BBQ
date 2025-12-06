@@ -194,7 +194,7 @@ data class SineShopAppDetail(
     @SerialName("download_size") val download_size: String?,
     @SerialName("upload_time") val upload_time: Long,
     @SerialName("update_time") val update_time: Long,
-    @SerialName("user") val user: SineShopUserInfoLite, // 使用 SineShopUserInfoLite
+    @SerialName("user") val user: SineShopUserInfoLite,
     @SerialName("tags") val tags: List<AppTag>?,
     @SerialName("download_count") val download_count: Int,
     @SerialName("is_favourite") val is_favourite: Int,
@@ -202,8 +202,9 @@ data class SineShopAppDetail(
     @SerialName("review_count") val review_count: Int,
     // 新增：审核状态和审核原因字段
     @SerialName("audit_status") val audit_status: Int?,
-    @SerialName("audit_reason") val audit_reason: String?
-    // 注意：这里没有评论列表，需要单独获取
+    @SerialName("audit_reason") val audit_reason: String?,
+    // 新增：审核员信息
+    @SerialName("audit_user") val audit_user: SineShopUserInfoLite?
 )
 
     // 新增：弦应用商店专用评论模型

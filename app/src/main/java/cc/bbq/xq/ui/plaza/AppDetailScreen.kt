@@ -471,40 +471,42 @@ fun AppDetailContent(
         }
 
         // --- 作者信息 ---
-        item {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .clickable {
-                            val userId = appDetail.user.id.toLongOrNull()
-                            if (userId != null) {
-                                navController.navigate(UserDetail(userId, appDetail.store).createRoute())
-                            }
-                        },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    AsyncImage(
-                        model = appDetail.user.avatarUrl,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp).clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text(appDetail.user.displayName, style = MaterialTheme.typography.titleMedium)
-                        if (appDetail.store == AppStore.SIENE_SHOP) {
-                            val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
-                            val auditUsername = raw?.audit_user?.display_name
-                            if (!auditUsername.isNullOrEmpty()) {
-                                Text("审核员: $auditUsername", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
+item {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .clickable {
+                    val userId = appDetail.user.id.toLongOrNull()
+                    if (userId != null) {
+                        navController.navigate(UserDetail(userId, appDetail.store).createRoute())
+                    }
+                },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = appDetail.user.avatarUrl,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp).clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(Modifier.width(16.dp))
+            Column {
+                Text(appDetail.user.displayName, style = MaterialTheme.typography.titleMedium)
+                if (appDetail.store == AppStore.SIENE_SHOP) {
+                    val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
+                    val auditUser = raw?.audit_user
+                    if (auditUser != null && !auditUser.displayName.isNullOrEmpty()) {
+                        Text("审核员: ${auditUser.displayName}", 
+                            style = MaterialTheme.typography.bodySmall, 
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
         }
+    }
+}
 
         // --- 评论列表 ---
         item {
