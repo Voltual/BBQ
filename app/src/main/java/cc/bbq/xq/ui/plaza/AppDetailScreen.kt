@@ -1,4 +1,4 @@
-// 文件路径: cc/bbq.xq.ui.plaza/AppDetailScreen.kt
+// 文件路径: cc/bbq/xq.ui.plaza.AppDetailScreen.kt
 package cc.bbq.xq.ui.plaza
 
 import android.content.Context
@@ -18,6 +18,9 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Comment
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -501,9 +504,6 @@ fun AppDetailContent(
                         AppStore.SIENE_SHOP -> {
                             // 弦应用商店信息
                             val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
-                            val deviceSdk = appDetail.raw?.app_sdk_min ?: 0
-                            val targetSdk = appDetail.raw?.app_sdk_target ?: 0
-                            val deviceInfo = getDeviceInfo(raw?.app_sdk_min ?: 0)
                             
                             InfoRow(
                                 label = "应用类型",
@@ -521,7 +521,7 @@ fun AppDetailContent(
                                     append(" (目标SDK: ${raw.app_sdk_target})")
                                 }
                                 append(" • ")
-                                append(deviceInfo)
+                                append(getDeviceInfo(raw?.app_sdk_min ?: 0))
                             }
                             InfoRow(
                                 label = "支持系统",
