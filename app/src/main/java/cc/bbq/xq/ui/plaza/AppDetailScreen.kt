@@ -1,4 +1,4 @@
-// 文件路径: cc/bbq.xq.ui/plaza/AppDetailScreen.kt
+// 文件路径: cc/bbq.xq.ui.plaza/AppDetailScreen.kt
 package cc.bbq.xq.ui.plaza
 
 import android.content.Context
@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import cc.bbq.xq.ui.Download // 确保导入 Download
 import cc.bbq.xq.AppStore
+import cc.bbq.xq.util.formatTimestamp
 
 @OptIn(ExperimentalMaterialApi::class) // 保留 ExperimentalMaterialApi 注解
 @Composable
@@ -279,14 +280,14 @@ fun AppDetailContent(
             }
         }
 
-        // --- 更新日志 ---
-        if (!appDetail.updateLog.isNullOrEmpty()) {
+        // --- 更新日志（弦应用商店） ---
+        if (appDetail.store == AppStore.SIENE_SHOP && !appDetail.updateLog.isNullOrEmpty()) {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("更新日志", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(8.dp))
-                        Text(appDetail.updateLog)
+                        Text(appDetail.updateLog!!)
                     }
                 }
             }
@@ -294,8 +295,6 @@ fun AppDetailContent(
 
         // --- 适配说明（小趣空间） ---
         if (appDetail.store == AppStore.XIAOQU_SPACE) {
-            // 这里需要从 raw 字段中提取 app_explain
-            // 由于 UnifiedAppDetail 中没有直接对应字段，我们需要从 raw 中获取
             val appExplain = when (val raw = appDetail.raw) {
                 is cc.bbq.xq.KtorClient.AppDetail -> raw.app_explain
                 else -> null
@@ -325,12 +324,14 @@ fun AppDetailContent(
                     when (appDetail.store) {
                         AppStore.XIAOQU_SPACE -> {
                             // 小趣空间信息
+                            val raw = appDetail.raw as? cc.bbq.xq.KtorClient.AppDetail
+                            
                             InfoRow(
                                 label = "应用类型",
                                 value = appDetail.type
                             )
                             InfoRow(
-                                label = "下载人数",
+                                label = "下载次数",
                                 value = "${appDetail.downloadCount} 次"
                             )
                             if (appDetail.size != null) {
@@ -341,33 +342,28 @@ fun AppDetailContent(
                             }
                             InfoRow(
                                 label = "上传时间",
-                                value = appDetail.uploadTime.toString()
+                                value = raw?.create_time ?: "未知"
+                            )
+                            InfoRow(
+                                label = "更新时间",
+                                value = raw?.update_time ?: "未知"
                             )
                         }
                         AppStore.SIENE_SHOP -> {
                             // 弦应用商店信息
+                            val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
+                            
                             InfoRow(
                                 label = "应用类型",
                                 value = appDetail.type
                             )
                             InfoRow(
                                 label = "版本类型",
-                                value = appDetail.raw?.let { 
-                                    when (it) {
-                                        is cc.bbq.xq.SineShopClient.SineShopAppDetail -> it.app_version_type
-                                        else -> null
-                                    }
-                                } ?: "未知"
+                                value = raw?.app_version_type ?: "未知"
                             )
                             InfoRow(
                                 label = "支持系统",
-                                value = appDetail.raw?.let { 
-                                    when (it) {
-                                        is cc.bbq.xq.SineShopClient.SineShopAppDetail -> 
-                                            if (it.app_sdk_min > 0) "Android ${it.app_sdk_min}" else "未知"
-                                        else -> "未知"
-                                    }
-                                } ?: "未知"
+                                value = if (raw?.app_sdk_min ?: 0 > 0) "Android ${raw?.app_sdk_min}" else "未知"
                             )
                             if (appDetail.size != null) {
                                 InfoRow(
@@ -376,40 +372,41 @@ fun AppDetailContent(
                                 )
                             }
                             InfoRow(
-                                label = "下载人数",
+                                label = "下载次数",
                                 value = "${appDetail.downloadCount} 次"
                             )
                             InfoRow(
                                 label = "应用开发者",
-                                value = appDetail.developer ?: "未知"
+                                value = raw?.app_developer ?: "未知"
                             )
                             InfoRow(
                                 label = "应用来源",
-                                value = appDetail.raw?.let { 
-                                    when (it) {
-                                        is cc.bbq.xq.SineShopClient.SineShopAppDetail -> it.app_source ?: "未知"
-                                        else -> "未知"
-                                    }
-                                } ?: "未知"
+                                value = raw?.app_source ?: "未知"
                             )
                             InfoRow(
                                 label = "上传时间",
-                                value = appDetail.raw?.let { 
-                                    when (it) {
-                                        is cc.bbq.xq.SineShopClient.SineShopAppDetail -> it.upload_time.toString()
-                                        else -> "未知"
-                                    }
-                                } ?: "未知"
+                                value = if (raw?.upload_time != null) formatTimestamp(raw.upload_time) else "未知"
                             )
                             InfoRow(
                                 label = "资料时间",
-                                value = appDetail.raw?.let { 
-                                    when (it) {
-                                        is cc.bbq.xq.SineShopClient.SineShopAppDetail -> it.update_time.toString()
-                                        else -> "未知"
-                                    }
-                                } ?: "未知"
+                                value = if (raw?.update_time != null) formatTimestamp(raw.update_time) else "未知"
                             )
+                            
+                            // 显示应用标签
+                            if (!raw?.tags.isNullOrEmpty()) {
+                                InfoRow(
+                                    label = "应用标签",
+                                    value = raw?.tags?.joinToString(", ") { it.name } ?: ""
+                                )
+                            }
+                            
+                            // 显示审核状态（如果有审核失败的情况）
+                            if (raw?.audit_status == 0) {
+                                InfoRow(
+                                    label = "审核状态",
+                                    value = raw?.audit_reason ?: "审核中"
+                                )
+                            }
                         }
                         else -> {
                             // 其他商店的通用信息
@@ -424,7 +421,7 @@ fun AppDetailContent(
                                 )
                             }
                             InfoRow(
-                                label = "下载人数",
+                                label = "下载次数",
                                 value = "${appDetail.downloadCount} 次"
                             )
                             InfoRow(
@@ -495,7 +492,16 @@ fun AppDetailContent(
                         contentScale = ContentScale.Crop
                     )
                     Spacer(Modifier.width(16.dp))
-                    Text(appDetail.user.displayName, style = MaterialTheme.typography.titleMedium)
+                    Column {
+                        Text(appDetail.user.displayName, style = MaterialTheme.typography.titleMedium)
+                        if (appDetail.store == AppStore.SIENE_SHOP) {
+                            val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
+                            val auditUsername = raw?.audit_user?.display_name
+                            if (!auditUsername.isNullOrEmpty()) {
+                                Text("审核员: $auditUsername", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -530,7 +536,7 @@ fun AppDetailContent(
 // 新增：信息行组件
 @Composable
 fun InfoRow(label: String, value: String?) {
-    if (!value.isNullOrEmpty()) {
+    if (!value.isNullOrEmpty() && value != "未知" && value != "") {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -552,7 +558,6 @@ fun InfoRow(label: String, value: String?) {
         Divider(modifier = Modifier.padding(vertical = 2.dp))
     }
 }
-
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
