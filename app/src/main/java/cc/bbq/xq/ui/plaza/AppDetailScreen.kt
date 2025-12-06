@@ -18,10 +18,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Comment
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import cc.bbq.xq.data.unified.UnifiedAppDetail
 import cc.bbq.xq.data.unified.UnifiedComment
+import cc.bbq.xq.data.unified.UnifiedAppItem
 import cc.bbq.xq.ui.ImagePreview
 import cc.bbq.xq.ui.UserDetail
 import cc.bbq.xq.ui.community.compose.CommentDialog
@@ -47,8 +44,13 @@ import org.koin.androidx.compose.koinViewModel
 import cc.bbq.xq.ui.Download // 确保导入 Download
 import cc.bbq.xq.AppStore
 import cc.bbq.xq.util.formatTimestamp
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.ui.res.painterResource
+import cc.bbq.xq.ui.theme.AppGridItem
 
-@OptIn(ExperimentalMaterialApi::class) // 保留 ExperimentalMaterialApi 注解
+@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun AppDetailScreen(
     appId: String,
@@ -70,6 +72,13 @@ fun AppDetailScreen(
     val showDownloadDrawer by viewModel.showDownloadDrawer.collectAsState()
     val downloadSources by viewModel.downloadSources.collectAsState()
 
+    // 新增：版本列表相关状态
+    val versions by viewModel.versions.collectAsState()
+    val isVersionListLoading by viewModel.isVersionListLoading.collectAsState()
+    val versionListError by viewModel.versionListError.collectAsState()
+    val currentTab by viewModel.currentTab.collectAsState()
+    val showVersionList by viewModel.showVersionList.collectAsState()
+
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -79,6 +88,9 @@ fun AppDetailScreen(
     // 评论删除确认对话框
     var showDeleteCommentDialog by remember { mutableStateOf(false) }
     var commentToDeleteId by remember { mutableStateOf<String?>(null) }
+
+    // 版本列表对话框
+    var showVersionListDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(appId, versionId, storeName) {
         viewModel.initializeData(appId, versionId, storeName)
@@ -130,19 +142,43 @@ fun AppDetailScreen(
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         } else if (appDetail != null) {
-            AppDetailContent(
-                navController = navController,
-                appDetail = appDetail!!,
-                comments = comments,
-                onCommentReply = { viewModel.openReplyDialog(it) },
-                onDownloadClick = { viewModel.handleDownloadClick() },
-                onCommentLongClick = { commentId ->
-                    commentToDeleteId = commentId
-                    showDeleteCommentDialog = true
-                },
-                onDeleteAppClick = { showDeleteAppDialog = true },
-                onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) }
-            )
+            // 根据是否为弦应用商店和是否有版本列表决定显示什么
+            if (appDetail.store == AppStore.SIENE_SHOP && versions.isNotEmpty()) {
+                // 弦应用商店且有版本列表，显示带标签页的界面
+                AppDetailWithTabs(
+                    navController = navController,
+                    appDetail = appDetail!!,
+                    comments = comments,
+                    onCommentReply = { viewModel.openReplyDialog(it) },
+                    onDownloadClick = { viewModel.handleDownloadClick() },
+                    onCommentLongClick = { commentId ->
+                        commentToDeleteId = commentId
+                        showDeleteCommentDialog = true
+                    },
+                    onDeleteAppClick = { showDeleteAppDialog = true },
+                    onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) },
+                    versions = versions { version                        viewModel.selectVersion(version)
+                        showVersionListDialog = false
+                    },
+                    currentTab = currentTab,
+                    onTabChanged = { viewModel.switchTab(it) }
+                )
+            } else {
+                // 其他情况显示普通详情页
+                AppDetailContent(
+                    navController = navController,
+                    appDetail = appDetail!!,
+                    comments = comments,
+                    onCommentReply = { viewModel.openReplyDialog(it) },
+                    onDownloadClick = { viewModel.handleDownloadClick() },
+                    onCommentLongClick = { commentId ->
+                        commentToDeleteId = commentId
+                        showDeleteCommentDialog = true
+                    },
+                    onDeleteAppClick = { showDeleteAppDialog = true },
+                    onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) }
+                )
+            }
         }
 
         FloatingActionButton(
@@ -154,7 +190,7 @@ fun AppDetailScreen(
             Icon(Icons.AutoMirrored.Filled.Comment, "评论")
         }
 
-        // 修复：使用语义颜色
+        // 修正：使用语义颜色
         PullRefreshIndicator(
             refreshing, 
             pullRefreshState, 
@@ -227,6 +263,115 @@ fun AppDetailScreen(
             },
             dismissButton = { TextButton(onClick = { showDeleteCommentDialog = false }) { Text("取消") } }
         )
+    }
+
+    // 版本列表对话框（仅在弦应用商店显示）
+    if (showVersionListDialog && appDetail?.store == AppStore.SIENE_SHOP) {
+        AlertDialog(
+            onDismissRequest = { showVersionListDialog = false },
+            title = { Text("选择版本") },
+            text = {
+                if (isVersionListLoading) {
+                    CircularProgressIndicator()
+                } else if (versionListError != null) {
+                    Text(versionListError!!)
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier.height(300.dp)
+                    ) {
+                        items(versions) { version ->
+                            VersionListItem(
+                                version = version,
+                                onClick = { selectedVersion ->
+                                    viewModel.selectVersion(selectedVersion)
+                                    showVersionListDialog = false
+                                }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showVersionListDialog = false }) { Text("关闭") }
+            }
+        )
+    }
+}
+
+// 新增：带标签页的应用详情组件
+@Composable
+fun AppDetailWithTabs(
+    navController: NavController,
+    appDetail: UnifiedAppDetail,
+    comments: List<UnifiedComment>,
+    onCommentReply: (UnifiedComment) -> Unit,
+    onDownloadClick: () -> Unit,
+    onCommentLongClick: (String) -> Unit,
+    onDeleteAppClick: () -> Unit,
+    onImagePreview: (String) -> Unit,
+    versions: List<UnifiedAppItem>,
+    onVersionSelected: (UnifiedAppItem) -> Unit,
+    currentTab: Int,
+    onTabChanged: (Int) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        // 标签栏
+        TabRow(
+            selectedTabIndex = currentTab,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Tab(
+                selected = currentTab == 0,
+                onClick = { onTabChanged(0) },
+                text = { Text("应用详情") }
+            )
+            Tab(
+                selected = currentTab == 1,
+                onClick = { onTabChanged(1) },
+                text = { Text("版本列表") }
+            )
+        }
+
+        // 内容区域
+        when (currentTab) {
+            0 -> AppDetailContent(
+                navController = navController,
+                appDetail = appDetail,
+                comments = comments,
+                onCommentReply = onCommentReply,
+                onDownloadClick = onDownloadClick,
+                onCommentLongClick = onCommentLongClick,
+                onDeleteAppClick = onDeleteAppClick,
+                onImagePreview = onImagePreview
+            )
+            1 -> VersionListContent(
+                versions = versions,
+                onVersionSelected = onVersionSelected
+            )
+        }
+    }
+}
+
+// 新增：版本列表内容组件
+@Composable
+fun VersionListContent(
+    versions: List<UnifiedAppItem>,
+    onVersionSelected: (UnifiedAppItem) -> Unit
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(versions) { version ->
+            AppGridItem(
+                app = version,
+                onClick = { onVersionSelected(version) }
+            )
+        }
     }
 }
 
@@ -350,75 +495,78 @@ fun AppDetailContent(
                             )
                         }
                         AppStore.SIENE_SHOP -> {
-    // 弦应用商店信息
-    val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
-    
-    InfoRow(
-        label = "应用类型",
-        value = appDetail.type
-    )
-    InfoRow(
-        label = "版本类型",
-        value = raw?.app_version_type ?: "未知"
-    )
-    
-    // 支持系统信息（包含最低SDK、目标SDK和设备兼容性）
-    val supportSystem = buildString {
-        append("Android ${raw?.app_sdk_min ?: "未知"}")
-        if (raw?.app_sdk_target != null && raw.app_sdk_target != raw.app_sdk_min) {
-            append(" (目标SDK: ${raw.app_sdk_target})")
-        }
-        append(" • ")
-        append(getDeviceInfo(raw?.app_sdk_min ?: 0))
-    }
-    InfoRow(
-        label = "支持系统",
-        value = supportSystem
-    )
-    
-    if (appDetail.size != null) {
-        InfoRow(
-            label = "安装包大小",
-            value = appDetail.size
-        )
-    }
-    InfoRow(
-        label = "下载次数",
-        value = "${appDetail.downloadCount} 次"
-    )
-    InfoRow(
-        label = "应用开发者",
-        value = raw?.app_developer ?: "未知"
-    )
-    InfoRow(
-        label = "应用来源",
-        value = raw?.app_source ?: "未知"
-    )
-    InfoRow(
-        label = "上传时间",
-        value = if (raw?.upload_time != null) formatTimestamp(raw.upload_time) else "未知"
-    )
-    InfoRow(
-        label = "资料时间",
-        value = if (raw?.update_time != null) formatTimestamp(raw.update_time) else "未知"
-    )
-    
-    // 显示应用标签
-    if (!raw?.tags.isNullOrEmpty()) {
-        InfoRow(
-            label = "应用标签",
-            value = raw?.tags?.joinToString(", ") { it.name } ?: ""
-        )
-    }
-    
-    // 显示审核状态（如果有审核失败的情况）
-    if (raw?.audit_status == 0 && !raw.audit_reason.isNullOrEmpty()) {
-        InfoRow(
-            label = "审核状态",
-            value = raw.audit_reason
-        )
-    }
-}
+                            // 弦应用商店信息
+                            val raw = appDetail.raw as? cc.bbq.xq.SineShopClient.SineShopAppDetail
+                            val deviceSdk = appDetail.raw?.app_sdk_min ?: 0
+                            val targetSdk = appDetail.raw?.app_sdk_target ?: 0
+                            val deviceInfo = getDeviceInfo(raw?.app_sdk_min ?: 0)
+                            
+                            InfoRow(
+                                label = "应用类型",
+                                value = appDetail.type
+                            )
+                            InfoRow(
+                                label = "版本类型",
+                                value = raw?.app_version_type ?: "未知"
+                            )
+                            
+                            // 支持系统信息（包含最低SDK、目标SDK和设备兼容性）
+                            val supportSystem = buildString {
+                                append("Android ${raw?.app_sdk_min ?: "未知"}")
+                                if (raw?.app_sdk_target != null && raw.app_sdk_target != raw.app_sdk_min) {
+                                    append(" (目标SDK: ${raw.app_sdk_target})")
+                                }
+                                append(" • ")
+                                append(deviceInfo)
+                            }
+                            InfoRow(
+                                label = "支持系统",
+                                value = supportSystem
+                            )
+                            
+                            if (appDetail.size != null) {
+                                InfoRow(
+                                    label = "安装包大小",
+                                    value = appDetail.size
+                                )
+                            }
+                            InfoRow(
+                                label = "下载次数",
+                                value = "${appDetail.downloadCount} 次"
+                            )
+                            InfoRow(
+                                label = "应用开发者",
+                                value = raw?.app_developer ?: "未知"
+                            )
+                            InfoRow(
+                                label = "应用来源",
+                                value = raw?.app_source ?: "未知"
+                            )
+                            InfoRow(
+                                label = "上传时间",
+                                value = if (raw?.upload_time != null) formatTimestamp(raw.upload_time) else "未知"
+                            )
+                            InfoRow(
+                                label = "资料时间",
+                                value = if (raw?.update_time != null) formatTimestamp(raw.update_time) else "未知"
+                            )
+                            
+                            // 显示应用标签
+                            if (!raw?.tags.isNullOrEmpty()) {
+                                InfoRow(
+                                    label = "应用标签",
+                                    value = raw?.tags?.joinToString(", ") { it.name } ?: ""
+                                )
+                            }
+                            
+                            // 显示审核状态（如果有审核失败的情况）
+                            if (raw?.audit_status == 0 && !raw.audit_reason.isNullOrEmpty()) {
+                                InfoRow(
+                                    label = "审核状态",
+                                    value = raw.audit_reason
+                                )
+                            }
+                        }
                         else -> {
                             // 其他商店的通用信息
                             InfoRow(
@@ -597,6 +745,50 @@ fun AppDetailContent(
                             navController.navigate(UserDetail(userId, appDetail.store).createRoute())
                         }
                     }
+                )
+            }
+        }
+    }
+}
+
+// 新增：版本列表项组件
+@Composable
+fun VersionListItem(
+    version: UnifiedAppItem,
+    onClick: (UnifiedAppItem) -> Unit
+) {
+    Card(
+        onClick = { onClick(version) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(8.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = version.iconUrl,
+                contentDescription = version.name,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = version.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1
+                )
+                Text(
+                    text = "版本: ${version.versionName}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
