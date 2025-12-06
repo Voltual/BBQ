@@ -161,7 +161,7 @@ fun AppDetailScreen(
                 // 标签栏（显示当前页面）
                 TopBar(
                     pagerState = pagerState,
-                    appDetail = appDetailValue,
+                    appDetail = appDetailValue, // 修复：使用非空类型
                     onBackClick = { navController.popBackStack() },
                     onDownloadClick = { viewModel.handleDownloadClick() },
                     onDeleteAppClick = { showDeleteAppDialog = true }
@@ -175,7 +175,7 @@ fun AppDetailScreen(
                     when (page) {
                         0 -> AppDetailContent(
                             navController = navController,
-                            appDetail = appDetailValue,
+                            appDetail = appDetailValue, // 修复：使用非空类型
                             comments = comments,
                             onCommentReply = { viewModel.openReplyDialog(it) },
                             onCommentLongClick = { commentId ->
@@ -331,12 +331,13 @@ fun AppDetailScreen(
 @Composable
 fun TopBar(
     pagerState: androidx.compose.foundation.pager.PagerState,
-    appDetail: UnifiedAppDetail,
+    appDetail: UnifiedAppDetail, // 修复：参数类型为非空
     onBackClick: () -> Unit,
     onDownloadClick: () -> Unit,
     onDeleteAppClick: () -> Unit
 ) {
-    val currentPage by pagerState.currentPage
+    // 修复：使用正确的 currentPage 访问方式
+    val currentPage by pagerState.currentPageFlow.collectAsState()
     
     TopAppBar(
         title = {
@@ -380,7 +381,7 @@ fun TopBar(
 @Composable
 fun AppDetailContent(
     navController: NavController,
-    appDetail: UnifiedAppDetail,
+    appDetail: UnifiedAppDetail, // 修复：参数类型为非空
     comments: List<UnifiedComment>,
     onCommentReply: (UnifiedComment) -> Unit,
     onCommentLongClick: (String) -> Unit, // 修改参数名，更清晰
