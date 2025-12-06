@@ -141,13 +141,13 @@ fun SineShopProfileScreen(
             icon = Icons.AutoMirrored.Filled.ExitToApp, // 使用自动镜像版本
             label = "退出登录",
             onClick = {  TODO: Implement logout  }
-        )*/
+        )
         FunctionCard(
             icon = Icons.Filled.Download,
             label = "本地下载",
-            onClick = { /* TODO: Implement local downloads */ }
+            onClick = {  TODO: Implement local downloads  }
         )
-/*      FunctionCard(
+      FunctionCard(
             icon = Icons.Filled.Devices,
             label = "我的设备",
             onClick = {  TODO: Implement my devices  }

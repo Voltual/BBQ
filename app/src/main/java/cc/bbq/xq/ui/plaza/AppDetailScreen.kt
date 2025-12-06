@@ -1,4 +1,4 @@
-// 文件路径: cc/bbq/xq/ui/plaza/AppDetailScreen.kt
+// 文件路径: cc/bbq.xq.ui/plaza/AppDetailScreen.kt
 package cc.bbq.xq.ui.plaza
 
 import android.content.Context
@@ -46,7 +46,6 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import cc.bbq.xq.ui.Download // 确保导入 Download
 import cc.bbq.xq.AppStore
-import cc.bbq.xq.ui.theme.*
 
 @OptIn(ExperimentalMaterialApi::class) // 保留 ExperimentalMaterialApi 注解
 @Composable
@@ -280,6 +279,164 @@ fun AppDetailContent(
             }
         }
 
+        // --- 更新日志 ---
+        if (!appDetail.updateLog.isNullOrEmpty()) {
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("更新日志", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(8.dp))
+                        Text(appDetail.updateLog)
+                    }
+                }
+            }
+        }
+
+        // --- 适配说明（小趣空间） ---
+        if (appDetail.store == AppStore.XIAOQU_SPACE) {
+            // 这里需要从 raw 字段中提取 app_explain
+            // 由于 UnifiedAppDetail 中没有直接对应字段，我们需要从 raw 中获取
+            val appExplain = when (val raw = appDetail.raw) {
+                is cc.bbq.xq.KtorClient.AppDetail -> raw.app_explain
+                else -> null
+            }
+            
+            if (!appExplain.isNullOrEmpty()) {
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("适配说明", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(8.dp))
+                            Text(appExplain)
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- 应用信息卡片 ---
+        item {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("应用信息", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(12.dp))
+
+                    // 根据不同商店显示不同的信息字段
+                    when (appDetail.store) {
+                        AppStore.XIAOQU_SPACE -> {
+                            // 小趣空间信息
+                            InfoRow(
+                                label = "应用类型",
+                                value = appDetail.type
+                            )
+                            InfoRow(
+                                label = "下载人数",
+                                value = "${appDetail.downloadCount} 次"
+                            )
+                            if (appDetail.size != null) {
+                                InfoRow(
+                                    label = "安装包大小",
+                                    value = appDetail.size
+                                )
+                            }
+                            InfoRow(
+                                label = "上传时间",
+                                value = appDetail.uploadTime.toString()
+                            )
+                        }
+                        AppStore.SIENE_SHOP -> {
+                            // 弦应用商店信息
+                            InfoRow(
+                                label = "应用类型",
+                                value = appDetail.type
+                            )
+                            InfoRow(
+                                label = "版本类型",
+                                value = appDetail.raw?.let { 
+                                    when (it) {
+                                        is cc.bbq.xq.SineShopClient.SineShopAppDetail -> it.app_version_type
+                                        else -> null
+                                    }
+                                } ?: "未知"
+                            )
+                            InfoRow(
+                                label = "支持系统",
+                                value = appDetail.raw?.let { 
+                                    when (it) {
+                                        is cc.bbq.xq.SineShopClient.SineShopAppDetail -> 
+                                            if (it.app_sdk_min > 0) "Android ${it.app_sdk_min}" else "未知"
+                                        else -> "未知"
+                                    }
+                                } ?: "未知"
+                            )
+                            if (appDetail.size != null) {
+                                InfoRow(
+                                    label = "安装包大小",
+                                    value = appDetail.size
+                                )
+                            }
+                            InfoRow(
+                                label = "下载人数",
+                                value = "${appDetail.downloadCount} 次"
+                            )
+                            InfoRow(
+                                label = "应用开发者",
+                                value = appDetail.developer ?: "未知"
+                            )
+                            InfoRow(
+                                label = "应用来源",
+                                value = appDetail.raw?.let { 
+                                    when (it) {
+                                        is cc.bbq.xq.SineShopClient.SineShopAppDetail -> it.app_source ?: "未知"
+                                        else -> "未知"
+                                    }
+                                } ?: "未知"
+                            )
+                            InfoRow(
+                                label = "上传时间",
+                                value = appDetail.raw?.let { 
+                                    when (it) {
+                                        is cc.bbq.xq.SineShopClient.SineShopAppDetail -> it.upload_time.toString()
+                                        else -> "未知"
+                                    }
+                                } ?: "未知"
+                            )
+                            InfoRow(
+                                label = "资料时间",
+                                value = appDetail.raw?.let { 
+                                    when (it) {
+                                        is cc.bbq.xq.SineShopClient.SineShopAppDetail -> it.update_time.toString()
+                                        else -> "未知"
+                                    }
+                                } ?: "未知"
+                            )
+                        }
+                        else -> {
+                            // 其他商店的通用信息
+                            InfoRow(
+                                label = "应用类型",
+                                value = appDetail.type
+                            )
+                            if (appDetail.size != null) {
+                                InfoRow(
+                                    label = "安装包大小",
+                                    value = appDetail.size
+                                )
+                            }
+                            InfoRow(
+                                label = "下载人数",
+                                value = "${appDetail.downloadCount} 次"
+                            )
+                            InfoRow(
+                                label = "上传时间",
+                                value = appDetail.uploadTime.toString()
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         // --- 应用介绍 ---
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -326,10 +483,7 @@ fun AppDetailContent(
                         .clickable {
                             val userId = appDetail.user.id.toLongOrNull()
                             if (userId != null) {
-                                // 获取当前appDetail的store
-                                val store = appDetail.store
-
-                                navController.navigate(UserDetail(userId, store).createRoute())
+                                navController.navigate(UserDetail(userId, appDetail.store).createRoute())
                             }
                         },
                     verticalAlignment = Alignment.CenterVertically
@@ -364,13 +518,92 @@ fun AppDetailContent(
                     onUserClick = {
                         val userId = comment.sender.id.toLongOrNull()
                         if (userId != null) {
-                            // 获取当前appDetail的store
-                            val store = appDetail.store
-
-                            navController.navigate(UserDetail(userId, store).createRoute())
+                            navController.navigate(UserDetail(userId, appDetail.store).createRoute())
                         }
                     }
                 )
+            }
+        }
+    }
+}
+
+// 新增：信息行组件
+@Composable
+fun InfoRow(label: String, value: String?) {
+    if (!value.isNullOrEmpty()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        Divider(modifier = Modifier.padding(vertical = 2.dp))
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun UnifiedCommentItem(
+    comment: UnifiedComment,
+    onReply: () -> Unit,
+    onLongClick: () -> Unit,
+    onUserClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            // 添加长按支持
+            .combinedClickable(
+                onClick = {}, // 点击事件目前没有特殊操作，留空
+                onLongClick = onLongClick
+            )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = comment.sender.avatarUrl,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp).clip(CircleShape).clickable(onClick = onUserClick),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(comment.sender.displayName, style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "回复",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable(onClick = onReply)
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(comment.content, style = MaterialTheme.typography.bodyMedium)
+
+            if (comment.fatherReply != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                ) {
+                    Text(
+                        text = "回复 @${comment.fatherReply.sender.displayName}: ${comment.fatherReply.content}",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
             }
         }
     }
