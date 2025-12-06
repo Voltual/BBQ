@@ -1,4 +1,4 @@
-// 文件路径: cc/bbq.xq.ui.plaza.AppDetailScreen.kt
+// 文件路径: cc/bbq.xq.ui.plaza/AppDetailScreen.kt
 package cc.bbq.xq.ui.plaza
 
 import android.content.Context
@@ -53,6 +53,8 @@ import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.filled.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.ui.res.painterResource
+import cc.bbq.xq.R
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -80,6 +82,15 @@ fun AppDetailScreen(
     val versions by viewModel.versions.collectAsState()
     val isVersionListLoading by viewModel.isVersionListLoading.collectAsState()
     val versionListError by viewModel.versionListError.collectAsState()
+
+    // 使用 HorizontalPager 的状态
+    val pagerState = rememberPagerState(pageCount = {
+        if (appDetail?.store == AppStore.SIENE_SHOP && versions.isNotEmpty()) {
+            2 // 详情页 + 版本列表
+        } else {
+            1 // 只有详情页
+        }
+    })
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -146,61 +157,50 @@ fun AppDetailScreen(
         } else if (appDetail != null) {
             // 修复：使用临时变量避免 smart cast 错误
             val appDetailValue = appDetail
-            
+
             // 使用 HorizontalPager 包装内容
             Column(modifier = Modifier.fillMaxSize()) {
-                // 使用 HorizontalPager 的状态
-                val pagerState = rememberPagerState(
-                    initialPage = 0,
-                    pageCount = {
-                        if (appDetailValue?.store == AppStore.SIENE_SHOP && versions.isNotEmpty()) {
-                            2 // 详情页 + 版本列表
-                        } else {
-                            1 // 只有详情页
-                        }
-                    }
-                )
-                
                 // 标签栏（显示当前页面）
                 TopBar(
                     pagerState = pagerState,
-                    appDetail = appDetailValue!!,
+                    appDetail = appDetailValue,
                     onBackClick = { navController.popBackStack() },
                     onDownloadClick = { viewModel.handleDownloadClick() },
                     onDeleteAppClick = { showDeleteAppDialog = true }
                 )
 
-                // Pager 内容
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.weight(1f)
                 ) { page ->
                     when (page) {
-                        0 -> AppDetailContent(
-                            navController = navController,
-                            appDetail = appDetailValue!!,
-                            comments = comments,
-                            onCommentReply = { viewModel.openReplyDialog(it) },
-                            onCommentLongClick = { commentId ->
-                                commentToDeleteId = commentId
-                                showDeleteCommentDialog = true
-                            },
-                            onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) },
-                            onVersionListClick = {
-                                // 如果有版本列表，跳转到版本列表页面
-                                if (pagerState.pageCount > 1) {
+                        0 -> appDetailValue?.let {
+                            AppDetailContent(
+                                navController = navController,
+                                appDetail = it,
+                                comments = comments,
+                                onCommentReply = { viewModel.openReplyDialog(it) },
+                                onCommentLongClick = { commentId ->
+                                    commentToDeleteId = commentId
+                                    showDeleteCommentDialog = true
+                                },
+                                onImagePreview = { url -> navController.navigate(ImagePreview(url).createRoute()) },
+                                onVersionListClick = {
                                     coroutineScope.launch {
-                                        pagerState.animateScrollToPage(1)
+                                        if (pagerState.pageCount > 1) {
+                                            pagerState.animateScrollToPage(1)
+                                        }
                                     }
                                 }
-                            }
-                        )
+                            )
+                        } ?: run {
+                            // 如果 appDetailValue 为空，显示加载错误或其他占位符
+                            Text("加载应用详情失败", modifier = Modifier.padding(16.dp))
+                        }
                         1 -> VersionListContent(
                             versions = versions,
                             onVersionSelected = { version ->
                                 viewModel.selectVersion(version)
-                                showVersionListDialog = false
-                                // 切换回详情页
                                 coroutineScope.launch {
                                     pagerState.animateScrollToPage(0)
                                 }
@@ -294,39 +294,6 @@ fun AppDetailScreen(
             dismissButton = { TextButton(onClick = { showDeleteCommentDialog = false }) { Text("取消") } }
         )
     }
-
-    // 版本列表对话框（仅在弦应用商店显示）
-    if (showVersionListDialog && appDetail?.store == AppStore.SIENE_SHOP) {
-        AlertDialog(
-            onDismissRequest = { showVersionListDialog = false },
-            title = { Text("选择版本") },
-            text = {
-                if (isVersionListLoading) {
-                    CircularProgressIndicator()
-                } else if (versionListError != null) {
-                    Text(versionListError!!)
-                } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.height(300.dp)
-                    ) {
-                        items(versions) { version ->
-                            VersionListItem(
-                                version = version,
-                                onClick = { selectedVersion ->
-                                    viewModel.selectVersion(selectedVersion)
-                                    showVersionListDialog = false
-                                }
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showVersionListDialog = false }) { Text("关闭") }
-            }
-        )
-    }
 }
 
 // 新增：顶部栏组件
@@ -334,13 +301,12 @@ fun AppDetailScreen(
 @Composable
 fun TopBar(
     pagerState: androidx.compose.foundation.pager.PagerState,
-    appDetail: UnifiedAppDetail,
+    appDetail: UnifiedAppDetail?,
     onBackClick: () -> Unit,
     onDownloadClick: () -> Unit,
     onDeleteAppClick: () -> Unit
 ) {
-    // 修复：正确获取当前页面
-    val currentPage by remember { derivedStateOf { pagerState.currentPage } }
+    val currentPage by pagerState.currentPage.collectAsState()
     
     TopAppBar(
         title = {
@@ -354,7 +320,7 @@ fun TopBar(
         },
         navigationIcon = {
             IconButton(onClick = onBackClick) {
-                Icon(Icons.Default.ArrowBack, "返回")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
             }
         },
         actions = {
@@ -370,11 +336,11 @@ fun TopBar(
                 }
                 1 -> {
                     // 版本列表页的操作按钮
-                    Text(
+                    /* Text(
                         text = "共 ${pagerState.pageCount} 页",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    ) */
                 }
             }
         }
@@ -413,24 +379,7 @@ fun AppDetailContent(
                             Text("版本: ${appDetail.versionName}", style = MaterialTheme.typography.bodyMedium)
                             Text("大小: ${appDetail.size}", style = MaterialTheme.typography.bodyMedium)
                         }
-                        Row {
-                            IconButton(onClick = onVersionListClick) {
-                                Icon(Icons.Filled.List, "版本列表")
-                            }
-                            IconButton(onClick = { /* 分享功能 */ }) {
-                                Icon(Icons.Filled.Share, "分享")
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    Button(
-                        onClick = { /* 下载功能在 TopBar 中 */ },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = false // 下载功能在 TopBar 中
-                    ) {
-                        Icon(Icons.Filled.Download, null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("下载应用（请使用顶部按钮）")
+                        
                     }
                 }
             }
@@ -694,12 +643,11 @@ fun AppDetailContent(
                                         contentDescription = "审核员头像",
                                         modifier = Modifier.size(40.dp).clip(CircleShape),
                                         contentScale = ContentScale.Crop
-                                    )
-                                    Spacer(Modifier.width(16.dp))
-                                    Column {
-                                        Text(raw.audit_user?.displayName ?: "未知审核员", style = MaterialTheme.typography.titleMedium)
-                                        Text("审核员", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
+                                )
+                                Spacer(Modifier.width(16.dp))
+                                Column {
+                                    Text(raw.audit_user?.displayName ?: "未知审核员", style = MaterialTheme.typography.titleMedium)
+                                    Text("审核员", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -755,28 +703,6 @@ fun AppDetailContent(
                     }
                 )
             }
-        }
-    }
-}
-
-// 新增：版本列表内容组件
-@Composable
-fun VersionListContent(
-    versions: List<UnifiedAppItem>,
-    onVersionSelected: (UnifiedAppItem) -> Unit
-) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(versions) { version ->
-            AppGridItem(
-                app = version,
-                onClick = { onVersionSelected(version) }
-            )
         }
     }
 }
