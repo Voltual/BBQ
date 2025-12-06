@@ -401,12 +401,12 @@ fun AppDetailContent(
                             }
                             
                             // 显示审核状态（如果有审核失败的情况）
-                            if (raw?.audit_status == 0) {
-                                InfoRow(
-                                    label = "审核状态",
-                                    value = raw?.audit_reason ?: "审核中"
-                                )
-                            }
+                            if (raw?.audit_status == 0 && !raw.audit_reason.isNullOrEmpty()) {
+    InfoRow(
+        label = "审核状态",
+        value = raw.audit_reason
+    )
+}
                         }
                         else -> {
                             // 其他商店的通用信息
