@@ -14,7 +14,7 @@ import cc.bbq.xq.KtorClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.KoinViewModel
+import org.koin.android.annotation.KoinViewModel
 
 // 排序类型枚举
 enum class SortType(val displayName: String, val apiValue: String) {

@@ -15,7 +15,7 @@ import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.BBQApplication
 import cc.bbq.xq.KtorClient // 导入 KtorClient
 import kotlinx.coroutines.flow.*
-import org.koin.core.annotation.KoinViewModel
+import org.koin.android.annotation.KoinViewModel
 import kotlinx.coroutines.launch
 
 enum class SearchMode {

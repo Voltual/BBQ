@@ -25,7 +25,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import org.koin.core.annotation.KoinViewModel
+import org.koin.android.annotation.KoinViewModel
 import android.content.Context // 导入 Context
 
 private val Context.dataStore by preferencesDataStore(name = "payment_requests")

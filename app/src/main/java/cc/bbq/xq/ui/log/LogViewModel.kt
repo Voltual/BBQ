@@ -19,7 +19,7 @@ import cc.bbq.xq.data.db.LogEntry
 import cc.bbq.xq.data.db.LogRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.KoinViewModel
+import org.koin.android.annotation.KoinViewModel
 
 @KoinViewModel
 class LogViewModel(application: Application) : AndroidViewModel(application) {

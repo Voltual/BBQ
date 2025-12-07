@@ -28,7 +28,7 @@ import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow // 添加导入
-import org.koin.core.annotation.KoinViewModel
+import org.koin.android.annotation.KoinViewModel
 
 // 添加数据加载状态
 sealed class DataLoadState {
