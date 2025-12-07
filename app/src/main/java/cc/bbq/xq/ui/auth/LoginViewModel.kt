@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
-import org.koin.core.annotation.KoinViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @KoinViewModel
 class LoginViewModel(
