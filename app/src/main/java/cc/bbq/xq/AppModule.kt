@@ -17,6 +17,6 @@ import org.koin.core.annotation.Module
  * 无需手动调用 `modules(AppModule().module)`。
  */
 @Module
-@ComponentScan("cc.bbq.xq.search")
+@ComponentScan("cc.bbq.xq.ui.search")
 @Configuration
 class AppModule
