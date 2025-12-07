@@ -126,6 +126,7 @@ fun SineShopClient.SineShopUserInfoLite.toUnifiedUser(): UnifiedUser {
     )
 }
 
+// 修改 Mappers.kt 中的映射函数
 fun SineShopClient.SineShopComment.toUnifiedComment(): UnifiedComment {
     return UnifiedComment(
         id = this.id.toString(),
@@ -135,8 +136,8 @@ fun SineShopClient.SineShopComment.toUnifiedComment(): UnifiedComment {
         childCount = this.child_count,
         fatherReply = this.father_reply?.toUnifiedComment(),
         raw = this,
-        // 弦应用商店的评论不直接包含应用ID，需要在 Repository 层设置
-        appId = null,
+        // 直接在这里处理 appId 的逻辑
+        appId = if (this.app_id == -1) null else this.app_id.toString(),
         versionId = null
     )
 }
