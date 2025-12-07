@@ -74,7 +74,7 @@ override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>,
                 // 如果评论的应用ID为 -1，表示评论已被删除
                 // 否则保留原始的应用ID
                 // 修复：使用 comment.appId
-                val appid = if (comment.appid == -1) null else comment.appId.toString()
+                val appId = if (comment.appId == -1) null else comment.appId.toString()
                 unified.copy(appId = appId)
             }
             val totalPages = calculateTotalPages(commentData.total)

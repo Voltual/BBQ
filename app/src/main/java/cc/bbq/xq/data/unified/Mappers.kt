@@ -136,11 +136,10 @@ fun SineShopClient.SineShopComment.toUnifiedComment(): UnifiedComment {
         fatherReply = this.father_reply?.toUnifiedComment(),
         raw = this,
         // 弦应用商店的评论不直接包含应用ID，需要在 Repository 层设置
-        appId = this.appld.toString(),
+        appId = null,
         versionId = null
     )
 }
-
 
 fun SineShopClient.SineShopAppDetail.toUnifiedAppDetail(): UnifiedAppDetail {
     return UnifiedAppDetail(
