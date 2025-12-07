@@ -75,6 +75,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.launch
 import cc.bbq.xq.SineShopClient
 import cc.bbq.xq.ui.Update // 导入 Update 导航目标
+import cc.bbq.xq.ui.MyComments // 导入 MyComments 导航目标
 
 @Composable
 fun HomeScreen(
@@ -100,6 +101,7 @@ fun HomeScreen(
     onAboutClick: () -> Unit,
     onAccountProfileClick: () -> Unit,
     onNavigateToUpdate: () -> Unit, // 新增：导航到更新屏幕的回调
+    onNavigateToMyComments: () -> Unit, // 新增：导航到我的评论的回调
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
     snackbarHostState: SnackbarHostState,
@@ -171,10 +173,8 @@ fun HomeScreen(
                                 }
                             }
                         },
-                        onNavigateToUpdate = onNavigateToUpdate
-                        onNavigateToMyComments = {
-        navController.navigate(MyComments.route)
-    } // 传递导航回调
+                        onNavigateToUpdate = onNavigateToUpdate,
+                        onNavigateToMyComments = onNavigateToMyComments
                     )
                 }
             }
