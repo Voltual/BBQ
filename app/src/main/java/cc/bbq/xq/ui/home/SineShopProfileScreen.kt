@@ -1,4 +1,3 @@
-// File: /app/src/main/java/cc/bbq/xq/ui/home/SineShopProfileScreen.kt
 //Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
@@ -35,6 +34,7 @@ import coil3.compose.AsyncImage
 import cc.bbq.xq.SineShopClient // 导入 SineShopClient
 import androidx.compose.foundation.clickable // 导入 clickable
 import cc.bbq.xq.ui.Update // 导入 Update 导航目标
+import cc.bbq.xq.ui.MyComments // 导入 MyComments 导航目标
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +42,8 @@ fun SineShopProfileScreen(
     userInfo: SineShopClient.SineShopUserInfo?,
     modifier: Modifier = Modifier,
     onNavigateToResourcePlaza: (String) -> Unit = {}, // 添加导航回调参数
-    onNavigateToUpdate: () -> Unit = {} // 新增：导航到更新屏幕的回调
+    onNavigateToUpdate: () -> Unit = {}, // 新增：导航到更新屏幕的回调
+    onNavigateToMyComments: () -> Unit = {} // 新增：导航到我的评论的回调
 ) {
     Column(
         modifier = modifier
@@ -110,7 +111,7 @@ fun SineShopProfileScreen(
         FunctionCard(
             icon = Icons.AutoMirrored.Filled.Comment, // 使用自动镜像版本
             label = "我的评论",
-            onClick = { /* TODO: Implement my comments */ }
+            onClick = { onNavigateToMyComments() } // 修改为调用我的评论导航
         )
         FunctionCard(
             icon = Icons.Filled.History,

@@ -182,6 +182,10 @@ data class MyPosts(val userId: Long) : AppDestination {
     }
 }
 
+object MyComments : AppDestination {
+    override val route = "my_comments"
+}
+
 object FollowList : AppDestination {
     override val route = "follow_list"
 }

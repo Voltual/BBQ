@@ -171,7 +171,10 @@ fun HomeScreen(
                                 }
                             }
                         },
-                        onNavigateToUpdate = onNavigateToUpdate // 传递导航回调
+                        onNavigateToUpdate = onNavigateToUpdate
+                        onNavigateToMyComments = {
+        navController.navigate(MyComments.route)
+    } // 传递导航回调
                     )
                 }
             }

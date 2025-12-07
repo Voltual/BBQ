@@ -238,6 +238,13 @@ composable(route = CreateRefundPost(0, 0, "", 0).route, arguments = CreateRefund
     DownloadScreen(modifier = Modifier.fillMaxSize())
 }
 
+composable(route = MyComments.route) {
+    MyCommentsScreen(
+        navController = navController,
+        modifier = Modifier.fillMaxSize()
+    )
+}
+
 composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { backStackEntry ->
     val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
     val storeName = backStackEntry.arguments?.getString("store") ?: AppStore.XIAOQU_SPACE.name
