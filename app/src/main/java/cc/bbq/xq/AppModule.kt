@@ -24,6 +24,7 @@ import cc.bbq.xq.ui.user.MyPostsViewModel
 import cc.bbq.xq.ui.user.UserDetailViewModel
 import cc.bbq.xq.ui.settings.storage.StoreManagerViewModel 
 import cc.bbq.xq.data.StorageSettingsDataStore 
+import cc.bbq.xq.data.SearchHistoryDataStore  // 新增导入
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -55,7 +56,10 @@ val appModule = module {
     viewModel { PlazaViewModel(androidApplication(), get()) }
     
     viewModel { PlayerViewModel(androidApplication()) }
-//    viewModel { SearchViewModel() }
+    
+    // 取消注释并修复 SearchViewModel
+    viewModel { SearchViewModel(get()) }
+    
     viewModel { UserListViewModel(androidApplication()) }
     viewModel { PostCreateViewModel(androidApplication()) }
     viewModel { MyPostsViewModel() }
@@ -74,8 +78,7 @@ val appModule = module {
     // Singletons
     single { AuthManager }
     single { BBQApplication.instance.database }
-//    single { BBQApplication.instance.processedPostsDataStore }
-//    single { BBQApplication.instance.searchHistoryDataStore }
+    single { SearchHistoryDataStore(androidApplication()) }  // 新增
     single { StorageSettingsDataStore(androidApplication()) }
 
     // Repositories
