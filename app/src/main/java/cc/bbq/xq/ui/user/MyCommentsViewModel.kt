@@ -33,6 +33,10 @@ class MyCommentsViewModel(
     private val _selectedStore = MutableStateFlow(AppStore.SIENE_SHOP)
     val selectedStore: StateFlow<AppStore> = _selectedStore.asStateFlow()
 
+    // 新增：评论删除确认对话框状态
+    private val _showDeleteCommentDialog = MutableStateFlow<String?>(null)
+    val showDeleteCommentDialog: StateFlow<String?> = _showDeleteCommentDialog.asStateFlow()
+
     private fun getRepository(): IAppStoreRepository {
         return repositories[selectedStore.value] ?: 
             throw IllegalStateException("Repository not found for ${selectedStore.value}")
@@ -88,6 +92,33 @@ class MyCommentsViewModel(
         loadComments()
     }
 
-    // 移除 switchStore 方法，因为我们只支持弦应用商店
-    // 用户不能切换商店类型
+    // 新增：显示删除评论确认对话框
+    fun showDeleteCommentDialog(commentId: String) {
+        _showDeleteCommentDialog.value = commentId
+    }
+
+    // 新增：隐藏删除评论确认对话框
+    fun hideDeleteCommentDialog() {
+        _showDeleteCommentDialog.value = null
+    }
+
+    // 新增：删除评论
+    fun deleteComment(commentId: String) {
+        viewModelScope.launch {
+            try {
+                val result = getRepository().deleteComment(commentId)
+                if (result.isSuccess) {
+                    // 从列表中移除已删除的评论
+                    _comments.value = _comments.value.filter { it.id != commentId }
+                    _error.value = null
+                } else {
+                    _error.value = "删除评论失败: ${result.exceptionOrNull()?.message}"
+                }
+            } catch (e: Exception) {
+                _error.value = "删除评论失败: ${e.message}"
+            } finally {
+                hideDeleteCommentDialog()
+            }
+        }
+    }
 }

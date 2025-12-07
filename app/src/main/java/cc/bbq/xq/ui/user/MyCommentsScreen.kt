@@ -27,11 +27,10 @@ import cc.bbq.xq.data.unified.UnifiedComment
 import cc.bbq.xq.ui.AppDetail
 import cc.bbq.xq.ui.UserDetail
 import cc.bbq.xq.ui.theme.*
+import cc.bbq.xq.util.formatTimestamp
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import java.text.SimpleDateFormat
-import java.util.*
 
 @Composable
 fun MyCommentsScreen(
@@ -44,6 +43,7 @@ fun MyCommentsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val selectedStore by viewModel.selectedStore.collectAsState()
+    val showDeleteCommentDialog by viewModel.showDeleteCommentDialog.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.initialize()
@@ -126,6 +126,9 @@ fun MyCommentsScreen(
                                 } catch (e: Exception) {
                                     // 错误处理
                                 }
+                            },
+                            onDeleteComment = { commentId ->
+                                viewModel.showDeleteCommentDialog(commentId)
                             }
                         )
                     }
@@ -150,6 +153,34 @@ fun MyCommentsScreen(
             }
         }
     }
+
+    // 删除评论确认对话框
+    if (showDeleteCommentDialog != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.hideDeleteCommentDialog() },
+            title = { Text("确认删除评论") },
+            text = { Text("确定要删除这条评论吗？此操作不可撤销。") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteCommentDialog?.let { commentId ->
+                            viewModel.deleteComment(commentId)
+                        }
+                    }
+                ) { 
+                    Text(
+                        "删除",
+                        color = MaterialTheme.colorScheme.error
+                    ) 
+                }
+            },
+            dismissButton = { 
+                TextButton(onClick = { viewModel.hideDeleteCommentDialog() }) { 
+                    Text("取消") 
+                } 
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -158,7 +189,8 @@ fun MyCommentItem(
     comment: UnifiedComment,
     onUserClick: (String) -> Unit,
     onOpenApp: (String, Long) -> Unit,
-    onOpenUrl: (String) -> Unit
+    onOpenUrl: (String) -> Unit,
+    onDeleteComment: (String) -> Unit // 新增：删除评论回调
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -184,7 +216,7 @@ fun MyCommentItem(
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = formatDate(comment.sendTime),
+                        text = formatTimestamp(comment.sendTime),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -263,14 +295,19 @@ fun MyCommentItem(
                         Text("查看应用")
                     }
                 }
+
+                // 删除评论按钮
+                Button(
+                    onClick = { onDeleteComment(comment.id) },
+                    shape = AppShapes.small,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                ) {
+                    Text("删除评论")
+                }
             }
         }
     }
-}
-
-// 格式化时间
-fun formatDate(timestamp: Long): String {
-    val date = Date(timestamp)
-    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-    return sdf.format(date)
 }
