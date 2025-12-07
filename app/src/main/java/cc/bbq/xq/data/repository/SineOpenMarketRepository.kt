@@ -19,7 +19,10 @@ class SineOpenMarketRepository : IAppStoreRepository {
     override suspend fun toggleFavorite(appId: String, isCurrentlyFavorite: Boolean): Result<Boolean> = Result.failure(Exception("Not supported"))
     override suspend fun deleteApp(appId: String, versionId: Long): Result<Unit> = Result.failure(Exception("Not supported"))
     override suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>> = Result.failure(Exception("Not supported"))
-    
+    // 添加 getMyComments 方法
+override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>, Int>> {
+    return Result.failure(NotImplementedError("弦开放平台不支持获取我的评论"))
+}
     // 不需要单独的图片上传接口，图片随表单一起提交
     override suspend fun uploadImage(file: File, type: String): Result<String> = Result.success(file.absolutePath)
     override suspend fun uploadApk(file: File, serviceType: String): Result<String> = Result.success(file.absolutePath)
