@@ -55,7 +55,7 @@ val appModule = module {
     viewModel { PlazaViewModel(androidApplication(), get()) }
     
     viewModel { PlayerViewModel(androidApplication()) }
-    viewModel { SearchViewModel() }
+//    viewModel { SearchViewModel() }
     viewModel { UserListViewModel(androidApplication()) }
     viewModel { PostCreateViewModel(androidApplication()) }
     viewModel { MyPostsViewModel() }
@@ -74,8 +74,8 @@ val appModule = module {
     // Singletons
     single { AuthManager }
     single { BBQApplication.instance.database }
-    single { BBQApplication.instance.processedPostsDataStore }
-    single { BBQApplication.instance.searchHistoryDataStore }
+//    single { BBQApplication.instance.processedPostsDataStore }
+//    single { BBQApplication.instance.searchHistoryDataStore }
     single { StorageSettingsDataStore(androidApplication()) }
 
     // Repositories
