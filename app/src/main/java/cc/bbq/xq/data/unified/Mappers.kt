@@ -141,6 +141,7 @@ fun SineShopClient.SineShopComment.toUnifiedComment(): UnifiedComment {
     )
 }
 
+
 fun SineShopClient.SineShopAppDetail.toUnifiedAppDetail(): UnifiedAppDetail {
     return UnifiedAppDetail(
         id = this.id.toString(),
