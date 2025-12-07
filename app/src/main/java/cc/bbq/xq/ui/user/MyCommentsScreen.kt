@@ -1,0 +1,270 @@
+// /app/src/main/java/cc/bbq/xq/ui/user/MyCommentsScreen.kt
+package cc.bbq.xq.ui.user
+
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import cc.bbq.xq.AppStore
+import cc.bbq.xq.ui.theme.*
+import coil3.compose.AsyncImage
+import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
+import java.text.SimpleDateFormat
+import java.util.*
+
+@Composable
+fun MyCommentsScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier,
+    viewModel: MyCommentsViewModel = koinViewModel()
+) {
+    val context = LocalContext.current
+    val comments by viewModel.comments.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val selectedStore by viewModel.selectedStore.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.initialize()
+    }
+
+    Column(modifier = modifier.fillMaxSize()) {
+        // 顶部标题和商店切换
+        AppStoreSelectorCard(
+            selectedStore = selectedStore,
+            onStoreChange = { newStore ->
+                // 如果商店类型改变，切换到新商店
+                if (newStore != selectedStore) {
+                    viewModel.switchStore(newStore)
+                }
+            },
+            title = "我的评论",
+            description = "查看您在所有商店发布的评论"
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // 评论列表
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (isLoading && comments.isEmpty()) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else if (comments.isEmpty() && !isLoading) {
+                Column(
+                    modifier = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Comment,
+                        contentDescription = "暂无评论",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = if (error != null) "加载失败" else "暂无评论",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    if (error != null) {
+                        Text(
+                            text = error!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    items(comments) { comment ->
+                        MyCommentItem(
+                            comment = comment,
+                            onUserClick = { userId ->
+                                // 跳转到用户详情页
+                                val userDetailRoute = UserDetail(
+                                    userId = userId.toLong(),
+                                    store = selectedStore
+                                ).createRoute()
+                                navController.navigate(userDetailRoute)
+                            },
+                            onOpenApp = { appId, versionId ->
+                                // 跳转到应用详情页
+                                val appDetailRoute = AppDetail(
+                                    appId = appId,
+                                    versionId = versionId,
+                                    storeName = selectedStore.name
+                                ).createRoute()
+                                navController.navigate(appDetailRoute)
+                            },
+                            onOpenUrl = { url ->
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    // 显示错误提示
+                                    val snackbarHostState = remember { SnackbarHostState() }
+                                    LaunchedEffect(Unit) {
+                                        snackbarHostState.showSnackbar("无法打开链接")
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
+            // 加载更多指示器
+            if (isLoading && comments.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
+                        .padding(12.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(strokeWidth = 2.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text("加载更多...")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun MyCommentItem(
+    comment: UnifiedComment,
+    onUserClick: (String) -> Unit,
+    onOpenApp: (String, Long) -> Unit,
+    onOpenUrl: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = AppShapes.medium
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            // 评论头部
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = comment.sender.avatarUrl,
+                    contentDescription = "用户头像",
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .clickable { onUserClick(comment.sender.id) },
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = comment.sender.displayName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = formatDate(comment.sendTime),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // 评论内容
+            Text(
+                text = comment.content,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            // 被删除的评论提示
+            if (comment.fatherReply == null && comment.childCount == 0) {
+                // 判断是否为被删除的评论（需要根据实际业务逻辑判断）
+                // 这里可以根据 comment.appId == -1 来判断
+            }
+
+            // 回复的评论
+            if (comment.fatherReply != null) {
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Text(
+                            text = "回复 @${comment.fatherReply.sender.displayName}：",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = comment.fatherReply.content,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // 操作按钮
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { onUserClick(comment.sender.id) },
+                    shape = AppShapes.small,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                ) {
+                    Text("查看用户")
+                }
+
+                // 如果评论关联了应用，显示查看应用按钮
+                // 注意：UnifiedComment 中没有 appId 字段，需要根据具体实现判断
+                // 这里暂时注释掉，需要在 UnifiedComment 中添加 appId 字段
+                /*
+                Button(
+                    onClick = { onOpenApp(comment.appId, comment.versionId) },
+                    shape = AppShapes.small,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                ) {
+                    Text("查看应用")
+                }
+                */
+            }
+        }
+    }
+}
+
+// 格式化时间
+fun formatDate(timestamp: Long): String {
+    val date = Date(timestamp)
+    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+    return sdf.format(date)
+}

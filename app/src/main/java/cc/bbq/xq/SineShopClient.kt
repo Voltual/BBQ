@@ -480,6 +480,31 @@ suspend fun getAppVersionsByPackage(appId: Int, page: Int = 1): Result<AppListDa
     }
 }
 
+// 新增：获取我的评论列表方法
+suspend fun getMyComments(page: Int = 1): Result<SineShopCommentListData> {
+    val url = "/reply/mine"
+    val parameters = sineShopParameters {
+        append("page", page.toString())
+    }
+    return safeApiCall<BaseResponse<SineShopCommentListData>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+                val token = getToken()
+                header(HttpHeaders.UserAgent, USER_AGENT + token)
+            }
+        }
+    }.map { response: BaseResponse<SineShopCommentListData> ->
+        if (response.code == 0) {
+            response.data ?: SineShopCommentListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 SineShopCommentListData
+        } else {
+            throw IOException("Failed to get my comments: ${response.msg}")
+        }
+    }
+}
+
 suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null, userId: Int? = null): Result<AppListData> {
     val url = "/app/list"
     val parameters = sineShopParameters {

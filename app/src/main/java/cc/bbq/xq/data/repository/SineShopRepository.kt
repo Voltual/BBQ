@@ -77,6 +77,25 @@ class SineShopRepository : IAppStoreRepository {
             Result.failure(e)
         }
     }
+    
+override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>, Int>> {
+    return try {
+        val result = SineShopClient.getMyComments(page = page)
+        result.map { commentData ->
+            val unifiedComments = commentData.list.map { comment ->
+                val unified = comment.toUnifiedComment()
+                // 如果评论的应用ID为 -1，表示评论已被删除
+                // 否则保留原始的应用ID
+                val appId = if (comment.app_id == -1) null else comment.app_id.toString()
+                unified.copy(appId = appId)
+            }
+            val totalPages = calculateTotalPages(commentData.total)
+            Pair(unifiedComments, totalPages)
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
 
     override suspend fun searchApps(query: String, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>> {
         return try {

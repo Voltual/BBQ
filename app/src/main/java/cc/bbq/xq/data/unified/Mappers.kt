@@ -134,7 +134,10 @@ fun SineShopClient.SineShopComment.toUnifiedComment(): UnifiedComment {
         sender = this.sender.toUnifiedUser(),
         childCount = this.child_count,
         fatherReply = this.father_reply?.toUnifiedComment(),
-        raw = this
+        raw = this,
+        // 弦应用商店的评论不直接包含应用ID，需要在 Repository 层设置
+        appId = null,
+        versionId = null
     )
 }
 
