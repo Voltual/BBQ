@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.AuthManager
 import kotlinx.coroutines.flow.first
+import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class FollowingPostsViewModel(private val context: Context) : ViewModel() {

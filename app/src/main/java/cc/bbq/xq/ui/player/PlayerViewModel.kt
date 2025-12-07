@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.zip.Inflater
+import org.koin.core.annotation.KoinViewModel
 
 enum class VideoScaleMode { FIT, FILL, ZOOM }
 

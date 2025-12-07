@@ -15,6 +15,7 @@ import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.data.db.BrowseHistoryRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class BrowseHistoryViewModel(application: Application) : AndroidViewModel(application) {

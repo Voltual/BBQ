@@ -29,6 +29,7 @@ import io.ktor.client.call.body
 import cc.bbq.xq.ui.compose.UpdateDialog
 import kotlinx.serialization.decodeFromString
 import cc.bbq.xq.util.UpdateChecker//导入公共的更新函数
+import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class UpdateSettingsViewModel : ViewModel() {

@@ -25,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.core.annotation.KoinViewModel
 
 // --- 统一的数据模型包装 ---
 data class PlazaData(val popularApps: List<UnifiedAppItem>)

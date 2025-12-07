@@ -23,6 +23,7 @@ import cc.bbq.xq.BBQApplication
 import cc.bbq.xq.data.unified.UnifiedUserDetail  // 新增：统一用户详情模型
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class UserDetailViewModel(application: Application) : AndroidViewModel(application) {

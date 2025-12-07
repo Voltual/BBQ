@@ -11,6 +11,7 @@ import io.ktor.utils.io.streams.asInput
 import kotlinx.coroutines.flow.first
 import io.ktor.client.call.*
 import java.io.File
+import org.koin.core.annotation.Single
 
 /**
  * 小趣空间数据仓库实现。

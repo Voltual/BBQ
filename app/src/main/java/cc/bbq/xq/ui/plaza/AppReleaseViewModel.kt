@@ -30,6 +30,7 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import org.koin.core.annotation.KoinViewModel
 import androidx.core.net.toUri
 
 // 小趣空间分类模型

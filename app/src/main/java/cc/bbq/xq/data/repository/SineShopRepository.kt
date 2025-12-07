@@ -5,6 +5,7 @@ import cc.bbq.xq.SineShopClient
 import cc.bbq.xq.data.unified.*
 import java.io.File
 import kotlin.math.ceil
+import org.koin.core.annotation.Single
 
 @Single
 class SineShopRepository : IAppStoreRepository {

@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import cc.bbq.xq.KtorClient
 import cc.bbq.xq.AuthManager
 import java.io.IOException
+import org.koin.core.annotation.KoinViewModel
 import kotlinx.coroutines.flow.first
 
 @KoinViewModel

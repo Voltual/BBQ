@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import org.koin.core.annotation.KoinViewModel
 import kotlinx.coroutines.Dispatchers
 
 data class MessageState(

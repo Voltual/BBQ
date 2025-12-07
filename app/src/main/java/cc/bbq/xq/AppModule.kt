@@ -37,39 +37,39 @@ import cc.bbq.xq.ui.user.MyCommentsViewModel
 
 val appModule = module {
     // ViewModel definitions
-    viewModel { LoginViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { BillingViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { CommunityViewModel() }//@KoinViewModel
-    viewModel { FollowingPostsViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { HotPostsViewModel() }//@KoinViewModel
-    viewModel { MyLikesViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { LogViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { MessageViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { LoginViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { BillingViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { CommunityViewModel() }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { FollowingPostsViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { HotPostsViewModel() }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { MyLikesViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { LogViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { MessageViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
     
     // 修正：注入 repositories 参数
-    viewModel { AppDetailComposeViewModel(androidApplication(), get()) }//@KoinViewModel
+    viewModel { AppDetailComposeViewModel(androidApplication(), get()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewMode
     
-    viewModel { AppReleaseViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { AppReleaseViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
     
     // PlazaViewModel
-    viewModel { PlazaViewModel(androidApplication(), get()) }//@KoinViewModel
+    viewModel { PlazaViewModel(androidApplication(), get()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
     
-    viewModel { PlayerViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { SearchViewModel() }//@KoinViewModel
-    viewModel { UserListViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { PostCreateViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { MyPostsViewModel() }//@KoinViewModel
-    viewModel { PaymentViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { UserDetailViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { StoreManagerViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { PlayerViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { SearchViewModel() }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { UserListViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { PostCreateViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { MyPostsViewModel() }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { PaymentViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { UserDetailViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { StoreManagerViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
     
-    viewModel { BrowseHistoryViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { PostDetailViewModel(androidApplication()) }//@KoinViewModel
-    viewModel { RankingListViewModel() }//@KoinViewModel
-    viewModel { UpdateSettingsViewModel() }//@KoinViewModel
-    viewModel { HomeViewModel() }//@KoinViewModel
-    viewModel { VersionListViewModel(androidApplication(), get<SineShopRepository>()) }//@KoinViewModel
-    viewModel { MyCommentsViewModel(androidApplication(), get()) }//@KoinViewModel
+    viewModel { BrowseHistoryViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { PostDetailViewModel(androidApplication()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { RankingListViewModel() }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { UpdateSettingsViewModel() }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { HomeViewModel() }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { VersionListViewModel(androidApplication(), get<SineShopRepository>()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
+    viewModel { MyCommentsViewModel(androidApplication(), get()) }//@KoinViewModelimport org.koin.core.annotation.KoinViewModel
 
     // Singletons
     single { AuthManager }

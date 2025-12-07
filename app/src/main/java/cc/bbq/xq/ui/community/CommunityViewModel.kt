@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import cc.bbq.xq.KtorClient
+import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class CommunityViewModel : ViewModel() {

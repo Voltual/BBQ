@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import org.koin.core.annotation.KoinViewModel
 
 data class BillingState(
     val billings: List<KtorClient.BillingItem> = emptyList(), // 使用 KtorClient.BillingItem

@@ -5,7 +5,9 @@ import cc.bbq.xq.AppStore
 import cc.bbq.xq.OpenMarketSineWorldClient
 import cc.bbq.xq.data.unified.*
 import java.io.File
+import org.koin.core.annotation.Single
 
+@Single
 class SineOpenMarketRepository : IAppStoreRepository {
 
     // 弦开放平台不支持这些读操作，返回空或错误
