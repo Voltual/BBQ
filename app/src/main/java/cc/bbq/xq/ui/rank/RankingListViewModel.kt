@@ -32,6 +32,7 @@ data class RankingListState(
     val sortType: SortType = SortType.MONEY // 默认硬币排行
 )
 
+@KoinViewModel
 class RankingListViewModel : ViewModel() {
 
     private val _state = MutableStateFlow(RankingListState())

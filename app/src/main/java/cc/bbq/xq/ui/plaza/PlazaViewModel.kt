@@ -32,6 +32,7 @@ data class PlazaData(val popularApps: List<UnifiedAppItem>)
 // --- Preference DataStore （仅保留 autoScrollMode） ---
 private val Context.dataStore by preferencesDataStore(name = "plaza_preferences")
 
+@KoinViewModel
 class PlazaViewModel(
     private val app: Application,
     private val repositories: Map<AppStore, IAppStoreRepository>

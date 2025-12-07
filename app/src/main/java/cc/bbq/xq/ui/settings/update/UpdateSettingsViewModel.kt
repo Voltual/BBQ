@@ -30,6 +30,7 @@ import cc.bbq.xq.ui.compose.UpdateDialog
 import kotlinx.serialization.decodeFromString
 import cc.bbq.xq.util.UpdateChecker//导入公共的更新函数
 
+@KoinViewModel
 class UpdateSettingsViewModel : ViewModel() {
 
     val autoCheckUpdates: Flow<Boolean> = UpdateSettingsDataStore.autoCheckUpdates

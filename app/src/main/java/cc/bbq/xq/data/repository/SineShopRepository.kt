@@ -6,6 +6,7 @@ import cc.bbq.xq.data.unified.*
 import java.io.File
 import kotlin.math.ceil
 
+@Single
 class SineShopRepository : IAppStoreRepository {
 
     private fun calculateTotalPages(totalItems: Int, pageSize: Int = 10): Int {

@@ -37,39 +37,39 @@ import cc.bbq.xq.ui.user.MyCommentsViewModel
 
 val appModule = module {
     // ViewModel definitions
-    viewModel { LoginViewModel(androidApplication()) }
-    viewModel { BillingViewModel(androidApplication()) }
-    viewModel { CommunityViewModel() }
-    viewModel { FollowingPostsViewModel(androidApplication()) }
-    viewModel { HotPostsViewModel() }
-    viewModel { MyLikesViewModel(androidApplication()) }
-    viewModel { LogViewModel(androidApplication()) }
-    viewModel { MessageViewModel(androidApplication()) }
+    viewModel { LoginViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { BillingViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { CommunityViewModel() }//@KoinViewModel
+    viewModel { FollowingPostsViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { HotPostsViewModel() }//@KoinViewModel
+    viewModel { MyLikesViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { LogViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { MessageViewModel(androidApplication()) }//@KoinViewModel
     
     // 修正：注入 repositories 参数
-    viewModel { AppDetailComposeViewModel(androidApplication(), get()) }
+    viewModel { AppDetailComposeViewModel(androidApplication(), get()) }//@KoinViewModel
     
-    viewModel { AppReleaseViewModel(androidApplication()) }
+    viewModel { AppReleaseViewModel(androidApplication()) }//@KoinViewModel
     
     // PlazaViewModel
-    viewModel { PlazaViewModel(androidApplication(), get()) }
+    viewModel { PlazaViewModel(androidApplication(), get()) }//@KoinViewModel
     
-    viewModel { PlayerViewModel(androidApplication()) }
-    viewModel { SearchViewModel() }
-    viewModel { UserListViewModel(androidApplication()) }
-    viewModel { PostCreateViewModel(androidApplication()) }
-    viewModel { MyPostsViewModel() }
-    viewModel { PaymentViewModel(androidApplication()) }
-    viewModel { UserDetailViewModel(androidApplication()) }
-    viewModel { StoreManagerViewModel(androidApplication()) }
+    viewModel { PlayerViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { SearchViewModel() }//@KoinViewModel
+    viewModel { UserListViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { PostCreateViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { MyPostsViewModel() }//@KoinViewModel
+    viewModel { PaymentViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { UserDetailViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { StoreManagerViewModel(androidApplication()) }//@KoinViewModel
     
-    viewModel { BrowseHistoryViewModel(androidApplication()) }
-    viewModel { PostDetailViewModel(androidApplication()) }
-    viewModel { RankingListViewModel() }
-    viewModel { UpdateSettingsViewModel() }
-    viewModel { HomeViewModel() }
-    viewModel { VersionListViewModel(androidApplication(), get<SineShopRepository>()) }
-    viewModel { MyCommentsViewModel(androidApplication(), get()) }
+    viewModel { BrowseHistoryViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { PostDetailViewModel(androidApplication()) }//@KoinViewModel
+    viewModel { RankingListViewModel() }//@KoinViewModel
+    viewModel { UpdateSettingsViewModel() }//@KoinViewModel
+    viewModel { HomeViewModel() }//@KoinViewModel
+    viewModel { VersionListViewModel(androidApplication(), get<SineShopRepository>()) }//@KoinViewModel
+    viewModel { MyCommentsViewModel(androidApplication(), get()) }//@KoinViewModel
 
     // Singletons
     single { AuthManager }

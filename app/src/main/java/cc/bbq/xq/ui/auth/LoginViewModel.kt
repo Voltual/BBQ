@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
 
+@KoinViewModel
 class LoginViewModel(
     application: Application
 ) : AndroidViewModel(application) {

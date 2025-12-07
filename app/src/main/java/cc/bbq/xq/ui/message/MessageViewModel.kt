@@ -28,6 +28,7 @@ data class MessageState(
     val isInitialized: Boolean = false
 )
 
+@KoinViewModel
 class MessageViewModel(application: Application) : AndroidViewModel(application) {
     private val _state = MutableStateFlow(MessageState())
     val state: StateFlow<MessageState> = _state.asStateFlow()

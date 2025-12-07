@@ -27,7 +27,7 @@ data class PlayerSettings(
     val danmakuSize: Float = 1.2f // NEW: 添加弹幕字号属性
 )
 
-// UPDATED: 改为 AndroidViewModel 以获取 Context
+@KoinViewModel
 class PlayerViewModel(application: Application) : AndroidViewModel(application) {
 
     private val playerDataStore = PlayerDataStore(application)

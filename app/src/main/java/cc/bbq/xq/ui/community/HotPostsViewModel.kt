@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import cc.bbq.xq.KtorClient
 
+@KoinViewModel
 class HotPostsViewModel : ViewModel() {
     private val _posts = MutableStateFlow<List<KtorClient.Post>>(emptyList())
     val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow()

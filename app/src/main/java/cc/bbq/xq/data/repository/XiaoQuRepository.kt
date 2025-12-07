@@ -15,6 +15,7 @@ import java.io.File
 /**
  * 小趣空间数据仓库实现。
  */
+ @Single
 class XiaoQuRepository(private val apiClient: KtorClient.ApiService) : IAppStoreRepository {
 
     // 辅助方法：获取 Token

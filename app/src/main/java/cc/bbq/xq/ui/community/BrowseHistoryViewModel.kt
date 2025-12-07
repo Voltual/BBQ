@@ -16,6 +16,7 @@ import cc.bbq.xq.data.db.BrowseHistoryRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+@KoinViewModel
 class BrowseHistoryViewModel(application: Application) : AndroidViewModel(application) {
     private val browseHistoryRepository = BrowseHistoryRepository()
     

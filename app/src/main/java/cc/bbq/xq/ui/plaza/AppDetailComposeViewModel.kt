@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import cc.bbq.xq.service.download.DownloadService
 
+@KoinViewModel
 class AppDetailComposeViewModel(
     application: Application,
     private val repositories: Map<AppStore, IAppStoreRepository>

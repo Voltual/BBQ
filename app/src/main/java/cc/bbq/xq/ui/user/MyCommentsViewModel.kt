@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+@KoinViewModel
 class MyCommentsViewModel(
     application: Application,
     private val repositories: Map<AppStore, IAppStoreRepository>

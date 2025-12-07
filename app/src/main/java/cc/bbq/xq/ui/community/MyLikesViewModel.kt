@@ -19,6 +19,7 @@ import cc.bbq.xq.AuthManager
 import java.io.IOException
 import kotlinx.coroutines.flow.first
 
+@KoinViewModel
 class MyLikesViewModel(private val context: Context) : ViewModel() {
     private val _posts = MutableStateFlow(emptyList<KtorClient.Post>())
     val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow()

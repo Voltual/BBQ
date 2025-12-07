@@ -23,6 +23,7 @@ import java.io.FileNotFoundException
 
 private const val ENCRYPTED_FILE_NAME = "user_credentials_encrypted.pb"
 
+@Single
 object AuthManager {
 
     private lateinit var masterKey: MasterKey

@@ -30,6 +30,7 @@ sealed class SearchResultItem {
     data class LogItem(val log: cc.bbq.xq.data.db.LogEntry) : SearchResultItem()
 }
 
+@KoinViewModel
 class SearchViewModel : ViewModel() {
     private val searchHistoryDataStore = BBQApplication.instance.searchHistoryDataStore
     private val browseHistoryDao = BBQApplication.instance.database.browseHistoryDao()

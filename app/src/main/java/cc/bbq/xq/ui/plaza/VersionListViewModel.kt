@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+@KoinViewModel
 class VersionListViewModel(
     application: Application,
     private val sineShopRepository: SineShopRepository

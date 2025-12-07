@@ -28,6 +28,7 @@ data class BillingState(
     val totalPages: Int = 1
 )
 
+@KoinViewModel
 class BillingViewModel(application: Application) : AndroidViewModel(application) {
     private val _state = MutableStateFlow(BillingState())
     val state: StateFlow<BillingState> = _state.asStateFlow()

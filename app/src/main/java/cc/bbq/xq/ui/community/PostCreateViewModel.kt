@@ -37,6 +37,7 @@ import io.ktor.client.statement.HttpResponse
 import androidx.compose.material3.SnackbarHostState
 import kotlinx.coroutines.flow.Flow // 添加导入
 
+@KoinViewModel
 class PostCreateViewModel(application: Application) : AndroidViewModel(application) {
 
     private val draftRepository = PostDraftRepository()

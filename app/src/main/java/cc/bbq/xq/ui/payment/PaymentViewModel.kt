@@ -29,6 +29,7 @@ import android.content.Context // 导入 Context
 
 private val Context.dataStore by preferencesDataStore(name = "payment_requests")
 
+@KoinViewModel
 class PaymentViewModel(application: Application) : AndroidViewModel(application) {
 
     private val dataStore = application.applicationContext.dataStore

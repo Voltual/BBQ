@@ -33,6 +33,7 @@ data class UserListState(
     val listType: UserListType = UserListType.FOLLOWERS
 )
 
+@KoinViewModel
 class UserListViewModel(application: Application) : AndroidViewModel(application) {
 
     private var currentListType: UserListType = UserListType.FOLLOWERS

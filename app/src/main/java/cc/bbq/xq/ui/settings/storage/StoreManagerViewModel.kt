@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+@KoinViewModel
 class StoreManagerViewModel(application: Application) : AndroidViewModel(application) {
 
     private val storageSettingsDataStore = StorageSettingsDataStore(application)

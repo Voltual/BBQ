@@ -24,6 +24,7 @@ import cc.bbq.xq.data.unified.UnifiedUserDetail  // 新增：统一用户详情�
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 
+@KoinViewModel
 class UserDetailViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _userData = MutableLiveData<UnifiedUserDetail?>()

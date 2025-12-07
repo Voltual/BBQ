@@ -44,6 +44,7 @@ enum class ApkUploadService(val displayName: String) {
     WANYUEYUN("挽悦云")
 }
 
+@KoinViewModel
 class AppReleaseViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context: Context = application.applicationContext

@@ -65,6 +65,7 @@ data class HomeUiState(
     val sineShopLoginPrompt: Boolean = true
 )
 
+@KoinViewModel
 class HomeViewModel : ViewModel() {
     var uiState = mutableStateOf(HomeUiState())
         private set

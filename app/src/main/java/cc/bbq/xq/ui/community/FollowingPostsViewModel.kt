@@ -18,6 +18,7 @@ import cc.bbq.xq.KtorClient
 import cc.bbq.xq.AuthManager
 import kotlinx.coroutines.flow.first
 
+@KoinViewModel
 class FollowingPostsViewModel(private val context: Context) : ViewModel() {
     private val _posts = MutableStateFlow<List<KtorClient.Post>>(emptyList())
     val posts: StateFlow<List<KtorClient.Post>> = _posts.asStateFlow()
