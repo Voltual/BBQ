@@ -50,20 +50,7 @@ fun MyCommentsScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // 标题栏 - 移除商店选择器，只显示标题
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "我的评论",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "查看您在${selectedStore.displayName}发布的评论",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        // 标题栏 - 移除商店选择器，只显示标题        
 
         Spacer(Modifier.height(8.dp))
 
@@ -269,17 +256,7 @@ fun MyCommentItem(
             Spacer(Modifier.height(8.dp))
 
             // 操作按钮
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = { onUserClick(comment.sender.id) },
-                    shape = AppShapes.small,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                ) {
-                    Text("查看用户")
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {                
 
                 // 如果评论关联了应用，显示查看应用按钮
                 // 修正：使用正确的 appId（优先使用父评论的 appId）
