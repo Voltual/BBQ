@@ -232,7 +232,9 @@ fun MyCommentItem(
             )
 
             // 被删除的评论提示
-            if (comment.appId == null) {
+            // 修正：正确检查应用是否被删除
+            val appIdToCheck = comment.appId ?: comment.fatherReply?.appId
+            if (appIdToCheck == null) {
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = "评论的应用已被删除",
@@ -280,7 +282,9 @@ fun MyCommentItem(
                 }
 
                 // 如果评论关联了应用，显示查看应用按钮
-                comment.appId?.let { appId ->
+                // 修正：使用正确的 appId（优先使用父评论的 appId）
+                val appIdToShow = comment.appId?.takeIf { it != "-1" } ?: comment.fatherReply?.appId
+                appIdToShow?.let { appId ->
                     Button(
                         onClick = { 
                             val versionId = comment.versionId ?: 0L
