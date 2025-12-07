@@ -144,6 +144,7 @@ fun HomeDestination(
             onAccountProfileClick = { navController.navigate(AccountProfile.route) },
             onRecalculateDays = { viewModel.recalculateDaysDiff() },
             onNavigateToUpdate = { navController.navigate(Update.route) }, // 传递导航回调
+            onNavigateToMyComments = {navController.navigate(MyComments.route)},
             modifier = Modifier.fillMaxSize(), // 现在 Modifier 已导入
             viewModel = viewModel,
             snackbarHostState = snackbarHostState,
