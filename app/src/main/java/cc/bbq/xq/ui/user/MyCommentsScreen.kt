@@ -1,4 +1,3 @@
-// 添加缺失的导入
 package cc.bbq.xq.ui.user
 
 import android.content.Intent
@@ -10,24 +9,23 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape // 添加这个导入
-import androidx.compose.material.icons.Icons // 添加这个导入
-import androidx.compose.material.icons.filled.Comment // 添加这个导入
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color // 添加这个导入
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController // 添加这个导入
+import androidx.navigation.NavController
 import cc.bbq.xq.AppStore
-import cc.bbq.xq.data.unified.UnifiedComment // 添加这个导入
-import cc.bbq.xq.ui.AppDetail // 添加这个导入
-import cc.bbq.xq.ui.UserDetail // 添加这个导入
+import cc.bbq.xq.data.unified.UnifiedComment
+import cc.bbq.xq.ui.AppDetail
+import cc.bbq.xq.ui.UserDetail
 import cc.bbq.xq.ui.theme.*
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
@@ -52,20 +50,22 @@ fun MyCommentsScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // 顶部标题和商店切换
-        AppStoreSelectorCard(
-            selectedStore = selectedStore,
-            onStoreChange = { newStore ->
-                // 如果商店类型改变，切换到新商店
-                if (newStore != selectedStore) {
-                    viewModel.switchStore(newStore)
-                }
-            },
-            title = "我的评论",
-            description = "查看您在所有商店发布的评论"
-        )
+        // 标题栏 - 移除商店选择器，只显示标题
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "我的评论",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "查看您在${selectedStore.displayName}发布的评论",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(8.dp))
 
         // 评论列表
         Box(modifier = Modifier.fillMaxSize()) {
@@ -105,7 +105,6 @@ fun MyCommentsScreen(
                         MyCommentItem(
                             comment = comment,
                             onUserClick = { userId ->
-                                // 跳转到用户详情页
                                 val userDetailRoute = UserDetail(
                                     userId = userId.toLong(),
                                     store = selectedStore
@@ -113,7 +112,6 @@ fun MyCommentsScreen(
                                 navController.navigate(userDetailRoute)
                             },
                             onOpenApp = { appId, versionId ->
-                                // 跳转到应用详情页
                                 val appDetailRoute = AppDetail(
                                     appId = appId,
                                     versionId = versionId,
@@ -126,8 +124,7 @@ fun MyCommentsScreen(
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    // 这里不能直接调用 @Composable 函数，需要使用 SnackbarHostState
-                                    // 暂时忽略错误处理
+                                    // 错误处理
                                 }
                             }
                         )

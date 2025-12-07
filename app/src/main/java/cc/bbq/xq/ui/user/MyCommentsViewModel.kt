@@ -1,4 +1,3 @@
-// 添加缺失的导入和修复 StateFlow
 package cc.bbq.xq.ui.user
 
 import android.app.Application
@@ -9,7 +8,7 @@ import cc.bbq.xq.data.repository.IAppStoreRepository
 import cc.bbq.xq.data.unified.UnifiedComment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow // 添加这个导入
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class MyCommentsViewModel(
@@ -30,7 +29,8 @@ class MyCommentsViewModel(
     private var isLoadingMore = false
     private var hasMore = true
 
-    private val _selectedStore = MutableStateFlow(AppStore.XIAOQU_SPACE)
+    // 硬编码为弦应用商店，因为只有它支持我的评论功能
+    private val _selectedStore = MutableStateFlow(AppStore.SIENE_SHOP)
     val selectedStore: StateFlow<AppStore> = _selectedStore.asStateFlow()
 
     private fun getRepository(): IAppStoreRepository {
@@ -52,7 +52,6 @@ class MyCommentsViewModel(
             try {
                 val result = getRepository().getMyComments(currentPage)
                 if (result.isSuccess) {
-                    // 修复：正确解构 Result
                     val data = result.getOrNull()
                     if (data != null) {
                         val (newComments, totalPages) = data
@@ -89,13 +88,6 @@ class MyCommentsViewModel(
         loadComments()
     }
 
-    fun switchStore(store: AppStore) {
-        if (selectedStore.value == store) return
-        
-        _selectedStore.value = store
-        currentPage = 1
-        hasMore = true
-        _comments.value = emptyList()
-        loadComments()
-    }
+    // 移除 switchStore 方法，因为我们只支持弦应用商店
+    // 用户不能切换商店类型
 }
