@@ -90,6 +90,16 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import cc.bbq.xq.data.unified.UnifiedComment
 
 // 基础按钮组件
 @Composable
@@ -729,6 +739,69 @@ fun AppGrid(
                 app = app,
                 onClick = { onItemClick(app) }
             )
+        }
+    }
+}
+/**
+ * 评论项组件
+ * 显示单条评论，支持回复和长按操作
+ * @param comment 评论数据
+ * @param onReply 回复按钮点击回调
+ * @param onLongClick 长按评论的回调
+ * @param onUserClick 点击用户头像或用户名的回调
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun UnifiedCommentItem(
+    comment: UnifiedComment,
+    onReply: () -> Unit,
+    onLongClick: () -> Unit,
+    onUserClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            // 添加长按支持
+            .combinedClickable(
+                onClick = {}, // 点击事件目前没有特殊操作，留空
+                onLongClick = onLongClick
+            )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = comment.sender.avatarUrl,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp).clip(CircleShape).clickable(onClick = onUserClick),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(comment.sender.displayName, style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "回复",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable(onClick = onReply)
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(comment.content, style = MaterialTheme.typography.bodyMedium)
+
+            if (comment.fatherReply != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                ) {
+                    Text(
+                        text = "回复 @${comment.fatherReply.sender.displayName}: ${comment.fatherReply.content}",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+            }
         }
     }
 }
