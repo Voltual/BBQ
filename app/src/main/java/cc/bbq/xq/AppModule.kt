@@ -33,6 +33,7 @@ import cc.bbq.xq.ui.rank.RankingListViewModel
 import cc.bbq.xq.ui.settings.update.UpdateSettingsViewModel
 import cc.bbq.xq.ui.home.HomeViewModel
 import cc.bbq.xq.ui.plaza.VersionListViewModel
+import cc.bbq.xq.ui.user.MyCommentsViewModel
 
 val appModule = module {
     // ViewModel definitions
