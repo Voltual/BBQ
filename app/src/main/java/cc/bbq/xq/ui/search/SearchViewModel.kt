@@ -32,8 +32,7 @@ sealed class SearchResultItem {
 }
 
 @KoinViewModel
-class SearchViewModel : ViewModel() {
-    private val searchHistoryDataStore = BBQApplication.instance.searchHistoryDataStore
+class SearchViewModel : ViewModel( private val searchHistoryDataStore: SearchHistoryDataStore) {
     private val browseHistoryDao = BBQApplication.instance.database.browseHistoryDao()
     private val logDao = BBQApplication.instance.database.logDao()
     //private val apiService = RetrofitClient.instance // 移除 RetrofitClient
