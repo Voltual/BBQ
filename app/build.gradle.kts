@@ -108,7 +108,9 @@ dependencies {
     ksp("androidx.room:room-compiler:$room_version")
     
 // 添加 Koin Annotations 相关的依赖：
-implementation("io.insert-koin:koin-androidx-compose:4.1.1")
+val koin_version = "4.1.1"
+implementation("io.insert-koin:koin-androidx-compose:$koin_version")
+implementation("io.insert-koin:koin-core:$koin_version")
 val koin_annotations_version = "2.3.1"
 implementation("io.insert-koin:koin-annotations:$koin_annotations_version") // 添加注解库
 ksp("io.insert-koin:koin-ksp-compiler:$koin_annotations_version") // 添加 KSP 处理器
