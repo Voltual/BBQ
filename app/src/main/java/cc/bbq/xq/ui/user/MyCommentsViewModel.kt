@@ -1,8 +1,7 @@
-// /app/src/main/java/cc/bbq/xq/ui/user/MyCommentsViewModel.kt
+// 添加缺失的导入和修复 StateFlow
 package cc.bbq.xq.ui.user
 
 import android.app.Application
-import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cc.bbq.xq.AppStore
@@ -10,6 +9,7 @@ import cc.bbq.xq.data.repository.IAppStoreRepository
 import cc.bbq.xq.data.unified.UnifiedComment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow // 添加这个导入
 import kotlinx.coroutines.launch
 
 class MyCommentsViewModel(
@@ -52,13 +52,17 @@ class MyCommentsViewModel(
             try {
                 val result = getRepository().getMyComments(currentPage)
                 if (result.isSuccess) {
-                    val (newComments, totalPages) = result.getOrThrow()
-                    if (currentPage == 1) {
-                        _comments.value = newComments
-                    } else {
-                        _comments.value = _comments.value + newComments
+                    // 修复：正确解构 Result
+                    val data = result.getOrNull()
+                    if (data != null) {
+                        val (newComments, totalPages) = data
+                        if (currentPage == 1) {
+                            _comments.value = newComments
+                        } else {
+                            _comments.value = _comments.value + newComments
+                        }
+                        hasMore = currentPage < totalPages
                     }
-                    hasMore = currentPage < totalPages
                 } else {
                     _error.value = "加载评论失败: ${result.exceptionOrNull()?.message}"
                 }

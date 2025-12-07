@@ -20,6 +20,7 @@ interface IAppStoreRepository {
     
     // 新增：上传图片 (主要用于小趣空间图床)
     suspend fun uploadImage(file: File, type: String): Result<String>
+    suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>, Int>>
     
     // 新增：上传APK (主要用于小趣空间第三方图床)
     suspend fun uploadApk(file: File, serviceType: String): Result<String>

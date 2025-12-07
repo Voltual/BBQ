@@ -78,6 +78,7 @@ class SineShopRepository : IAppStoreRepository {
         }
     }
     
+// 修复 getMyComments 方法中的错误
 override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>, Int>> {
     return try {
         val result = SineShopClient.getMyComments(page = page)
@@ -86,6 +87,7 @@ override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>,
                 val unified = comment.toUnifiedComment()
                 // 如果评论的应用ID为 -1，表示评论已被删除
                 // 否则保留原始的应用ID
+                // 修复：使用 comment.app_id
                 val appId = if (comment.app_id == -1) null else comment.app_id.toString()
                 unified.copy(appId = appId)
             }

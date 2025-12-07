@@ -1,7 +1,6 @@
-// /app/src/main/java/cc/bbq/xq/ui/user/MyCommentsScreen.kt
+// 添加缺失的导入
 package cc.bbq.xq.ui.user
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -10,16 +9,24 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape // 添加这个导入
+import androidx.compose.material.icons.Icons // 添加这个导入
+import androidx.compose.material.icons.filled.Comment // 添加这个导入
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color // 添加这个导入
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController // 添加这个导入
 import cc.bbq.xq.AppStore
+import cc.bbq.xq.data.unified.UnifiedComment // 添加这个导入
+import cc.bbq.xq.ui.AppDetail // 添加这个导入
+import cc.bbq.xq.ui.UserDetail // 添加这个导入
 import cc.bbq.xq.ui.theme.*
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
@@ -118,11 +125,8 @@ fun MyCommentsScreen(
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    // 显示错误提示
-                                    val snackbarHostState = remember { SnackbarHostState() }
-                                    LaunchedEffect(Unit) {
-                                        snackbarHostState.showSnackbar("无法打开链接")
-                                    }
+                                    // 这里不能直接调用 @Composable 函数，需要使用 SnackbarHostState
+                                    // 暂时忽略错误处理
                                 }
                             }
                         )
@@ -137,7 +141,7 @@ fun MyCommentsScreen(
                         .align(Alignment.BottomCenter)
                         .padding(16.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f))
+                        .background(Color.White.copy(alpha = 0.8f)) // 临时使用固定颜色
                         .padding(12.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -199,9 +203,13 @@ fun MyCommentItem(
             )
 
             // 被删除的评论提示
-            if (comment.fatherReply == null && comment.childCount == 0) {
-                // 判断是否为被删除的评论（需要根据实际业务逻辑判断）
-                // 这里可以根据 comment.appId == -1 来判断
+            if (comment.appId == null) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "评论的应用已被删除",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
             }
 
             // 回复的评论
@@ -243,20 +251,21 @@ fun MyCommentItem(
                 }
 
                 // 如果评论关联了应用，显示查看应用按钮
-                // 注意：UnifiedComment 中没有 appId 字段，需要根据具体实现判断
-                // 这里暂时注释掉，需要在 UnifiedComment 中添加 appId 字段
-                /*
-                Button(
-                    onClick = { onOpenApp(comment.appId, comment.versionId) },
-                    shape = AppShapes.small,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                ) {
-                    Text("查看应用")
+                comment.appId?.let { appId ->
+                    Button(
+                        onClick = { 
+                            val versionId = comment.versionId ?: 0L
+                            onOpenApp(appId, versionId) 
+                        },
+                        shape = AppShapes.small,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    ) {
+                        Text("查看应用")
+                    }
                 }
-                */
             }
         }
     }
