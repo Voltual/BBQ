@@ -207,17 +207,18 @@ data class SineShopAppDetail(
     @SerialName("audit_user") val audit_user: SineShopUserInfoLite?
 )
 
-    // 新增：弦应用商店专用评论模型
-    @Serializable
-    data class SineShopComment(
-        val id: Int,
-        val content: String,
-        @SerialName("send_time") val send_time: Long,
-        @SerialName("father_reply_id") val father_reply_id: Int,
-        @SerialName("sender") val sender: SineShopUserInfoLite, // 使用 SineShopUserInfoLite
-        @SerialName("child_count") val child_count: Int,
-        @SerialName("father_reply") val father_reply: SineShopComment? // 可能为 null
-    )
+@Serializable
+data class SineShopComment(
+    val id: Int,
+    val content: String,
+    @SerialName("send_time") val send_time: Long,
+    @SerialName("father_reply_id") val father_reply_id: Int,
+    @SerialName("sender") val sender: SineShopUserInfoLite,
+    @SerialName("child_count") val child_count: Int,
+    @SerialName("father_reply") val father_reply: SineShopComment?,
+    // 添加 app_id 字段
+    @SerialName("app_id") val app_id: Int
+)
 
     // 为评论列表定义单独的数据模型
     @Serializable

@@ -63,22 +63,8 @@ class SineShopRepository : IAppStoreRepository {
             Result.failure(e)
         }
     }
-
-    // 新增：专用的版本列表方法，使用 appid 参数
-    suspend fun getAppVersionsByAppId(appId: Int, page: Int = 1): Result<Pair<List<UnifiedAppItem>, Int>> {
-        return try {
-            val result = SineShopClient.getAppVersionsByAppId(appid = appId, page = page)
-            result.map { appListData ->
-                val unifiedItems = appListData.list.map { it.toUnifiedAppItem() }
-                val totalPages = calculateTotalPages(appListData.total)
-                Pair(unifiedItems, totalPages)
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
     
-// 修复 getMyComments 方法中的错误
+    // 修复 getMyComments 方法中的错误
 override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>, Int>> {
     return try {
         val result = SineShopClient.getMyComments(page = page)
@@ -99,6 +85,20 @@ override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>,
     }
 }
 
+    // 新增：专用的版本列表方法，使用 appid 参数
+    suspend fun getAppVersionsByAppId(appId: Int, page: Int = 1): Result<Pair<List<UnifiedAppItem>, Int>> {
+        return try {
+            val result = SineShopClient.getAppVersionsByAppId(appid = appId, page = page)
+            result.map { appListData ->
+                val unifiedItems = appListData.list.map { it.toUnifiedAppItem() }
+                val totalPages = calculateTotalPages(appListData.total)
+                Pair(unifiedItems, totalPages)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     override suspend fun searchApps(query: String, page: Int, userId: String?): Result<Pair<List<UnifiedAppItem>, Int>> {
         return try {
             val result = SineShopClient.getAppsList(keyword = query, page = page)
