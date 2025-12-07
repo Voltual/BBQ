@@ -55,6 +55,7 @@ class BBQApplication : Application() {
         // 初始化 Koin
         startKoin {
             androidContext(this@BBQApplication)
+            modules(AppModule().module)
         }
     }
 
