@@ -16,6 +16,7 @@ import cc.bbq.xq.BBQApplication
 import cc.bbq.xq.KtorClient // 导入 KtorClient
 import kotlinx.coroutines.flow.*
 import org.koin.android.annotation.KoinViewModel
+import cc.bbq.xq.data.SearchHistoryDataStore
 import kotlinx.coroutines.launch
 
 enum class SearchMode {
