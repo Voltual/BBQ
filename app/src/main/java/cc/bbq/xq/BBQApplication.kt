@@ -21,7 +21,11 @@ import cc.bbq.xq.data.SearchHistoryDataStore
 import cc.bbq.xq.data.StorageSettingsDataStore 
 import cc.bbq.xq.data.UpdateSettingsDataStore 
 import cc.bbq.xq.data.UserAgreementDataStore // 导入 UserAgreementDataStore
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.annotation.KoinApplication
+import org.koin.ksp.generated.*
 
+@KoinApplication
 class BBQApplication : Application() {
 
     // 数据库单例
@@ -49,11 +53,10 @@ class BBQApplication : Application() {
         // 加载并应用保存的自定义颜色
         ThemeManager.customColorSet = ThemeColorStore.loadColors(this)
 
-/*        // 初始化 Koin
+        // 初始化 Koin
         startKoin {
             androidContext(this@BBQApplication)
-            modules(appModule)
-        }*/
+        }
     }
 
     companion object {
