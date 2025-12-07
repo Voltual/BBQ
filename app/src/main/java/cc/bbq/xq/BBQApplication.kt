@@ -9,7 +9,6 @@
 package cc.bbq.xq
 
 import android.app.Application
-import cc.bbq.xq.data.ProcessedPostsDataStore
 import cc.bbq.xq.ui.theme.ThemeManager
 import cc.bbq.xq.ui.theme.ThemeColorStore
 import kotlinx.coroutines.CoroutineScope
