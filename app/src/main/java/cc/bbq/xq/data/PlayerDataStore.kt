@@ -20,10 +20,12 @@ import cc.bbq.xq.ui.player.PlayerSettings
 import cc.bbq.xq.ui.player.VideoScaleMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.koin.core.annotation.Single
 
 // 使用属性委托创建 DataStore 实例
 private val Context.playerDataStore: DataStore<Preferences> by preferencesDataStore(name = "player_settings")
 
+@Single
 class PlayerDataStore(context: Context) {
 
     private val dataStore = context.playerDataStore

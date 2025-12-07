@@ -15,10 +15,12 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import org.koin.core.annotation.Single
 import kotlinx.coroutines.flow.map
 
 val Context.draftDataStore: DataStore<Preferences> by preferencesDataStore(name = "post_draft")
 
+@Single
 class PostDraftDataStore(private val context: Context) {
     companion object {
         private val DRAFT_TITLE = stringPreferencesKey("draft_title")

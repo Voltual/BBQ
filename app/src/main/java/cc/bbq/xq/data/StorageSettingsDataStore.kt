@@ -9,9 +9,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import org.koin.core.annotation.Single
 
 private val Context.storageSettingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "storage_settings")
 
+@Single
 class StorageSettingsDataStore(context: Context) {
 
     private val dataStore: DataStore<Preferences> = context.storageSettingsDataStore

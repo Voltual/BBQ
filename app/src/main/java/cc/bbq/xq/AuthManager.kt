@@ -20,11 +20,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import java.io.File
 import java.io.FileNotFoundException
-import org.koin.core.annotation.Single
 
 private const val ENCRYPTED_FILE_NAME = "user_credentials_encrypted.pb"
 
-@Single
 object AuthManager {
 
     private lateinit var masterKey: MasterKey

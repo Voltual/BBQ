@@ -25,24 +25,8 @@ import cc.bbq.xq.data.UserAgreementDataStore // 导入 UserAgreementDataStore
 
 class BBQApplication : Application() {
 
-    // DataStore 单例
-    lateinit var processedPostsDataStore: ProcessedPostsDataStore
-        private set
-
-    lateinit var searchHistoryDataStore: SearchHistoryDataStore // 新增
-        private set
-
-    // 新增：数据库单例
+    // 数据库单例
     lateinit var database: AppDatabase
-        private set
-
-    lateinit var storageSettingsDataStore: StorageSettingsDataStore // 新增
-        private set
-
-    lateinit var updateSettingsDataStore: UpdateSettingsDataStore // 新增
-        private set
-
-    lateinit var userAgreementDataStore: UserAgreementDataStore // 新增
         private set
 
     override fun onCreate() {
@@ -53,12 +37,7 @@ class BBQApplication : Application() {
         AuthManager.initialize(this) 
 
         // 初始化所有单例
-        processedPostsDataStore = ProcessedPostsDataStore(this)
         database = AppDatabase.getDatabase(this) // 初始化数据库
-        searchHistoryDataStore = SearchHistoryDataStore(this) 
-        storageSettingsDataStore = StorageSettingsDataStore(this)
-        updateSettingsDataStore = UpdateSettingsDataStore
-        userAgreementDataStore = UserAgreementDataStore(this) // 新增用户协议
 
         // 初始化 AuthManager 并执行迁移
         CoroutineScope(Dispatchers.IO).launch {
@@ -71,11 +50,11 @@ class BBQApplication : Application() {
         // 加载并应用保存的自定义颜色
         ThemeManager.customColorSet = ThemeColorStore.loadColors(this)
 
-        // 初始化 Koin
+/*        // 初始化 Koin
         startKoin {
             androidContext(this@BBQApplication)
             modules(appModule)
-        }
+        }*/
     }
 
     companion object {
