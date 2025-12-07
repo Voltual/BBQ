@@ -69,6 +69,7 @@ val appModule = module {
     viewModel { UpdateSettingsViewModel() }
     viewModel { HomeViewModel() }
     viewModel { VersionListViewModel(androidApplication(), get<SineShopRepository>()) }
+    viewModel { MyCommentsViewModel(androidApplication(), get()) }
 
     // Singletons
     single { AuthManager }
