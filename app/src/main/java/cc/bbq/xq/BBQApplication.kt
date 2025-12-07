@@ -23,7 +23,6 @@ import cc.bbq.xq.data.UpdateSettingsDataStore
 import cc.bbq.xq.data.UserAgreementDataStore // 导入 UserAgreementDataStore
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.annotation.KoinApplication
-import org.koin.ksp.generated.*
 
 @KoinApplication
 class BBQApplication : Application() {
