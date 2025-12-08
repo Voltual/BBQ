@@ -16,24 +16,24 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
-import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
 import coil3.util.DebugLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okio.FileSystem
-import okio.Path
-import okio.Path.Companion.toPath
-import java.io.File
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import cc.bbq.xq.data.db.AppDatabase
-import cc.bbq.xq.data.SearchHistoryDataStore
-import cc.bbq.xq.data.StorageSettingsDataStore
-import cc.bbq.xq.data.UpdateSettingsDataStore
-import cc.bbq.xq.data.UserAgreementDataStore
 import org.koin.core.annotation.KoinApplication
+
+// Coil 3 相关导入
+import java.io.File // 🛠️ 修正: 导入 File
+import okio.Path // 🛠️ 修正: 导入 okio Path
+import okio.Path.Companion.toPath // 🛠️ 修正: 导入 toPath 扩展
+import coil3.intercept.Interceptor
+import coil3.intercept.Interceptor.Chain
+import coil3.request.CachePolicy
+import coil3.request.ImageResult
 
 @KoinApplication
 class BBQApplication : Application(), SingletonImageLoader.Factory {
@@ -65,37 +65,65 @@ class BBQApplication : Application(), SingletonImageLoader.Factory {
         // 初始化 Koin
         startKoin {
             androidContext(this@BBQApplication)
-            modules(appModule)
+            modules(appModule) // 假设 appModule 已经定义
         }
     }
     
     override fun newImageLoader(context: PlatformContext): ImageLoader {
-        return ImageLoader.Builder(context)
-            .crossfade(true)
-            .logger(DebugLogger())
-            .memoryCache {
-                MemoryCache.Builder()
-                    .maxSizePercent(context, 0.25)
-                    .build()
-            }
-            .diskCache {
-                DiskCache.Builder()
-                    .directory(getCacheDirPath(context))
-                    .maxSizePercent(0.02)
-                    .build()
-            }
-            .networkFetcherFactory(KtorNetworkFetcherFactory())
-            .build()
+    return ImageLoader.Builder(context)
+        .crossfade(true)
+        .logger(DebugLogger())
+        .memoryCache {
+            MemoryCache.Builder()
+                .maxSizePercent(context, 0.25)
+                .build()
+        }
+        .diskCache {
+            DiskCache.Builder()
+                // 🛠️ 修正: 使用 File.toOkioPath() 扩展函数
+                .directory(context.cacheDir.resolve("image_cache").toOkioPath()) 
+                .maxSizePercent(0.02)
+                .build()
+        }
+        .components {
+            // 🛠️ 修正: 添加 CustomCacheInterceptor，它实现了 Interceptor 接口
+            add(CustomCacheInterceptor()) 
+        }
+        .build()
     }
 
-    private fun getCacheDirPath(context: PlatformContext): Path {
-        val cacheDir = File(context.androidContext.cacheDir, "image_cache")
-        if (!cacheDir.exists()) cacheDir.mkdirs()
-        return cacheDir.absolutePath.toPath()
-    }
-
+    // 🛠️ 修正: 扩展函数：File 转 Okio Path
+    private fun File.toOkioPath(): Path = absolutePath.toPath()
+    
     companion object {
         lateinit var instance: BBQApplication
             private set
+    }
+}
+
+/**
+ * 🛠️ 修正: 将 CacheStrategy 更改为 Interceptor。
+ * Interceptor 允许我们在 Coil 执行请求链（包括缓存和网络）时注入自定义逻辑。
+ * 目标是禁用特定 URL 的磁盘缓存。
+ */
+class CustomCacheInterceptor : Interceptor {
+    override suspend fun intercept(chain: Chain): ImageResult {
+        val request = chain.request
+        // Coil 3 通常使用 Any 作为 data，通常是 String URL
+        val url = request.data as? String 
+
+        if (url != null && url.startsWith("https://static.market.sineworld.cn/images/user_avatar/")) {
+            // 检查URL是否是用户头像，如果是，则创建一个新的 Request，
+            // 显式禁用磁盘缓存（读/写）。
+            val newRequest = request.newBuilder()
+                .diskCachePolicy(CachePolicy.DISABLED) // 禁用磁盘缓存的读取和写入
+                .build()
+            
+            // 继续链，使用新的请求
+            return chain.proceed(newRequest)
+        }
+        
+        // 对于其他所有 URL，使用原始请求继续
+        return chain.proceed(request)
     }
 }
