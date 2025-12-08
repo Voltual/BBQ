@@ -342,7 +342,7 @@ composable(route = FanList.route) {
     )
 }
 
-        composable(route = AccountProfile.route, arguments = AccountProfile.arguments) { backStackEntry ->
+composable(route = AccountProfile.route, arguments = AccountProfileArgs.arguments) { backStackEntry ->
     val storeName = backStackEntry.arguments?.getString("store") ?: AppStore.XIAOQU_SPACE.name
     val store = try {
         AppStore.valueOf(storeName)

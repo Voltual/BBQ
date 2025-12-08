@@ -197,15 +197,16 @@ object FanList : AppDestination {
 object AccountProfile : AppDestination {
     override val route = "account_profile?store={store}"
     fun createRoute(store: AppStore = AppStore.XIAOQU_SPACE) = "account_profile?store=${store.name}"
+}
 
-    companion object {
-        val arguments = listOf(
-            navArgument("store") { 
-                type = NavType.StringType 
-                defaultValue = AppStore.XIAOQU_SPACE.name 
-            }
-        )
-    }
+// 修复：将 companion object 移到外部
+companion object AccountProfileArgs {
+    val arguments = listOf(
+        navArgument("store") { 
+            type = NavType.StringType 
+            defaultValue = AppStore.XIAOQU_SPACE.name 
+        }
+    )
 }
 
 // --- 资源广场与应用 ---
