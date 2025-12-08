@@ -47,7 +47,7 @@ jobs:
 
       - name: Build with Gradle
         run: |
-                                       ./gradlew assembleDebug -x validateSigningDebug
+                                       ./gradlew assembleDebug 
 
       - name: Get version info
         id: version
