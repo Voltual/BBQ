@@ -33,6 +33,7 @@ import cc.bbq.xq.ui.theme.BBQCard
 import coil3.compose.AsyncImage
 import cc.bbq.xq.SineShopClient // 导入 SineShopClient
 import androidx.compose.foundation.clickable // 导入 clickable
+import cc.bbq.xq.AppStore
 import cc.bbq.xq.ui.AccountProfile
 import cc.bbq.xq.ui.AppStore
 import cc.bbq.xq.ui.Update // 导入 Update 导航目标

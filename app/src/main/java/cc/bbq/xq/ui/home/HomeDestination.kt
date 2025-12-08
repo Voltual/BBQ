@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier // 新增导入
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import cc.bbq.xq.AppStore
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.restartMainActivity
 import cc.bbq.xq.ui.theme.BBQTheme
