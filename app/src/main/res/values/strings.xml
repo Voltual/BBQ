@@ -84,8 +84,9 @@
    <string name="update_load_apps_failed">加载应用列表失败: %1$s</string>
        <string name="user_info_changed">用户信息修改成功</string>
     <string name="user_info_change_failed">用户信息修改失败</string>
-    string name="not_logged_in">请先登录</string>
-    <string name="unsupported_platform">不支持的平台</string>  
+    <string name="not_logged_in">请先登录</string>
+    <string name="unsupported_platform">不支持的平台</string>
+    
 
     
 </resources>
