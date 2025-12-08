@@ -111,7 +111,7 @@ class CustomCacheInterceptor : Interceptor {
         // Coil 3 通常使用 Any 作为 data，通常是 String URL
         val url = request.data as? String 
 
-        if (url != null && url.startsWith("https://static.market.sineworld.cn/images/user_avatar/")) {
+        if (url != null && url.startsWith("https://static.market.sineworld.cn/images/user_avatar/15599.jpg")) {
             // 检查URL是否是用户头像，如果是，则创建一个新的 Request，
             // 显式禁用磁盘缓存（读/写）。
             val newRequest = request.newBuilder()
