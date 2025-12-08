@@ -481,6 +481,29 @@ suspend fun getAppVersionsByPackage(appId: Int, page: Int = 1): Result<AppListDa
     }
 }
 
+// 修改外显名称和个人描述
+suspend fun editUserInfo(displayName: String, describe: String): Result<Boolean> {
+    val url = "/user/edit"
+    val parameters = sineShopParameters {
+        append("displayname", displayName)
+        append("describe", describe)
+    }
+    return safeApiCall<BaseResponse<Boolean>> {
+        httpClient.post(url) {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(FormDataContent(parameters))
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response: BaseResponse<Boolean> ->
+        if (response.code == 0) {
+            response.data ?: false
+        } else {
+            throw IOException("Failed to edit user info: ${response.msg}")
+        }
+    }
+}
+
 // 新增：获取我的评论列表方法
 suspend fun getMyComments(page: Int = 1): Result<SineShopCommentListData> {
     val url = "/reply/mine"
@@ -503,6 +526,39 @@ suspend fun getMyComments(page: Int = 1): Result<SineShopCommentListData> {
         } else {
             throw IOException("Failed to get my comments: ${response.msg}")
         }
+    }
+}
+
+// 上传头像
+suspend fun uploadAvatar(imageData: ByteArray, filename: String): Result<Boolean> {
+    try {
+        val response: HttpResponse = httpClient.post("/user/avatar") {
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append("image", imageData, Headers.build {
+                            append(HttpHeaders.ContentType, "image/jpeg")
+                            append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
+                        })
+                    }
+                )
+            )
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+
+        // 检查状态码是否成功
+        if (!response.status.isSuccess()) {
+            return Result.failure(IOException("Request failed with status ${response.status.value}"))
+        }
+
+        // 使用 Ktor 的 body<T>() 函数解析 JSON 响应
+        val baseResponse: BaseResponse<Boolean> = response.body()
+
+        return Result.success(baseResponse.data ?: false)
+
+    } catch (e: Exception) {
+        return Result.failure(e)
     }
 }
 
