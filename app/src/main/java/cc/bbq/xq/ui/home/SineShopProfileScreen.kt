@@ -33,8 +33,11 @@ import cc.bbq.xq.ui.theme.BBQCard
 import coil3.compose.AsyncImage
 import cc.bbq.xq.SineShopClient // 导入 SineShopClient
 import androidx.compose.foundation.clickable // 导入 clickable
+import cc.bbq.xq.ui.AccountProfile
+import cc.bbq.xq.ui.AppStore
 import cc.bbq.xq.ui.Update // 导入 Update 导航目标
 import cc.bbq.xq.ui.MyComments // 导入 MyComments 导航目标
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +46,8 @@ fun SineShopProfileScreen(
     modifier: Modifier = Modifier,
     onNavigateToResourcePlaza: (String) -> Unit = {}, // 添加导航回调参数
     onNavigateToUpdate: () -> Unit = {}, // 新增：导航到更新屏幕的回调
-    onNavigateToMyComments: () -> Unit = {} // 新增：导航到我的评论的回调
+    onNavigateToMyComments: () -> Unit = {}, // 新增：导航到我的评论的回调
+    navController: NavController // 添加NavController
 ) {
     Column(
         modifier = modifier
@@ -131,7 +135,7 @@ fun SineShopProfileScreen(
         FunctionCard(
             icon = Icons.Filled.Edit,
             label = "编辑账号信息",
-            onClick = { /* TODO: Implement edit profile */ }
+            onClick = { navController.navigate(AccountProfile.createRoute(AppStore.SIENE_SHOP)) } // 修改为导航到弦应用商店修改用户信息屏幕
         )
 /*        FunctionCard(
             icon = Icons.Filled.Security,

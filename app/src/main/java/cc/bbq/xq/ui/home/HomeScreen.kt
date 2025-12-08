@@ -174,7 +174,8 @@ fun HomeScreen(
                             }
                         },
                         onNavigateToUpdate = onNavigateToUpdate,
-                        onNavigateToMyComments = onNavigateToMyComments
+                        onNavigateToMyComments = onNavigateToMyComments,
+                        navController = navController
                     )
                 }
             }
