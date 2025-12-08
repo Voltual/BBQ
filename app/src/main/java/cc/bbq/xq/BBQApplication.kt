@@ -16,12 +16,8 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
-import coil3.network.CacheStrategy
-import coil3.network.NetworkResponse
 import coil3.network.ktor3.KtorNetworkFetcherFactory
-import coil3.request.ImageRequest
 import coil3.request.crossfade
-import coil3.request.Options
 import coil3.util.DebugLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,11 +29,8 @@ import cc.bbq.xq.data.SearchHistoryDataStore
 import cc.bbq.xq.data.StorageSettingsDataStore
 import cc.bbq.xq.data.UpdateSettingsDataStore
 import cc.bbq.xq.data.UserAgreementDataStore
-import org.koin.android.ext.koin.androidContext
 import org.koin.core.annotation.KoinApplication
-import kotlin.time.Duration.Companion.days
-import coil3.ComponentRegistry
-import coil3.network.NetworkRequest
+import java.nio.file.Paths
 
 @KoinApplication
 class BBQApplication : Application(), SingletonImageLoader.Factory {
@@ -84,14 +77,9 @@ class BBQApplication : Application(), SingletonImageLoader.Factory {
             }
             .diskCache {
                 DiskCache.Builder()
-                    .directory(context.cacheDir.resolve("image_cache"))
+                    .directory(Paths.get(context.cacheDir.absolutePath, "image_cache"))
                     .maxSizePercent(0.02)
                     .build()
-            }
-            .networkFetcherFactory(KtorNetworkFetcherFactory())
-            // 添加自定义缓存策略
-            .components {
-                add(CacheStrategy.Factory { CustomCacheStrategy() })
             }
             .build()
     }
@@ -99,45 +87,5 @@ class BBQApplication : Application(), SingletonImageLoader.Factory {
     companion object {
         lateinit var instance: BBQApplication
             private set
-    }
-}
-
-// 自定义缓存策略
-class CustomCacheStrategy : CacheStrategy {
-    override suspend fun read(
-        cacheResponse: NetworkResponse,
-        networkRequest: NetworkRequest,
-        options: Options
-    ): CacheStrategy.ReadResult? {
-        // 检查是否是用户头像URL
-        val url = networkRequest.data?.toString() ?: return null
-        if (url.startsWith("https://static.market.sineworld.cn/images/user_avatar/")) {
-            // 对用户头像URL禁用缓存
-            return CacheStrategy.ReadResult.new(
-                cacheResponse = null,
-                diskReadAtStart = false
-            )
-        }
-        
-        // 对于其他URL，使用默认的缓存策略
-        return null
-    }
-    
-    override suspend fun write(
-        cacheResponse: NetworkResponse?,
-        networkRequest: NetworkRequest,
-        networkResponse: NetworkResponse,
-        options: Options
-    ): CacheStrategy.WriteResult {
-        // 检查是否是用户头像URL
-        val url = networkRequest.data?.toString() ?: return CacheStrategy.WriteResult.UseDelegate
-
-        if (url.startsWith("https://static.market.sineworld.cn/images/user_avatar/")) {
-            // 对用户头像URL不写入缓存
-            return CacheStrategy.WriteResult.Skip
-        }
-        
-        // 对于其他URL，使用默认的缓存策略
-        return CacheStrategy.WriteResult.UseDelegate
     }
 }
