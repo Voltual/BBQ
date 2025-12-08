@@ -17,9 +17,11 @@ import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.CacheStrategy
+import coil3.network.NetworkResponse
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import coil3.request.Options
 import coil3.util.DebugLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +36,8 @@ import cc.bbq.xq.data.UserAgreementDataStore
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.annotation.KoinApplication
 import kotlin.time.Duration.Companion.days
+import coil3.ComponentRegistry
+import coil3.network.NetworkRequest
 
 @KoinApplication
 class BBQApplication : Application(), SingletonImageLoader.Factory {
@@ -87,7 +91,7 @@ class BBQApplication : Application(), SingletonImageLoader.Factory {
             .networkFetcherFactory(KtorNetworkFetcherFactory())
             // 添加自定义缓存策略
             .components {
-                add(CustomCacheStrategy())
+                add(CacheStrategy.Factory { CustomCacheStrategy() })
             }
             .build()
     }
@@ -104,16 +108,19 @@ class CustomCacheStrategy : CacheStrategy {
         cacheResponse: NetworkResponse,
         networkRequest: NetworkRequest,
         options: Options
-    ): CacheStrategy.ReadResult {
+    ): CacheStrategy.ReadResult? {
         // 检查是否是用户头像URL
-        val url = networkRequest.data.toString()
+        val url = networkRequest.data?.toString() ?: return null
         if (url.startsWith("https://static.market.sineworld.cn/images/user_avatar/")) {
             // 对用户头像URL禁用缓存
-            return CacheStrategy.ReadResult.SkipCache
+            return CacheStrategy.ReadResult.new(
+                cacheResponse = null,
+                diskReadAtStart = false
+            )
         }
         
         // 对于其他URL，使用默认的缓存策略
-        return CacheStrategy.Default.read(cacheResponse, networkRequest, options)
+        return null
     }
     
     override suspend fun write(
@@ -123,13 +130,14 @@ class CustomCacheStrategy : CacheStrategy {
         options: Options
     ): CacheStrategy.WriteResult {
         // 检查是否是用户头像URL
-        val url = networkRequest.data.toString()
+        val url = networkRequest.data?.toString() ?: return CacheStrategy.WriteResult.UseDelegate
+
         if (url.startsWith("https://static.market.sineworld.cn/images/user_avatar/")) {
             // 对用户头像URL不写入缓存
-            return CacheStrategy.WriteResult.SkipCache
+            return CacheStrategy.WriteResult.Skip
         }
         
         // 对于其他URL，使用默认的缓存策略
-        return CacheStrategy.Default.write(cacheResponse, networkRequest, networkResponse, options)
+        return CacheStrategy.WriteResult.UseDelegate
     }
 }
