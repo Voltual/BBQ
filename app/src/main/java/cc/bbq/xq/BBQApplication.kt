@@ -17,7 +17,7 @@ import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.CacheStrategy
-import coil3.network.ktor.KtorNetworkFetcherFactory
+import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import coil3.util.DebugLogger
