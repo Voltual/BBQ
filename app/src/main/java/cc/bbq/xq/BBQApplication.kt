@@ -5,11 +5,10 @@
 // 有关更多细节，请参阅 GNU 通用公共许可证。
 //
 // 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
+// 如果没有，请查阅 <http://www.gnu.org/licenses/>.
 package cc.bbq.xq
 
 import android.app.Application
-import android.content.Context
 import cc.bbq.xq.ui.theme.ThemeManager
 import cc.bbq.xq.ui.theme.ThemeColorStore
 import coil3.ImageLoader
@@ -18,11 +17,8 @@ import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.network.CacheStrategy
-import coil3.network.NetworkRequest
-import coil3.network.NetworkResponse
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.ImageRequest
-import coil3.request.Options
 import coil3.request.crossfade
 import coil3.util.DebugLogger
 import kotlinx.coroutines.CoroutineScope
@@ -37,7 +33,9 @@ import cc.bbq.xq.data.UpdateSettingsDataStore
 import cc.bbq.xq.data.UserAgreementDataStore
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.annotation.KoinApplication
-import okio.Path
+import okio.FileSystem
+import okio.Path.Companion.toOkioPath
+import kotlin.time.Duration.Companion.days
 
 @KoinApplication
 class BBQApplication : Application(), SingletonImageLoader.Factory {
@@ -84,13 +82,13 @@ class BBQApplication : Application(), SingletonImageLoader.Factory {
             }
             .diskCache {
                 DiskCache.Builder()
-                    .directory(context.cacheDir.toPath())
+                    .directory(context.cacheDir.resolve("image_cache").toOkioPath())
                     .maxSizePercent(0.02)
                     .build()
             }
-            .networkFetcherFactory(KtorNetworkFetcherFactory())
-            // 添加自定义缓存策略
+            // 添加自定义缓存策略和网络fetcher
             .components {
+                add(KtorNetworkFetcherFactory())
                 add(CustomCacheStrategy())
             }
             .build()
@@ -136,9 +134,4 @@ class CustomCacheStrategy : CacheStrategy {
         // 对于其他URL，使用默认的缓存策略
         return CacheStrategy.DEFAULT.write(cacheResponse, networkRequest, networkResponse, options)
     }
-}
-
-// 扩展函数：将 File 转换为 Path
-private fun java.io.File.toPath(): Path {
-    return Path(this.absolutePath)
 }
