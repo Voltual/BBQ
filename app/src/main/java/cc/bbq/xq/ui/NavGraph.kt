@@ -342,12 +342,20 @@ composable(route = FanList.route) {
     )
 }
 
-        composable(route = AccountProfile.route) {
-            AccountProfileScreen(
-                modifier = Modifier.fillMaxSize(),
-                snackbarHostState = snackbarHostState // 传递 SnackbarHostState
-            )
-        }
+        composable(route = AccountProfile.route, arguments = AccountProfile.arguments) { backStackEntry ->
+    val storeName = backStackEntry.arguments?.getString("store") ?: AppStore.XIAOQU_SPACE.name
+    val store = try {
+        AppStore.valueOf(storeName)
+    } catch (e: IllegalArgumentException) {
+        AppStore.XIAOQU_SPACE
+    }
+    
+    AccountProfileScreen(
+        modifier = Modifier.fillMaxSize(),
+        snackbarHostState = snackbarHostState,
+        store = store // 传递 store 参数
+    )
+}
 
         // --- 资源广场 ---
 composable(route = ResourcePlaza(false).route, arguments = ResourcePlaza.arguments) { backStackEntry ->

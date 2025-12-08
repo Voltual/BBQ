@@ -32,7 +32,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.KtorClient
+import cc.bbq.xq.SineShopClient
+import cc.bbq.xq.AppStore // 导入 AppStore 枚举
 import cc.bbq.xq.data.DeviceNameDataStore
+import cc.bbq.xq.data.unified.UnifiedUserDetail
+import cc.bbq.xq.data.unified.toUnifiedUserDetail
 import cc.bbq.xq.util.FileUtil
 import coil3.compose.rememberAsyncImagePainter
 import com.github.dhaval2404.imagepicker.ImagePicker
@@ -46,9 +50,15 @@ import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
 
 @Composable
-fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: SnackbarHostState) {
+fun AccountProfileScreen(
+    modifier: Modifier = Modifier, 
+    snackbarHostState: SnackbarHostState,
+    store: AppStore = AppStore.XIAOQU_SPACE // 新增：支持两种模式
+) {
     var nickname by rememberSaveable { mutableStateOf("") }
     var qqNumber by rememberSaveable { mutableStateOf("") }
+    var displayName by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
     var avatarUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     var showProgressDialog by rememberSaveable { mutableStateOf(false) }
     var progressMessage by rememberSaveable { mutableStateOf("") }
@@ -62,6 +72,55 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
         deviceName = deviceNameDataStore.deviceNameFlow.first()
     }
 
+    // 新增：根据 store 类型加载用户信息
+    LaunchedEffect(store) {
+        when (store) {
+            AppStore.XIAOQU_SPACE -> {
+                // 小趣空间：加载用户信息
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()
+                val token = userCredentials?.token
+                
+                if (token != null) {
+                    val userInfoResult = KtorClient.ApiServiceImpl.getUserInfo(
+                        appid = 1,
+                        token = token
+                    )
+                    
+                    if (userInfoResult.isSuccess) {
+                        val userInfo = userInfoResult.getOrNull()
+                        if (userInfo?.code == 1) {
+                            nickname = userInfo.data.nickname
+                            displayName = userInfo.data.nickname
+                            avatarUrl = userInfo.data.usertx
+                        }
+                    }
+                }
+            }
+            AppStore.SIENE_SHOP -> {
+                // 弦应用商店：加载用户信息
+                val sineShopCredentials = AuthManager.getSineMarketToken(context)
+                val token = sineShopCredentials
+                
+                if (token != null) {
+                    val userInfoResult = SineShopClient.getUserInfo()
+                    
+                    if (userInfoResult.isSuccess) {
+                        val userInfo = userInfoResult.getOrNull()
+                        if (userInfo != null) {
+                            displayName = userInfo.displayName
+                            description = userInfo.userDescribe ?: ""
+                            avatarUrl = userInfo.userAvatar ?: ""
+                        }
+                    }
+                }
+            }
+            else -> {
+                // 其他平台不需要加载
+            }
+        }
+    }
+
     Scaffold(
         snackbarHost = { BBQSnackbarHost(snackbarHostState) },
         modifier = modifier.fillMaxSize(),
@@ -73,21 +132,46 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            OutlinedTextField(
-                value = nickname,
-                onValueChange = { nickname = it },
-                label = { Text("修改昵称") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            // 根据 store 类型显示不同的输入字段
+            when (store) {
+                AppStore.XIAOQU_SPACE -> {
+                    OutlinedTextField(
+                        value = nickname,
+                        onValueChange = { nickname = it },
+                        label = { Text("修改昵称") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = qqNumber,
-                onValueChange = { qqNumber = it },
-                label = { Text("修改QQ号") },
-                modifier = Modifier.fillMaxWidth()
-            )
+                    OutlinedTextField(
+                        value = qqNumber,
+                        onValueChange = { qqNumber = it },
+                        label = { Text("修改QQ号") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                AppStore.SIENE_SHOP -> {
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = { displayName = it },
+                        label = { Text("外显名称") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("个人描述") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                else -> {
+                    // 其他平台不需要显示输入字段
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -105,12 +189,10 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
                 avatarUrl = avatarUrl,
                 onAvatarSelected = { uri ->
                     coroutineScope.launch {
-                        // 直接调用非Composable函数
                         uploadAvatar(
                             context = context,
                             uri = uri,
-//                            coroutineScope = coroutineScope,
-//                            snackbarHostState = snackbarHostState,
+                            store = store, // 传递 store 参数
                             onProgress = { message ->
                                 showProgressDialog = true
                                 progressMessage = message
@@ -137,11 +219,13 @@ fun AccountProfileScreen(modifier: Modifier = Modifier, snackbarHostState: Snack
             Button(
                 onClick = {
                     coroutineScope.launch {
-                        // 直接调用非Composable函数
                         saveChanges(
                             context = context,
                             nickname = nickname,
                             qqNumber = qqNumber,
+                            displayName = displayName,
+                            description = description,
+                            store = store, // 传递 store 参数
                             coroutineScope = coroutineScope,
                             snackbarHostState = snackbarHostState,
                             onDeviceNameSaved = {
@@ -235,20 +319,15 @@ fun AvatarUploadSection(
     }
 }
 
-// 移除了 @Composable 注解，这是一个普通的挂起函数操作
+// 修改 uploadAvatar 函数，支持两种模式
 suspend fun uploadAvatar(
     context: Context,
     uri: Uri,
-//    coroutineScope: CoroutineScope,
-//    snackbarHostState: SnackbarHostState,
+    store: AppStore = AppStore.XIAOQU_SPACE, // 新增：支持两种模式
     onProgress: (String) -> Unit = {},
     onComplete: () -> Unit = {},
     onError: (String) -> Unit = {}
 ) {
-    val userCredentialsFlow = AuthManager.getCredentials(context)
-    val userCredentials = userCredentialsFlow.first()
-    val token = userCredentials?.token
-
     try {
         withContext(Dispatchers.Main) {
             onProgress("上传头像中...")
@@ -265,30 +344,80 @@ suspend fun uploadAvatar(
         val file = File(realPath)
         val bytes = file.readBytes()
 
-        val appid = 1
-        //val token = credentials?.third ?: ""
+        when (store) {
+            AppStore.XIAOQU_SPACE -> {
+                // 小趣空间上传头像
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()
+                val token = userCredentials?.token
 
-        val uploadResult = KtorClient.ApiServiceImpl.uploadAvatar(
-            appid = appid,
-            token = token!!,
-            file = bytes,
-            filename = file.name
-        )
+                if (token != null) {
+                    val uploadResult = KtorClient.ApiServiceImpl.uploadAvatar(
+                        appid = 1,
+                        token = token,
+                        file = bytes,
+                        filename = file.name
+                    )
 
-        if (uploadResult.isSuccess) {
-            val response = uploadResult.getOrNull()
-            if (response?.code == 1) {
-                withContext(Dispatchers.Main) {
-                    onComplete()
-                }
-            } else {
-                withContext(Dispatchers.Main) {
-                    onError("头像上传失败: ${response?.msg ?: "未知错误"}")
+                    if (uploadResult.isSuccess) {
+                        val response = uploadResult.getOrNull()
+                        if (response?.code == 1) {
+                            withContext(Dispatchers.Main) {
+                                onComplete()
+                            }
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                onError("头像上传失败: ${response?.msg ?: "未知错误"}")
+                            }
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            onError("头像上传失败: ${uploadResult.exceptionOrNull()?.message ?: "未知错误"}")
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        onError("未登录")
+                    }
                 }
             }
-        } else {
-            withContext(Dispatchers.Main) {
-                onError("头像上传失败: ${uploadResult.exceptionOrNull()?.message ?: "未知错误"}")
+            AppStore.SIENE_SHOP -> {
+                // 弦应用商店上传头像
+                val sineShopCredentials = AuthManager.getSineMarketToken(context)
+                val token = sineShopCredentials
+                
+                if (token != null) {
+                    val uploadResult = SineShopClient.uploadAvatar(
+                        imageData = bytes,
+                        filename = file.name
+                    )
+
+                    if (uploadResult.isSuccess) {
+                        val response = uploadResult.getOrNull()
+                        if (response) {
+                            withContext(Dispatchers.Main) {
+                                onComplete()
+                            }
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                onError("头像上传失败")
+                            }
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            onError("头像上传失败: ${uploadResult.exceptionOrNull()?.message ?: "未知错误"}")
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        onError("未登录")
+                    }
+                }
+            }
+            else -> {
+                withContext(Dispatchers.Main) {
+                    onError("不支持的平台")
+                }
             }
         }
     } catch (e: Exception) {
@@ -298,78 +427,153 @@ suspend fun uploadAvatar(
     }
 }
 
-// 移除了 @Composable 注解，这是一个普通的挂起函数操作
+// 修改 saveChanges 函数，支持两种模式
 suspend fun saveChanges(
     context: Context,
     nickname: String,
     qqNumber: String,
-    @Suppress("UNUSED_PARAMETER") coroutineScope: CoroutineScope, //fixed: mark as unused
+    displayName: String,
+    description: String,
+    store: AppStore = AppStore.XIAOQU_SPACE, // 新增：支持两种模式
+    coroutineScope: CoroutineScope,
     snackbarHostState: SnackbarHostState,
     onDeviceNameSaved: () -> Unit
 ) {
-    val userCredentialsFlow = AuthManager.getCredentials(context)
-    val userCredentials = userCredentialsFlow.first()
-    val token = userCredentials?.token
-
     try {
-        if (nickname.isNotEmpty()) {
-            val nicknameResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
-                appid = 1,
-                token = token!!,
-                nickname = nickname,
-                qq = null
-            )
-            if (nicknameResponse.isSuccess) {
-                withContext(Dispatchers.Main) {
-                    if (nicknameResponse.getOrNull()?.code == 1) {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = context.getString(R.string.nickname_changed),
-                                duration = SnackbarDuration.Short
-                            )
+        when (store) {
+            AppStore.XIAOQU_SPACE -> {
+                // 小趣空间保存修改
+                val userCredentialsFlow = AuthManager.getCredentials(context)
+                val userCredentials = userCredentialsFlow.first()
+                val token = userCredentials?.token
+
+                if (token != null) {
+                    if (nickname.isNotEmpty()) {
+                        val nicknameResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
+                            appid = 1,
+                            token = token,
+                            nickname = nickname,
+                            qq = null
+                        )
+                        if (nicknameResponse.isSuccess) {
+                            withContext(Dispatchers.Main) {
+                                if (nicknameResponse.getOrNull()?.code == 1) {
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = context.getString(R.string.nickname_changed),
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
+                                } else {
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = context.getString(
+                                                R.string.nickname_change_failed,
+                                                nicknameResponse.getOrNull()?.msg ?: ""
+                                            ),
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
+                                }
+                            }
                         }
-                    } else {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = context.getString(
-                                    R.string.nickname_change_failed,
-                                    nicknameResponse.getOrNull()?.msg ?: ""
-                                ),
-                                duration = SnackbarDuration.Short
-                            )
+                    }
+
+                    if (qqNumber.isNotEmpty()) {
+                        val qqResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
+                            appid = 1,
+                            token = token,
+                            nickname = null,
+                            qq = qqNumber
+                        )
+                        if (qqResponse.isSuccess) {
+                            withContext(Dispatchers.Main) {
+                                if (qqResponse.getOrNull()?.code == 1) {
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = context.getString(R.string.qq_changed),
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
+                                } else {
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = context.getString(
+                                                R.string.qq_change_failed,
+                                                qqResponse.getOrNull()?.msg ?: ""
+                                            ),
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
+                                }
+                            }
                         }
+                    }
+                } else {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = context.getString(R.string.not_logged_in),
+                            duration = SnackbarDuration.Short
+                        )
                     }
                 }
             }
-        }
-
-        if (qqNumber.isNotEmpty()) {
-            val qqResponse = KtorClient.ApiServiceImpl.modifyUserInfo(
-                appid = 1,
-                token = token!!,
-                nickname = null,
-                qq = qqNumber
-            )
-            if (qqResponse.isSuccess) {
-                withContext(Dispatchers.Main) {
-                    if (qqResponse.getOrNull()?.code == 1) {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = context.getString(R.string.qq_changed),
-                                duration = SnackbarDuration.Short
-                            )
-                        }
-                    } else {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = context.getString(
-                                    R.string.qq_change_failed,
-                                    qqResponse.getOrNull()?.msg ?: ""
-                                ),
-                                duration = SnackbarDuration.Short
-                            )
+            AppStore.SIENE_SHOP -> {
+                // 弦应用商店保存修改
+                val sineShopCredentials = AuthManager.getSineMarketToken(context)
+                val token = sineShopCredentials
+                
+                if (token != null) {
+                    if (displayName.isNotEmpty() || description.isNotEmpty()) {
+                        val editResult = SineShopClient.editUserInfo(
+                            displayName = displayName,
+                            describe = description
+                        )
+                        
+                        if (editResult.isSuccess) {
+                            val response = editResult.getOrNull()
+                            if (response) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = context.getString(R.string.user_info_changed),
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            } else {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = context.getString(R.string.user_info_change_failed),
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            }
+                        } else {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(
+                                    message = context.getString(
+                                        R.string.user_info_change_failed,
+                                        editResult.exceptionOrNull()?.message ?: ""
+                                    ),
+                                    duration = SnackbarDuration.Short
+                                )
+                            }
                         }
                     }
+                } else {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = context.getString(R.string.not_logged_in),
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                }
+            }
+            else -> {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = context.getString(R.string.unsupported_platform),
+                        duration = SnackbarDuration.Short
+                    )
                 }
             }
         }
