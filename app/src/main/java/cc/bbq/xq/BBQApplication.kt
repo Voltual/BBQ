@@ -16,17 +16,16 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
-import coil3.network.CacheStrategy
-import coil3.network.NetworkRequest
-import coil3.network.NetworkResponse
 import coil3.network.ktor3.KtorNetworkFetcherFactory
-import coil3.request.ImageRequest
-import coil3.request.Options
 import coil3.request.crossfade
 import coil3.util.DebugLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import okio.FileSystem
+import okio.Path
+import okio.Path.Companion.toPath
+import java.io.File
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import cc.bbq.xq.data.db.AppDatabase
@@ -34,7 +33,6 @@ import cc.bbq.xq.data.SearchHistoryDataStore
 import cc.bbq.xq.data.StorageSettingsDataStore
 import cc.bbq.xq.data.UpdateSettingsDataStore
 import cc.bbq.xq.data.UserAgreementDataStore
-import org.koin.android.ext.koin.androidContext
 import org.koin.core.annotation.KoinApplication
 
 @KoinApplication
@@ -72,61 +70,32 @@ class BBQApplication : Application(), SingletonImageLoader.Factory {
     }
     
     override fun newImageLoader(context: PlatformContext): ImageLoader {
-    return ImageLoader.Builder(context)
-        .crossfade(true)
-        .logger(DebugLogger())
-        .memoryCache {
-            MemoryCache.Builder()
-                .maxSizePercent(context, 0.25)
-                .build()
-        }
-        .diskCache {
-            DiskCache.Builder()
-                .directory(context.cacheDir.resolve("image_cache").toOkioPath()) // 转换为Okio Path
-                .maxSizePercent(0.02)
-                .build()
-        }
-        .components {
-            add(CustomCacheStrategy()) // 正确添加组件
-        }
-        .build()
-}
+        return ImageLoader.Builder(context)
+            .crossfade(true)
+            .logger(DebugLogger())
+            .memoryCache {
+                MemoryCache.Builder()
+                    .maxSizePercent(context, 0.25)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(getCacheDirPath(context))
+                    .maxSizePercent(0.02)
+                    .build()
+            }
+            .networkFetcherFactory(KtorNetworkFetcherFactory())
+            .build()
+    }
 
-// 扩展函数：File 转 Okio Path
-private fun File.toOkioPath(): Path = absolutePath.toPath()
-    
+    private fun getCacheDirPath(context: PlatformContext): Path {
+        val cacheDir = File(context.androidContext.cacheDir, "image_cache")
+        if (!cacheDir.exists()) cacheDir.mkdirs()
+        return cacheDir.absolutePath.toPath()
+    }
+
     companion object {
         lateinit var instance: BBQApplication
             private set
-    }
-}
-
-class CustomCacheStrategy : CacheStrategy {
-    override suspend fun read(
-        cacheResponse: NetworkResponse,
-        networkRequest: NetworkRequest,
-        options: Options
-    ): CacheStrategy.ReadResult {
-        // 检查是否是用户头像URL
-        val url = networkRequest.url
-        if (url.startsWith("https://static.market.sineworld.cn/images/user_avatar/")) {
-            // 对用户头像URL禁用缓存
-            return CacheStrategy.ReadResult(networkRequest)
-        }
-        return CacheStrategy.DEFAULT.read(cacheResponse, networkRequest, options)
-    }
-
-    override suspend fun write(
-        cacheResponse: NetworkResponse?,
-        networkRequest: NetworkRequest,
-        networkResponse: NetworkResponse,
-        options: Options
-    ): CacheStrategy.WriteResult {
-        // 检查是否是用户头像URL
-        val url = networkRequest.url
-        if (url.startsWith("https://static.market.sineworld.cn/images/user_avatar/")) {
-            return CacheStrategy.WriteResult.DISABLED
-        }
-        return CacheStrategy.DEFAULT.write(cacheResponse, networkRequest, networkResponse, options)
     }
 }
