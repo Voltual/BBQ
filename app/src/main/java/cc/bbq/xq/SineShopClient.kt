@@ -92,6 +92,16 @@ object SineShopClient {
     ) {
         val isSuccess: Boolean get() = code == 0
     }
+    
+    // 为弦应用商店头像上传定义专门的响应模型
+@kotlinx.serialization.Serializable
+data class AvatarUploadResponse(
+    val code: Int,
+    val msg: String,
+    val data: Int? = null // 上传成功时为 1
+) {
+    val isSuccess: Boolean get() = code == 0
+}
 
     // 新增：用户信息模型
     @Serializable
@@ -530,7 +540,10 @@ suspend fun getMyComments(page: Int = 1): Result<SineShopCommentListData> {
 }
 
 // 上传头像
-suspend fun uploadAvatar(imageData: ByteArray, filename: String): Result<Boolean> {
+suspend fun uploadAvatar(
+    imageData: ByteArray,
+    filename: String
+): Result<Boolean> {
     try {
         val response: HttpResponse = httpClient.post("/user/avatar") {
             setBody(
@@ -552,11 +565,11 @@ suspend fun uploadAvatar(imageData: ByteArray, filename: String): Result<Boolean
             return Result.failure(IOException("Request failed with status ${response.status.value}"))
         }
 
-        // 使用 Ktor 的 body<T>() 函数解析 JSON 响应
-        val baseResponse: BaseResponse<Boolean> = response.body()
+        // 使用专门的 AvatarUploadResponse 模型
+        val uploadResponse: AvatarUploadResponse = response.body()
 
-        return Result.success(baseResponse.data ?: false)
-
+        // 检查上传是否成功：code == 0 且 data == 1
+        return Result.success(uploadResponse.code == 0 && uploadResponse.data == 1)
     } catch (e: Exception) {
         return Result.failure(e)
     }
