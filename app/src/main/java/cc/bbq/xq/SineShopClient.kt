@@ -147,8 +147,9 @@ data class AvatarUploadResponse(
 @Serializable
 data class SineShopReview(
     val id: Int,
+    @SerialName("app_id") val appId: Int,          // 新增: 应用 ID (Int)
     @SerialName("package_name") val packageName: String,
-    @SerialName("app_version") val appVersion: String,
+    @SerialName("app_version") val appVersion: String, // 注意：Kotlin 字段名是 appVersion，JSON key 是 app_version
     val rating: Int,
     val content: String,
     @SerialName("upvote_count") val upvoteCount: Int,
