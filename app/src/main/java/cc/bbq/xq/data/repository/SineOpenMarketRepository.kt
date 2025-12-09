@@ -28,6 +28,10 @@ class SineOpenMarketRepository : IAppStoreRepository {
 override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>, Int>> {
     return Result.failure(NotImplementedError("弦开放平台不支持获取我的评论"))
 }
+
+override suspend fun getMyReviews(page: Int): Result<Pair<List<UnifiedComment>, Int>> {
+        return Result.failure(Exception("弦开放平台暂不支持获取我的评价功能。"))
+    }
     // 不需要单独的图片上传接口，图片随表单一起提交
     override suspend fun uploadImage(file: File, type: String): Result<String> = Result.success(file.absolutePath)
     override suspend fun uploadApk(file: File, serviceType: String): Result<String> = Result.success(file.absolutePath)
