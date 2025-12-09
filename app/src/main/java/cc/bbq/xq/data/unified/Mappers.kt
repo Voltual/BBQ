@@ -249,12 +249,12 @@ fun SineShopClient.SineShopReview.toUnifiedReview(): UnifiedComment {
         content = this.content,
         sendTime = this.createTime,
         sender = this.user.toUnifiedUser(),
-        childCount = 0, // 评价没有子评论
+        childCount = 0, 
         fatherReply = null,
         raw = this,
-        appId = this.app_id.toString(), // 修正：使用 app_id 作为应用ID
-        versionId = this.app_version.toLongOrNull(), // 修正：将 app_version (String) 转换为 Long?
-        rating = this.rating, // 评分
-        isCountedInRating = this.isCountedInRating // 新增：是否计入评分
+        appId = this.appId.toString(),       // 使用 appId (Kotlin 属性名)
+        versionId = this.appVersion.toLongOrNull(), // 使用 appVersion (Kotlin 属性名)
+        rating = this.rating,
+        isCountedInRating = this.isCountedInRating
     )
 }
