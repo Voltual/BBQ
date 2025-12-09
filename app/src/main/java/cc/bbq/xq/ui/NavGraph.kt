@@ -280,9 +280,8 @@ val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
                 errorMessage = errorMessage,
                 onPostsClick = { navController.navigate(MyPosts(userId).createRoute()) },
                 onResourcesClick = { uid, store -> // 接收 store 参数
-                    // 传递 store.name 到 ResourcePlaza
-                    navController.navigate(ResourcePlaza(isMyResource = false, userId = uid, storeName = store.name).createRoute())
-                },
+    navController.navigate(ResourcePlaza(isMyResource = false, userId = uid, mode = "public", storeName = store.name).createRoute())
+},
                 onImagePreview = { imageUrl ->
                     navController.navigate(ImagePreview(imageUrl).createRoute())
                 },
