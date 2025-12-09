@@ -48,37 +48,39 @@ class MyReviewsViewModel(
         loadReviews()
     }
 
-    private fun loadReviews() {
-        if (isLoading.value || isLoadingMore) return
+    // 在 MyReviewsViewModel.kt 中，修正 loadReviews 方法
+private fun loadReviews() {
+    if (isLoading.value || isLoadingMore) return
 
-        _isLoading.value = true
-        _error.value = null
+    _isLoading.value = true
+    _error.value = null
 
-        viewModelScope.launch {
-            try {
-                val result = getRepository().getMyReviews(currentPage)
-                if (result.isSuccess) {
-                    val data = result.getOrNull()
-                    if (data != null) {
-                        val (newReviews, totalPages) = data
-                        if (currentPage == 1) {
-                            _reviews.value = newReviews
-                        } else {
-                            _reviews.value = _reviews.value + newReviews
-                        }
-                        hasMore = currentPage < totalPages
+    viewModelScope.launch {
+        try {
+            // 修正：调用 getMyReviews 方法（返回的是 Pair<List<UnifiedComment>, Int>）
+            val result = getRepository().getMyReviews(currentPage)
+            if (result.isSuccess) {
+                val data = result.getOrNull()
+                if (data != null) {
+                    val (newReviews, totalPages) = data // 修正：data 是 Pair 类型
+                    if (currentPage == 1) {
+                        _reviews.value = newReviews
+                    } else {
+                        _reviews.value = _reviews.value + newReviews
                     }
-                } else {
-                    _error.value = "加载评价失败: ${result.exceptionOrNull()?.message}"
+                    hasMore = currentPage < totalPages
                 }
-            } catch (e: Exception) {
-                _error.value = "加载评价失败: ${e.message}"
-            } finally {
-                _isLoading.value = false
-                isLoadingMore = false
+            } else {
+                _error.value = "加载评价失败: ${result.exceptionOrNull()?.message}"
             }
+        } catch (e: Exception) {
+            _error.value = "加载评价失败: ${e.message}"
+        } finally {
+            _isLoading.value = false
+            isLoadingMore = false
         }
     }
+}
 
     fun loadMore() {
         if (!hasMore || isLoading.value || isLoadingMore) return

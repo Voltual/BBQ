@@ -277,31 +277,7 @@ data class SineShopComment(
         val code: Int,
         val data: List<SineShopDownloadSource>?,
         val msg: String
-    )
-    
-    // 新增：评价数据模型
-@Serializable
-data class SineShopReview(
-    val id: Int,
-    @SerialName("package_name") val packageName: String,
-    @SerialName("app_version") val appVersion: String,
-    val rating: Int,
-    val content: String,
-    @SerialName("upvote_count") val upvoteCount: Int,
-    @SerialName("downvote_count") val downvoteCount: Int,
-    @SerialName("create_time") val createTime: Long,
-    val user: SineShopUserInfoLite,
-    @SerialName("user_vote_type") val userVoteType: Int,
-    val priority: Int,
-    @SerialName("is_counted_in_rating") val isCountedInRating: Boolean
-)
-
-// 为评价列表定义单独的数据模型
-@Serializable
-data class SineShopReviewListData(
-    val total: Int,
-    val list: List<SineShopReview>
-)
+    )    
 
     /**
      * 安全地执行 Ktor 请求，并处理异常和重试

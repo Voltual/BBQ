@@ -243,7 +243,6 @@ fun SineShopClient.SineShopUserInfo.toUnifiedUserDetail(): UnifiedUserDetail {
     )
 }
 
-// 为弦应用商店评价添加映射函数
 fun SineShopClient.SineShopReview.toUnifiedReview(): UnifiedComment {
     return UnifiedComment(
         id = this.id.toString(),
@@ -254,7 +253,12 @@ fun SineShopClient.SineShopReview.toUnifiedReview(): UnifiedComment {
         fatherReply = null,
         raw = this,
         appId = this.packageName, // 使用包名作为应用ID
-        versionId = this.appVersion, // 使用版本号作为版本ID
+        versionId = this.appVersion.toLongOrNull(), // 修正：将 String 转换为 Long?
         rating = this.rating // 新增：评分
     )
+}
+
+fun SineShopClient.SineShopReviewListData.toUnifiedReviews(): Pair<List<UnifiedComment>, Int> {
+    val unifiedComments = this.list.map { it.toUnifiedComment() }
+    return Pair(unifiedComments, this.total)
 }

@@ -192,6 +192,27 @@ override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>,
             Result.failure(e)
         }
     }
+    
+override suspend fun getMyReviews(page: Int): Result<Pair<List<UnifiedComment>, Int>> {
+    return try {
+        val result = SineShopClient.getMyReviews(page = page)
+        result.map { commentData ->
+            val unifiedComments = commentData.list.map { it.toUnifiedReview() } // 使用 toUnifiedReview
+            val totalPages = calculateTotalPages(commentData.total)
+            Pair(unifiedComments, totalPages)
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
+
+override suspend fun deleteReview(reviewId: String): Result<Unit> {
+    return try {
+        SineShopClient.deleteSineShopReview(reviewId = reviewId.toInt())
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
 
     override suspend fun releaseApp(params: UnifiedAppReleaseParams): Result<Unit> {
         return Result.failure(UnsupportedOperationException("弦应用商店不支持发布应用。"))
