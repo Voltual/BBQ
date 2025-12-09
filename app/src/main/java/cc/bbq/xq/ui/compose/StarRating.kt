@@ -1,4 +1,4 @@
-// 文件路径: /app/src/main/java/cc/bbq/xq/ui/compose/StarRating.kt
+// /app/src/main/java/cc/bbq/xq/ui/compose/StarRating.kt
 package cc.bbq.xq.ui.compose
 
 import androidx.compose.foundation.layout.Row
@@ -8,6 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,7 +39,7 @@ fun StarRating(
         repeat(rating.coerceAtMost(maxStars)) {
             Icon(
                 imageVector = Icons.Filled.Star,
-                contentDescription = null,  // 可访问性描述可设为null，因为已经有整体评分文本
+                contentDescription = null,
                 tint = activeColor,
                 modifier = Modifier.size(starSize)
             )

@@ -107,13 +107,13 @@ dependencies {
     implementation("androidx.room:room-ktx:$room_version")
     ksp("androidx.room:room-compiler:$room_version")
     
-// 添加 Koin Annotations 相关的依赖：
-val koin_version = "4.1.1"
-implementation("io.insert-koin:koin-androidx-compose:$koin_version")
-implementation("io.insert-koin:koin-core:$koin_version")
-val koin_annotations_version = "2.3.1"
-implementation("io.insert-koin:koin-annotations:$koin_annotations_version") // 添加注解库
-ksp("io.insert-koin:koin-ksp-compiler:$koin_annotations_version") // 添加 KSP 处理器
+    // 添加 Koin Annotations 相关的依赖：
+    val koin_version = "4.1.1"
+    implementation("io.insert-koin:koin-androidx-compose:$koin_version")
+    implementation("io.insert-koin:koin-core:$koin_version")
+    val koin_annotations_version = "2.3.1"
+    implementation("io.insert-koin:koin-annotations:$koin_annotations_version") // 添加注解库
+    ksp("io.insert-koin:koin-ksp-compiler:$koin_annotations_version") // 添加 KSP 处理器
 
     // ===== Ktor 客户端依赖 =====
     val ktor_version = "3.3.2"
@@ -157,6 +157,9 @@ protobuf {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        freeCompilerArgs.add("-XXLanguage:+UnitConversionsOnArbitraryExpressions")
+        // 添加 suppress 参数来忽略这个警告
+        freeCompilerArgs.add("-suppress")
         freeCompilerArgs.add("-XXLanguage:+UnitConversionsOnArbitraryExpressions")
     }
 }
