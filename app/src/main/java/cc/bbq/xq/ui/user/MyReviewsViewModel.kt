@@ -58,11 +58,11 @@ private fun loadReviews() {
     viewModelScope.launch {
         try {
             // 修正：调用 getMyReviews 方法（返回的是 Pair<List<UnifiedComment>, Int>）
-            val result = getRepository().getMyReviews(currentPage)
+            val result = getRepository().getMyReviews(currentPage)//这是61行
             if (result.isSuccess) {
                 val data = result.getOrNull()
                 if (data != null) {
-                    val (newReviews, totalPages) = data // 修正：data 是 Pair 类型
+                    val (newReviews, totalPages) = data // 修正：data 是 Pair 类型//这是65行
                     if (currentPage == 1) {
                         _reviews.value = newReviews
                     } else {

@@ -930,13 +930,12 @@ suspend fun getMyFavouriteAppsList(page: Int = 1): Result<AppListData> {
     }
 }
 
-// 新增：删除弦应用商店评价方法
 suspend fun deleteSineShopReview(reviewId: Int): Result<Unit> {
     val url = "/review/delete"
     val parameters = sineShopParameters {
         append("reviewid", reviewId.toString())
     }
-    return safeApiCall<BaseResponse> {
+    return safeApiCall<BaseResponse<Unit>> { // 指定类型参数为 BaseResponse<Unit>
         httpClient.post(url) {
             contentType(ContentType.Application.FormUrlEncoded)
             setBody(FormDataContent(parameters))

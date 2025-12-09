@@ -257,8 +257,3 @@ fun SineShopClient.SineShopReview.toUnifiedReview(): UnifiedComment {
         rating = this.rating // 新增：评分
     )
 }
-
-fun SineShopClient.SineShopReviewListData.toUnifiedReviews(): Pair<List<UnifiedComment>, Int> {
-    val unifiedComments = this.list.map { it.toUnifiedComment() }
-    return Pair(unifiedComments, this.total)
-}

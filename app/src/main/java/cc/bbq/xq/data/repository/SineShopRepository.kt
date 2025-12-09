@@ -164,16 +164,6 @@ override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>,
         }
     }
     
-    override suspend fun deleteReview(reviewId: String): Result<Unit> {
-    return try {
-        // 调用弦应用商店的删除评价接口
-        val result = SineShopClient.deleteSineShopReview(reviewId = reviewId.toInt())
-        result.map { Unit }
-    } catch (e: Exception) {
-        Result.failure(e)
-    }
-}
-
     override suspend fun toggleFavorite(appId: String, isCurrentlyFavorite: Boolean): Result<Boolean> {
         return Result.failure(UnsupportedOperationException("弦应用商店不支持收藏功能。"))
     }
@@ -196,19 +186,11 @@ override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>,
 override suspend fun getMyReviews(page: Int): Result<Pair<List<UnifiedComment>, Int>> {
     return try {
         val result = SineShopClient.getMyReviews(page = page)
-        result.map { commentData ->
-            val unifiedComments = commentData.list.map { it.toUnifiedReview() } // 使用 toUnifiedReview
-            val totalPages = calculateTotalPages(commentData.total)
+        result.map { reviewListData -> // 修改：直接映射为 SineShopReview
+            val unifiedComments = reviewListData.list.map { it.toUnifiedReview() }
+            val totalPages = calculateTotalPages(reviewListData.total)
             Pair(unifiedComments, totalPages)
         }
-    } catch (e: Exception) {
-        Result.failure(e)
-    }
-}
-
-override suspend fun deleteReview(reviewId: String): Result<Unit> {
-    return try {
-        SineShopClient.deleteSineShopReview(reviewId = reviewId.toInt())
     } catch (e: Exception) {
         Result.failure(e)
     }
