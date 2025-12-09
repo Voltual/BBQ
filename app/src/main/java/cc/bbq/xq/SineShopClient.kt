@@ -254,6 +254,30 @@ data class SineShopComment(
         val data: List<SineShopDownloadSource>?,
         val msg: String
     )
+    
+    // 新增：评价数据模型
+@Serializable
+data class SineShopReview(
+    val id: Int,
+    @SerialName("package_name") val packageName: String,
+    @SerialName("app_version") val appVersion: String,
+    val rating: Int,
+    val content: String,
+    @SerialName("upvote_count") val upvoteCount: Int,
+    @SerialName("downvote_count") val downvoteCount: Int,
+    @SerialName("create_time") val createTime: Long,
+    val user: SineShopUserInfoLite,
+    @SerialName("user_vote_type") val userVoteType: Int,
+    val priority: Int,
+    @SerialName("is_counted_in_rating") val isCountedInRating: Boolean
+)
+
+// 为评价列表定义单独的数据模型
+@Serializable
+data class SineShopReviewListData(
+    val total: Int,
+    val list: List<SineShopReview>
+)
 
     /**
      * 安全地执行 Ktor 请求，并处理异常和重试
@@ -603,6 +627,56 @@ suspend fun getAppsList(tag: Int? = null, page: Int = 1, keyword: String? = null
     }
 }
 
+// 新增：获取弦应用商店应用评价列表方法
+suspend fun getSineShopAppReviews(appId: Int, page: Int = 1): Result<SineShopReviewListData> {
+    val url = "/review/list"
+    val parameters = sineShopParameters {
+        append("appid", appId.toString())
+        append("page", page.toString())
+    }
+    return safeApiCall<BaseResponse<SineShopReviewListData>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+            }
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response: BaseResponse<SineShopReviewListData> ->
+        if (response.code == 0) {
+            response.data ?: SineShopReviewListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 SineShopReviewListData
+        } else {
+            throw IOException("Failed to get app reviews: ${response.msg}")
+        }
+    }
+}
+
+// 新增：获取我的评价列表方法
+suspend fun getMyReviews(page: Int = 1): Result<SineShopReviewListData> {
+    val url = "/review/mine"
+    val parameters = sineShopParameters {
+        append("page", page.toString())
+    }
+    return safeApiCall<BaseResponse<SineShopReviewListData>> {
+        httpClient.get(url) {
+            parameters.entries().forEach { (key, values) ->
+                values.forEach { value ->
+                    parameter(key, value)
+                }
+            }
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response: BaseResponse<SineShopReviewListData> ->
+        if (response.code == 0) {
+            response.data ?: SineShopReviewListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 SineShopReviewListData
+        } else {
+            throw IOException("Failed to get my reviews: ${response.msg}")
+        }
+    }
+}
 
     // 新增：获取最新上传的应用列表方法
     suspend fun getLatestAppsList(page: Int = 1): Result<AppListData> {
@@ -906,10 +980,8 @@ suspend fun getMyHistoryAppsList(page: Int = 1): Result<AppListData> {
     }
 }
     
-    private fun getToken(): String {
-        return runBlocking {
-            AuthManager.getSineMarketToken(BBQApplication.instance).first()
-        }
-    }
+    private suspend fun getToken(): String {
+    return AuthManager.getSineMarketToken(BBQApplication.instance).first()
+}
 }
 
