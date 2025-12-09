@@ -245,6 +245,13 @@ composable(route = MyComments.route) {
     )
 }
 
+composable(route = MyReviews.route) {
+    MyReviewsScreen(
+        navController = navController,
+        modifier = Modifier.fillMaxSize()
+    )
+}
+
 composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { backStackEntry ->
     val userId = backStackEntry.arguments?.getLong(AppDestination.ARG_USER_ID) ?: -1L
     val storeName = backStackEntry.arguments?.getString("store") ?: AppStore.XIAOQU_SPACE.name
@@ -422,14 +429,6 @@ composable(route = UpdateAppRelease("").route, arguments = UpdateAppRelease.argu
     )
 }
 
-        // cc/bbq/xq/bot/ui/NavGraph.kt
-// ... (之前的代码)
-
-        // --- 机器人 & 日志 ---
- /*       composable(route = BotSettings.route) {
-            BotSettingsNavHost(navController = navController)
-        }
-*/
         composable(route = LogViewer.route) {
             val logViewModel: LogViewModel = org.koin.androidx.compose.koinViewModel()
             LogScreen(
@@ -460,7 +459,6 @@ composable(route = UpdateAppRelease("").route, arguments = UpdateAppRelease.argu
             )
         }
 
-        // 在 NavGraph.kt 中更新支付相关的调用
         composable(route = PaymentCenterAdvanced.route) {
             paymentViewModel.setPaymentInfo(type = PaymentType.POST_REWARD, locked = false)
             PaymentCenterScreen(
@@ -507,8 +505,7 @@ composable(route = UpdateAppRelease("").route, arguments = UpdateAppRelease.argu
 //                navController = navController // 传递 navController
             )
         }
-        
-        // 新增更新设置屏幕
+       
 
 composable(
     route = UpdateSettings.route
@@ -541,48 +538,6 @@ composable(FollowingPosts.route) { FollowingPostsScreen(navController, following
     }
 }
 
-/*
-@Composable
-private fun BotSettingsNavHost(navController: NavHostController) {
-    val slideDistance = rememberSlideDistance()
-
-    // 创建独立的导航控制器用于机器人设置内部导航
-    val innerNavController = rememberNavController()
-
-    val activityViewModel: BotSettingsViewModel = org.koin.androidx.compose.koinViewModel()
-    val loginViewModel: LoginViewModel = org.koin.androidx.compose.koinViewModel()
-    
-    NavHost(
-        navController = innerNavController, // 使用内部导航控制器
-        startDestination = "settings",
-        enterTransition = { materialSharedAxisXIn(forward = true, slideDistance = slideDistance) },
-        exitTransition = { materialSharedAxisXOut(forward = true, slideDistance = slideDistance) },
-        popEnterTransition = { materialSharedAxisXIn(forward = false, slideDistance = slideDistance) },
-        popExitTransition = { materialSharedAxisXOut(forward = false, slideDistance = slideDistance) }
-    ) {
-        composable("settings") {
-            BotSettingsScreen(
-                viewModel = activityViewModel,
-//                onBackClick = { (navController.context as? Activity)?.finish() },
-                onNavigateToBotLogin = { innerNavController.navigate("bot_login") }, // 使用内部导航
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-
-        composable("bot_login") {
-            LoginScreen(
-                viewModel = loginViewModel,
-                onLoginSuccess = { 
-                    // 登录成功后返回到设置页面
-                    innerNavController.popBackStack() 
-                },
-                isBotLoginMode = true, // 这里应该是 true，因为是机器人登录模式
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-    }
-}
-*/
 
 // 在 NavGraph.kt 中修复社区屏幕的导航逻辑
 @OptIn(ExperimentalMaterial3Api::class)

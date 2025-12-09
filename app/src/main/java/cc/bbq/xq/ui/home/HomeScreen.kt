@@ -175,6 +175,7 @@ fun HomeScreen(
                         },
                         onNavigateToUpdate = onNavigateToUpdate,
                         onNavigateToMyComments = onNavigateToMyComments,
+                        onNavigateToMyReviews = { navController.navigate(MyReviews.route) },
                         navController = navController
                     )
                 }

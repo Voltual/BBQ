@@ -51,6 +51,7 @@ fun SineShopProfileScreen(
     onNavigateToResourcePlaza: (String) -> Unit = {}, // 添加导航回调参数
     onNavigateToUpdate: () -> Unit = {}, // 新增：导航到更新屏幕的回调
     onNavigateToMyComments: () -> Unit = {}, // 新增：导航到我的评论的回调
+    onNavigateToMyReviews: () -> Unit = {}, // 新增：导航到我的评价的回调
     navController: NavController // 添加NavController
 ) {
     Column(
@@ -124,9 +125,9 @@ fun SineShopProfileScreen(
             onClick = { /* TODO: Implement my reviews */ }
         )
         FunctionCard(
-            icon = Icons.AutoMirrored.Filled.Comment, // 使用自动镜像版本
-            label = "我的评论",
-            onClick = { onNavigateToMyComments() } // 修改为调用我的评论导航
+            icon = Icons.Filled.Star,
+            label = "我的评价",
+            onClick = { onNavigateToMyReviews() }
         )
         FunctionCard(
             icon = Icons.Filled.History,

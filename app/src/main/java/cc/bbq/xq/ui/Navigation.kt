@@ -186,6 +186,10 @@ object MyComments : AppDestination {
     override val route = "my_comments"
 }
 
+object MyReviews : AppDestination {
+    override val route = "my_reviews"
+}
+
 object FollowList : AppDestination {
     override val route = "follow_list"
 }

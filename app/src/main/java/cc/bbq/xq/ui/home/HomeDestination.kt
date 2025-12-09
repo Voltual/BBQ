@@ -139,8 +139,9 @@ fun HomeDestination(
             onAccountProfileClick = { navController.navigate(AccountProfile.createRoute(AppStore.SIENE_SHOP)) },
             onRecalculateDays = { viewModel.recalculateDaysDiff() },
             onNavigateToUpdate = { navController.navigate(Update.route) }, // 传递导航回调
+            onNavigateToMyReviews = { navController.navigate(MyReviews.route) }, // 新增：传递导航回调
             onNavigateToMyComments = {navController.navigate(MyComments.route)},
-            modifier = Modifier.fillMaxSize(), // 现在 Modifier 已导入
+            modifier = Modifier.fillMaxSize(), 
             viewModel = viewModel,
             snackbarHostState = snackbarHostState,
             navController = navController
