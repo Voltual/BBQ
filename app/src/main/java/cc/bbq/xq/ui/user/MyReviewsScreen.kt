@@ -36,6 +36,7 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.CachePolicy
 import kotlinx.coroutines.launch
+import cc.bbq.xq.ui.compose.StarRating
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -221,23 +222,22 @@ fun MyReviewItem(
             Spacer(Modifier.height(8.dp))
 
             // 评分
-            review.rating?.let { rating ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = "评分",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "$rating.0",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                Spacer(Modifier.height(8.dp))
-            }
+review.rating?.let { rating ->
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        StarRating(
+            rating = rating,
+            starSize = 18.dp,
+            activeColor = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text = "$rating.0",
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium
+        )
+    }
+    Spacer(Modifier.height(8.dp))
+}
 
             // 评价内容
             Text(
