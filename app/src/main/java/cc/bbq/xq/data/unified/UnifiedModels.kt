@@ -25,9 +25,10 @@ data class UnifiedComment(
     val childComments: List<UnifiedComment> = emptyList(),
     val fatherReply: UnifiedComment? = null,
     val raw: Any,
-    // 新增：评论关联的应用ID和版本ID（可为空）
     val appId: String? = null,
-    val versionId: Long? = null
+    val versionId: Long? = null,
+    val rating: Int? = null, // 新增：评分（可为空）
+    val isCountedInRating: Boolean? = null // 新增：是否计入评分（可为空）
 )
 
 /**

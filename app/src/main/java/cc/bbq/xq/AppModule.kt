@@ -11,6 +11,7 @@ import cc.bbq.xq.ui.community.FollowingPostsViewModel
 import cc.bbq.xq.ui.community.HotPostsViewModel
 import cc.bbq.xq.ui.community.MyLikesViewModel
 import cc.bbq.xq.ui.payment.PaymentViewModel
+import cc.bbq.xq.ui.user.MyReviewsViewModel
 import cc.bbq.xq.ui.log.LogViewModel
 import cc.bbq.xq.ui.user.UserListViewModel
 import cc.bbq.xq.ui.message.MessageViewModel
@@ -47,6 +48,7 @@ val appModule = module {
     viewModel { LogViewModel(androidApplication()) }
     viewModel { MessageViewModel(androidApplication()) }
     
+    
     // 修正：注入 repositories 参数
     viewModel { AppDetailComposeViewModel(androidApplication(), get()) }
     
@@ -74,6 +76,7 @@ val appModule = module {
     viewModel { HomeViewModel() }
     viewModel { VersionListViewModel(androidApplication(), get<SineShopRepository>()) }
     viewModel { MyCommentsViewModel(androidApplication(), get()) }
+    viewModel { MyReviewsViewModel(androidApplication(), get()) }
 
     // Singletons
     single { AuthManager }

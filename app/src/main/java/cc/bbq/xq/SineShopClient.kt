@@ -142,6 +142,30 @@ data class AvatarUploadResponse(
         val name: String,
         val icon: String?
     )
+    
+    // 新增：评价数据模型
+@Serializable
+data class SineShopReview(
+    val id: Int,
+    @SerialName("package_name") val packageName: String,
+    @SerialName("app_version") val appVersion: String,
+    val rating: Int,
+    val content: String,
+    @SerialName("upvote_count") val upvoteCount: Int,
+    @SerialName("downvote_count") val downvoteCount: Int,
+    @SerialName("create_time") val createTime: Long,
+    val user: SineShopUserInfoLite,
+    @SerialName("user_vote_type") val userVoteType: Int,
+    val priority: Int,
+    @SerialName("is_counted_in_rating") val isCountedInRating: Boolean
+)
+
+// 为评价列表定义单独的数据模型
+@Serializable
+data class SineShopReviewListData(
+    val total: Int,
+    val list: List<SineShopReview>
+)
 
     // 新增：应用数据模型
     @Serializable
@@ -926,6 +950,28 @@ suspend fun getMyFavouriteAppsList(page: Int = 1): Result<AppListData> {
             response.data ?: AppListData(0, emptyList()) // 如果 data 为 null，则返回一个空的 AppListData
         } else {
             throw IOException("Failed to get my favourite app list: ${response.msg}")
+        }
+    }
+}
+
+// 新增：删除弦应用商店评价方法
+suspend fun deleteSineShopReview(reviewId: Int): Result<Unit> {
+    val url = "/review/delete"
+    val parameters = sineShopParameters {
+        append("reviewid", reviewId.toString())
+    }
+    return safeApiCall<BaseResponse> {
+        httpClient.post(url) {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody(FormDataContent(parameters))
+            val token = getToken()
+            header(HttpHeaders.UserAgent, USER_AGENT + token)
+        }
+    }.map { response ->
+        if (response.code == 0) {
+            // 删除成功，返回 Unit
+        } else {
+            throw IOException("Failed to delete review: ${response.msg}")
         }
     }
 }

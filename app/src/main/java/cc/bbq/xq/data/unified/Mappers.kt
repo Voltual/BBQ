@@ -242,3 +242,19 @@ fun SineShopClient.SineShopUserInfo.toUnifiedUserDetail(): UnifiedUserDetail {
         raw = this
     )
 }
+
+// 为弦应用商店评价添加映射函数
+fun SineShopClient.SineShopReview.toUnifiedReview(): UnifiedComment {
+    return UnifiedComment(
+        id = this.id.toString(),
+        content = this.content,
+        sendTime = this.createTime,
+        sender = this.user.toUnifiedUser(),
+        childCount = 0, // 评价没有子评论
+        fatherReply = null,
+        raw = this,
+        appId = this.packageName, // 使用包名作为应用ID
+        versionId = this.appVersion, // 使用版本号作为版本ID
+        rating = this.rating // 新增：评分
+    )
+}
