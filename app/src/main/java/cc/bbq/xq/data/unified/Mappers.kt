@@ -252,8 +252,9 @@ fun SineShopClient.SineShopReview.toUnifiedReview(): UnifiedComment {
         childCount = 0, // 评价没有子评论
         fatherReply = null,
         raw = this,
-        appId = this.packageName, // 使用包名作为应用ID
-        versionId = this.appVersion.toLongOrNull(), // 修正：将 String 转换为 Long?
-        rating = this.rating // 新增：评分
+        appId = this.app_id.toString(), // 修正：使用 app_id 作为应用ID
+        versionId = this.app_version.toLongOrNull(), // 修正：将 app_version (String) 转换为 Long?
+        rating = this.rating, // 评分
+        isCountedInRating = this.isCountedInRating // 新增：是否计入评分
     )
 }
