@@ -128,6 +128,14 @@ override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>,
             Result.failure(e)
         }
     }
+    
+override suspend fun deleteReview(reviewId: String): Result<Unit> {
+    return try {
+        SineShopClient.deleteSineShopReview(reviewId = reviewId.toInt())
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
 
     override suspend fun postComment(appId: String, versionId: Long, content: String, parentCommentId: String?, mentionUserId: String?): Result<Unit> {
         return try {
@@ -182,11 +190,11 @@ override suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>,
             Result.failure(e)
         }
     }
-    
+   
 override suspend fun getMyReviews(page: Int): Result<Pair<List<UnifiedComment>, Int>> {
     return try {
         val result = SineShopClient.getMyReviews(page = page)
-        result.map { reviewListData -> // 修改：直接映射为 SineShopReview
+        result.map { reviewListData ->
             val unifiedComments = reviewListData.list.map { it.toUnifiedReview() }
             val totalPages = calculateTotalPages(reviewListData.total)
             Pair(unifiedComments, totalPages)

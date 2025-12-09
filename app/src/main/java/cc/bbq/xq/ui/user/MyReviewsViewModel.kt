@@ -48,7 +48,6 @@ class MyReviewsViewModel(
         loadReviews()
     }
 
-    // 在 MyReviewsViewModel.kt 中，修正 loadReviews 方法
 private fun loadReviews() {
     if (isLoading.value || isLoadingMore) return
 
@@ -57,19 +56,15 @@ private fun loadReviews() {
 
     viewModelScope.launch {
         try {
-            // 修正：调用 getMyReviews 方法（返回的是 Pair<List<UnifiedComment>, Int>）
-            val result = getRepository().getMyReviews(currentPage)//这是61行
+            val result = getRepository().getMyReviews(currentPage)
             if (result.isSuccess) {
-                val data = result.getOrNull()
-                if (data != null) {
-                    val (newReviews, totalPages) = data // 修正：data 是 Pair 类型//这是65行
-                    if (currentPage == 1) {
-                        _reviews.value = newReviews
-                    } else {
-                        _reviews.value = _reviews.value + newReviews
-                    }
-                    hasMore = currentPage < totalPages
+                val (newReviews, totalPages) = result.getOrNull() ?: Pair(emptyList(), 0)
+                if (currentPage == 1) {
+                    _reviews.value = newReviews
+                } else {
+                    _reviews.value = _reviews.value + newReviews
                 }
+                hasMore = currentPage < totalPages
             } else {
                 _error.value = "加载评价失败: ${result.exceptionOrNull()?.message}"
             }
