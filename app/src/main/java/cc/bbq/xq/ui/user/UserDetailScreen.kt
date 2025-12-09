@@ -51,6 +51,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import coil3.request.ImageRequest
+import coil3.request.CachePolicy
+import androidx.compose.ui.platform.LocalContext
 import cc.bbq.xq.R
 import cc.bbq.xq.AuthManager
 import cc.bbq.xq.ui.theme.AppShapes
@@ -217,19 +220,22 @@ private fun SieneShopProfileContent(
                 ) {
                     // 头像
                     AsyncImage(
-                        model = userData.avatarUrl,
-                        contentDescription = "用户头像",
-                        contentScale = ContentScale.Crop,
-                        placeholder = painterResource(R.drawable.ic_menu_profile),
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .clickable {
-                                if (!userData.avatarUrl.isNullOrEmpty()) {
-                                    onImagePreview(userData.avatarUrl)
-                                }
-                            }
-                    )
+    model = ImageRequest.Builder(LocalContext.current)
+        .data(userData.avatarUrl ?: "https://static.sineshop.xin/images/user_avatar/default_avatar.png")
+        .diskCachePolicy(CachePolicy.DISABLED) // 禁用磁盘缓存
+        .placeholder(painterResource(R.drawable.ic_menu_profile)) // 保留原占位符
+        .build(),
+    contentDescription = "用户头像",
+    contentScale = ContentScale.Crop,
+    modifier = Modifier
+        .size(80.dp)
+        .clip(CircleShape)
+        .clickable {
+            if (!userData.avatarUrl.isNullOrEmpty()) {
+                onImagePreview(userData.avatarUrl)
+            }
+        }
+)
 
                     Spacer(modifier = Modifier.height(8.dp))
 

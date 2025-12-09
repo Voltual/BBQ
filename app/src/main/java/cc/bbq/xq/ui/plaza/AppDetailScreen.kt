@@ -18,6 +18,9 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import coil3.request.ImageRequest
+import coil3.request.CachePolicy
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.filled.Download
@@ -542,11 +545,14 @@ fun AppDetailContent(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 AsyncImage(
-                                    model = raw?.user?.userAvatar,
-                                    contentDescription = "上传者头像",
-                                    modifier = Modifier.size(40.dp).clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
+    model = ImageRequest.Builder(LocalContext.current)
+        .data(raw?.user?.userAvatar ?: "https://static.sineshop.xin/images/user_avatar/default_avatar.png")
+        .diskCachePolicy(CachePolicy.DISABLED) // 禁用磁盘缓存
+        .build(),
+    contentDescription = "上传者头像",
+    modifier = Modifier.size(40.dp).clip(CircleShape),
+    contentScale = ContentScale.Crop
+)
                                 Spacer(Modifier.width(16.dp))
                                 Column {
                                     Text(raw?.user?.displayName ?: "未知上传者", style = MaterialTheme.typography.titleMedium)
@@ -569,11 +575,14 @@ fun AppDetailContent(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     AsyncImage(
-                                        model = raw.audit_user?.userAvatar,
-                                        contentDescription = "审核员头像",
-                                        modifier = Modifier.size(40.dp).clip(CircleShape),
-                                        contentScale = ContentScale.Crop
-                                    )
+    model = ImageRequest.Builder(LocalContext.current)
+        .data(raw.audit_user?.userAvatar ?: "https://static.sineshop.xin/images/user_avatar/default_avatar.png")
+        .diskCachePolicy(CachePolicy.DISABLED) // 禁用磁盘缓存
+        .build(),
+    contentDescription = "审核员头像",
+    modifier = Modifier.size(40.dp).clip(CircleShape),
+    contentScale = ContentScale.Crop
+)
                                     Spacer(Modifier.width(16.dp))
                                     Column {
                                         Text(raw.audit_user?.displayName ?: "未知审核员", style = MaterialTheme.typography.titleMedium)

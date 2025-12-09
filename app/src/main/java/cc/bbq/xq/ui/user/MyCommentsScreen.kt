@@ -31,6 +31,9 @@ import cc.bbq.xq.util.formatTimestamp
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import coil3.request.ImageRequest
+import coil3.request.CachePolicy
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun MyCommentsScreen(
@@ -187,14 +190,17 @@ fun MyCommentItem(
             // 评论头部
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
-                    model = comment.sender.avatarUrl,
-                    contentDescription = "用户头像",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .clickable { onUserClick(comment.sender.id) },
-                    contentScale = ContentScale.Crop
-                )
+    model = ImageRequest.Builder(LocalContext.current)
+        .data(comment.sender.avatarUrl ?: "https://static.sineshop.xin/images/user_avatar/default_avatar.png")
+        .diskCachePolicy(CachePolicy.DISABLED) // 禁用磁盘缓存
+        .build(),
+    contentDescription = "用户头像",
+    modifier = Modifier
+        .size(32.dp)
+        .clip(CircleShape)
+        .clickable { onUserClick(comment.sender.id) },
+    contentScale = ContentScale.Crop
+)
                 Spacer(Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
