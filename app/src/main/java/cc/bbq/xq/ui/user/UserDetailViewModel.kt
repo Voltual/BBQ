@@ -22,20 +22,20 @@ import cc.bbq.xq.SineShopClient
 import cc.bbq.xq.BBQApplication
 import cc.bbq.xq.data.unified.UnifiedUserDetail  // 新增：统一用户详情模型
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.*
 import org.koin.android.annotation.KoinViewModel
 
 @KoinViewModel
 class UserDetailViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _userData = MutableLiveData<UnifiedUserDetail?>()
-    val userData: LiveData<UnifiedUserDetail?> = _userData
+    private val _userData = MutableStateFlow<UnifiedUserDetail?>(null)
+    val userData: StateFlow<UnifiedUserDetail?> = _userData.asStateFlow()
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> = _errorMessage
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     // 添加状态跟踪
     private var _isInitialized = false
@@ -58,13 +58,14 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     private fun resetState() {
-        _userData.postValue(null)
-        _errorMessage.postValue("")
+        _userData.value = null
+        _errorMessage.value = null
+        _isLoading.value = false
     }
 
     // 内部方法：只在需要时加载数据
     private fun loadDataIfNeeded() {
-        if (!_isInitialized && _currentUserId != -1L && !(_isLoading.value == true)) {
+        if (!_isInitialized && _currentUserId != -1L && !_isLoading.value) {
             _isInitialized = true
             loadData()
         }
@@ -78,66 +79,66 @@ class UserDetailViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     private fun loadData() {
-    viewModelScope.launch {
-        val context = getApplication<Application>()
-        val userCredentialsFlow = AuthManager.getCredentials(context)
-        val userCredentials = userCredentialsFlow.first()
-        val token = userCredentials?.token ?: ""
+        viewModelScope.launch {
+            val context = getApplication<Application>()
+            val userCredentialsFlow = AuthManager.getCredentials(context)
+            val userCredentials = userCredentialsFlow.first()
+            val token = userCredentials?.token ?: ""
 
-        // 检查是否已经在加载
-        if (_isLoading.value == true) return@launch
+            // 检查是否已经在加载
+            if (_isLoading.value) return@launch
 
-        _isLoading.postValue(true)
+            _isLoading.value = true
 
-        try {
-            val result = when (_currentStore) {
-                AppStore.XIAOQU_SPACE -> {
-                    // 小趣空间 API
-                    apiService.getUserInformation(
-                        userId = _currentUserId,
-                        token = token
-                    )
-                }
-                AppStore.SIENE_SHOP -> {
-                    // 弦应用商店 API
-                    SineShopClient.getUserInfoById(_currentUserId)
-                }
-                else -> {
-                    // 其他应用商店：不支持用户详情，直接返回失败
-                    Result.failure(IllegalArgumentException("当前应用商店不支持用户详情"))
-                }
-            }
-
-            // 只有在前两个分支时才处理响应
-            if (_currentStore == AppStore.XIAOQU_SPACE || _currentStore == AppStore.SIENE_SHOP) {
-                when (val response = result.getOrNull()) {
-                    is KtorClient.UserInformationResponse -> {
-                        // 小趣空间响应
-                        if (response.code == 1) {
-                            _userData.postValue(response.data.toUnifiedUserDetail())
-                            _errorMessage.postValue("")
-                        } else {
-                            _errorMessage.postValue("加载失败: ${response.msg}")
-                        }
+            try {
+                val result = when (_currentStore) {
+                    AppStore.XIAOQU_SPACE -> {
+                        // 小趣空间 API
+                        apiService.getUserInformation(
+                            userId = _currentUserId,
+                            token = token
+                        )
                     }
-                    is SineShopClient.SineShopUserInfo -> {
-                        // 弦应用商店响应：直接是数据对象
-                        _userData.postValue(response.toUnifiedUserDetail())
-                        _errorMessage.postValue("")
+                    AppStore.SIENE_SHOP -> {
+                        // 弦应用商店 API
+                        SineShopClient.getUserInfoById(_currentUserId)
                     }
                     else -> {
-                        _errorMessage.postValue("加载失败: ${result.exceptionOrNull()?.message ?: "网络错误"}")
+                        // 其他应用商店：不支持用户详情，直接返回失败
+                        Result.failure(IllegalArgumentException("当前应用商店不支持用户详情"))
                     }
                 }
-            } else {
-                // 其他商店的情况
-                _errorMessage.postValue("当前应用商店不支持用户详情")
+
+                // 只有在前两个分支时才处理响应
+                if (_currentStore == AppStore.XIAOQU_SPACE || _currentStore == AppStore.SIENE_SHOP) {
+                    when (val response = result.getOrNull()) {
+                        is KtorClient.UserInformationResponse -> {
+                            // 小趣空间响应
+                            if (response.code == 1) {
+                                _userData.value = response.data.toUnifiedUserDetail()
+                                _errorMessage.value = null
+                            } else {
+                                _errorMessage.value = "加载失败: ${response.msg}"
+                            }
+                        }
+                        is SineShopClient.SineShopUserInfo -> {
+                            // 弦应用商店响应：直接是数据对象
+                            _userData.value = response.toUnifiedUserDetail()
+                            _errorMessage.value = null
+                        }
+                        else -> {
+                            _errorMessage.value = "加载失败: ${result.exceptionOrNull()?.message ?: "网络错误"}"
+                        }
+                    }
+                } else {
+                    // 其他商店的情况
+                    _errorMessage.value = "当前应用商店不支持用户详情"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "网络错误: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
-        } catch (e: Exception) {
-            _errorMessage.postValue("网络错误: ${e.message}")
-        } finally {
-            _isLoading.postValue(false)
         }
     }
-}
 }

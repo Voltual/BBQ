@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.ViewModelProvider
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -271,10 +270,9 @@ composable(route = UserDetail(0).route, arguments = UserDetail.arguments) { back
         }
     }
     
-    val userData by viewModel.userData.observeAsState()
-    val isLoading by viewModel.isLoading.observeAsState(false)
-    val errorMessage by viewModel.errorMessage.observeAsState()
-    
+    val userData by viewModel.userData.collectAsStateWithLifecycle()
+val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     UserDetailScreen(
                 userData = userData,
                 isLoading = isLoading,

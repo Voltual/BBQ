@@ -31,7 +31,7 @@ class PlazaViewModel(
     private val repositories: Map<AppStore, IAppStoreRepository>
 ) : AndroidViewModel(app) {
 
-    // --- LiveData & State ---
+    // ---  State ---
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -154,8 +154,7 @@ class PlazaViewModel(
         }
         if (_currentCategoryId.value == categoryId) return
 
-        // currentCategoryId = categoryId // 移除：不再直接修改实例变量
-        _currentCategoryId.value = categoryId // 使用 LiveData 更新
+        _currentCategoryId.value = categoryId
         loadPage(1)
     }
 
@@ -214,8 +213,7 @@ class PlazaViewModel(
     private fun resetStateAndLoadCategories() {
         Log.d("PlazaViewModel", "resetStateAndLoadCategories called")
         _isLoading.value = true
-        // currentCategoryId = null // 移除：不再直接修改实例变量
-        _currentCategoryId.value = null // 使用 LiveData 更新
+        _currentCategoryId.value = null 
         
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -248,8 +246,7 @@ class PlazaViewModel(
                         _categories.value = categoryList
                         
                         if (_currentCategoryId.value == null) {
-                            // currentCategoryId = categoryList.firstOrNull()?.id // 移除
-                            _currentCategoryId.value = categoryList.firstOrNull()?.id // 使用 LiveData 更新
+                            _currentCategoryId.value = categoryList.firstOrNull()?.id 
                         }
                         
                         _isLoading.value = false
@@ -295,7 +292,7 @@ class PlazaViewModel(
                 val result = if (isSearchMode) {
                     currentRepository.searchApps(currentQuery, page, finalUserId)
                 } else {
-                    currentRepository.getApps(_currentCategoryId.value, page, finalUserId) // 使用 LiveData 的值
+                    currentRepository.getApps(_currentCategoryId.value, page, finalUserId) 
                 }
 
                 if (result.isSuccess) {
