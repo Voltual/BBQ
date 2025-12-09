@@ -4,6 +4,7 @@ package cc.bbq.xq.ui.compose
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size // 导入 size 扩展函数
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
@@ -19,7 +20,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * 星级评分组件
- * 
+ *
  * @param rating 当前评分值 (0-5)
  * @param maxStars 最大星数 (默认5星)
  * @param starSize 星星大小 (默认18.dp)
@@ -41,7 +42,7 @@ fun StarRating(
                 imageVector = Icons.Filled.Star,
                 contentDescription = null,
                 tint = activeColor,
-                modifier = Modifier.size(starSize)
+                modifier = Modifier.size(starSize) // 使用 size 扩展函数
             )
         }
         // 显示空心星补足剩余
@@ -50,7 +51,7 @@ fun StarRating(
                 imageVector = Icons.Outlined.Star,
                 contentDescription = null,
                 tint = inactiveColor,
-                modifier = Modifier.size(starSize)
+                modifier = Modifier.size(starSize) // 使用 size 扩展函数
             )
         }
         // 评分文本
