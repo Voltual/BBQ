@@ -67,11 +67,18 @@ fun SineShopProfileScreen(
                 modifier = Modifier.size(72.dp)
             ) {
                 AsyncImage(
-                    model = userInfo?.userAvatar ?: "https://static.sineshop.xin/images/user_avatar/default_avatar.png",
-                    contentDescription = "用户头像",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.clip(CircleShape)
-                )
+    model = ImageRequest.Builder(LocalContext.current)
+        .data(userInfo?.userAvatar ?: "https://static.sineshop.xin/images/user_avatar/default_avatar.png")
+        // 直接禁用磁盘缓存
+        .diskCachePolicy(CachePolicy.DISABLED)
+        // 可选：禁用内存缓存
+        // .memoryCachePolicy(CachePolicy.DISABLED)
+        .crossfade(true)
+        .build(),
+    contentDescription = "用户头像",
+    contentScale = ContentScale.Crop,
+    modifier = Modifier.clip(CircleShape)
+)
             }
 
             Spacer(modifier = Modifier.width(16.dp))
