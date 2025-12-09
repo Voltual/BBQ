@@ -122,12 +122,12 @@ fun SineShopProfileScreen(
         FunctionCard(
             icon = Icons.Filled.Star,
             label = "我的评价",
-            onClick = { /* TODO: Implement my reviews */ }
+            onClick = { onNavigateToMyReviews() }
         )
         FunctionCard(
-            icon = Icons.Filled.Star,
-            label = "我的评价",
-            onClick = { onNavigateToMyReviews() }
+            icon = Icons.AutoMirrored.Filled.Comment, 
+            label = "我的评论",
+            onClick = { onNavigateToMyComments() }
         )
         FunctionCard(
             icon = Icons.Filled.History,

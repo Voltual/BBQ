@@ -391,7 +391,7 @@ fun getTitleForDestination(backStackEntry: NavBackStackEntry?): String {
         CreateAppRelease.route -> "发布应用"
         "app_release_update" -> "更新应用"
         LogViewer.route -> "日志"
-        AccountProfile.route -> "账号资料"
+        "account_profile?store={store}" -> "账号资料"
         FollowList.route -> "我的关注"
         FanList.route -> "我的粉丝"
         MyLikes.route -> "我喜欢的"
@@ -410,6 +410,7 @@ fun getTitleForDestination(backStackEntry: NavBackStackEntry?): String {
         Download.route -> "下载管理"
         Update.route -> "应用更新"
         "my_comments" -> "我的评论"
+        "my_reviews" -> "我的评价"
         else -> "BBQ"
     }
 }

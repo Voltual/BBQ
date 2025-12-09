@@ -56,12 +56,6 @@ fun MyReviewsScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // 标题
-        Text(
-            text = "我的评价",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(16.dp)
-        )
 
         Spacer(Modifier.height(8.dp))
 
