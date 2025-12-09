@@ -1,12 +1,4 @@
 // /app/src/main/java/cc/bbq/xq/ui/plaza/ResourcePlazaScreen.kt
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 package cc.bbq.xq.ui.plaza
 
 import androidx.compose.animation.*
@@ -45,6 +37,7 @@ import coil3.request.ImageRequest
 import org.koin.androidx.compose.koinViewModel
 import cc.bbq.xq.ui.theme.AppGrid
 import cc.bbq.xq.ui.theme.AppGridItem
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun ResourcePlazaScreen(
@@ -77,17 +70,17 @@ fun ResourcePlazaContent(
     mode: String, // 新增 mode 参数
     storeName: String // 新增参数
 ) {
-    val selectedAppStore by viewModel.appStore.observeAsState(AppStore.XIAOQU_SPACE)
-    val categories by viewModel.categories.observeAsState(emptyList())
-    val plazaState by viewModel.plazaData.observeAsState(PlazaData(emptyList()))
-    val searchState by viewModel.searchResults.observeAsState(emptyList())
-    val isLoading by viewModel.isLoading.observeAsState(false)
-    val currentPage by viewModel.currentPage.observeAsState(1)
-    val totalPages by viewModel.totalPages.observeAsState(1)
-    val autoScrollMode by viewModel.autoScrollMode.observeAsState(false)
-    val errorMessage by viewModel.errorMessage.observeAsState()
+    val selectedAppStore by viewModel.appStore.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val plazaState by viewModel.plazaData.collectAsStateWithLifecycle()
+    val searchState by viewModel.searchResults.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val currentPage by viewModel.currentPage.collectAsStateWithLifecycle()
+    val totalPages by viewModel.totalPages.collectAsStateWithLifecycle()
+    val autoScrollMode by viewModel.autoScrollMode.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     // 新增：从 ViewModel 获取 currentCategoryId
-    val currentCategoryId by viewModel.currentCategoryId.observeAsState()
+    val currentCategoryId by viewModel.currentCategoryId.collectAsStateWithLifecycle()
 
     val isSearchMode by remember(searchState) { derivedStateOf { searchState.isNotEmpty() } }
     var searchQuery by remember { mutableStateOf("") }

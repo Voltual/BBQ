@@ -1,12 +1,4 @@
 // /app/src/main/java/cc/bbq/xq/ui/plaza/PlazaViewModel.kt
-//Copyright (C) 2025 Voltual
-// 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
-//（或任意更新的版本）的条款重新分发和/或修改它。
-//本程序是基于希望它有用而分发的，但没有任何担保；甚至没有适销性或特定用途适用性的隐含担保。
-// 有关更多细节，请参阅 GNU 通用公共许可证。
-//
-// 你应该已经收到了一份 GNU 通用公共许可证的副本
-// 如果没有，请查阅 <http://www.gnu.org/licenses/>。
 package cc.bbq.xq.ui.plaza
 
 import android.app.Application
@@ -22,7 +14,7 @@ import cc.bbq.xq.data.repository.IAppStoreRepository
 import cc.bbq.xq.data.unified.UnifiedAppItem
 import cc.bbq.xq.data.unified.UnifiedCategory
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinViewModel
@@ -40,38 +32,38 @@ class PlazaViewModel(
 ) : AndroidViewModel(app) {
 
     // --- LiveData & State ---
-    private val _isLoading = MutableLiveData(false)
-    val isLoading: LiveData<Boolean> = _isLoading
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private val _errorMessage = MutableLiveData<String?>(null)
-    val errorMessage: LiveData<String?> = _errorMessage
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    private val _appStore = MutableLiveData(AppStore.XIAOQU_SPACE)
-    val appStore: LiveData<AppStore> = _appStore
+    private val _appStore = MutableStateFlow(AppStore.XIAOQU_SPACE)
+    val appStore: StateFlow<AppStore> = _appStore.asStateFlow()
 
-    private val _categories = MutableLiveData<List<UnifiedCategory>>(emptyList())
-    val categories: LiveData<List<UnifiedCategory>> = _categories
+    private val _categories = MutableStateFlow<List<UnifiedCategory>>(emptyList())
+    val categories: StateFlow<List<UnifiedCategory>> = _categories.asStateFlow()
 
-    private val _plazaData = MutableLiveData(PlazaData(emptyList()))
-    val plazaData: LiveData<PlazaData> = _plazaData
+    private val _plazaData = MutableStateFlow(PlazaData(emptyList()))
+    val plazaData: StateFlow<PlazaData> = _plazaData.asStateFlow()
 
-    private val _searchResults = MutableLiveData<List<UnifiedAppItem>>(emptyList())
-    val searchResults: LiveData<List<UnifiedAppItem>> = _searchResults
+    private val _searchResults = MutableStateFlow<List<UnifiedAppItem>>(emptyList())
+    val searchResults: StateFlow<List<UnifiedAppItem>> = _searchResults.asStateFlow()
     
     private var _currentStoreNameState: String = AppStore.XIAOQU_SPACE.name
 
-    private val _currentPage = MutableLiveData(1)
-    val currentPage: LiveData<Int> = _currentPage
+    private val _currentPage = MutableStateFlow(1)
+    val currentPage: StateFlow<Int> = _currentPage.asStateFlow()
 
-    private val _totalPages = MutableLiveData(1)
-    val totalPages: LiveData<Int> = _totalPages
+    private val _totalPages = MutableStateFlow(1)
+    val totalPages: StateFlow<Int> = _totalPages.asStateFlow()
 
-    private val _autoScrollMode = MutableLiveData<Boolean>()
-    val autoScrollMode: LiveData<Boolean> = _autoScrollMode
+    private val _autoScrollMode = MutableStateFlow<Boolean>(false)
+    val autoScrollMode: StateFlow<Boolean> = _autoScrollMode.asStateFlow()
 
     // 新增：公开 currentCategoryId
-    private val _currentCategoryId = MutableLiveData<String?>(null)
-    val currentCategoryId: LiveData<String?> = _currentCategoryId
+    private val _currentCategoryId = MutableStateFlow<String?>(null)
+    val currentCategoryId: StateFlow<String?> = _currentCategoryId.asStateFlow()
 
     // --- 内部状态管理 ---
     private var isSearchMode = false
@@ -93,13 +85,15 @@ class PlazaViewModel(
     // 移除：private var savedCurrentCategoryId: String? = null
 
     private val currentRepository: IAppStoreRepository
-        get() = repositories[_appStore.value ?: AppStore.XIAOQU_SPACE] ?: throw IllegalStateException("No repository found for the selected app store")
+        get() = repositories[_appStore.value] ?: throw IllegalStateException("No repository found for the selected app store")
 
     private val AUTO_SCROLL_MODE_KEY = booleanPreferencesKey("auto_scroll_mode")
 
     init {
         viewModelScope.launch {
-            _autoScrollMode.postValue(readAutoScrollMode())
+            readAutoScrollMode().collect {
+                _autoScrollMode.value = it
+            }
         }
     }
 
@@ -149,7 +143,7 @@ class PlazaViewModel(
     }
 
     fun setAppStore(store: AppStore) {
-        if (_appStore.value == store && _categories.value?.isNotEmpty() == true) return
+        if (_appStore.value == store && _categories.value.isNotEmpty()) return
         _appStore.value = store
         resetStateAndLoadCategories()
     }
@@ -184,12 +178,12 @@ class PlazaViewModel(
     }
 
     fun nextPage() {
-        val next = (_currentPage.value ?: 1) + 1
-        loadPage(next, append = autoScrollMode.value == true)
+        val next = _currentPage.value + 1
+        loadPage(next, append = autoScrollMode.value)
     }
 
     fun prevPage() {
-        val prev = (_currentPage.value ?: 1) - 1
+        val prev = _currentPage.value - 1
         loadPage(prev)
     }
 
@@ -199,9 +193,9 @@ class PlazaViewModel(
     }
 
     fun loadMore() {
-        if (autoScrollMode.value == true && _isLoading.value != true) {
-            val current = _currentPage.value ?: 1
-            val total = _totalPages.value ?: 1
+        if (autoScrollMode.value && !_isLoading.value) {
+            val current = _currentPage.value
+            val total = _totalPages.value
             if (current < total) {
                 loadPage(current + 1, append = true)
             }
@@ -229,21 +223,21 @@ class PlazaViewModel(
                 when (currentMode) {
                     "my_upload", "my_favourite", "my_history" -> {
                         if (_appStore.value != AppStore.SIENE_SHOP) {
-                            _appStore.postValue(AppStore.SIENE_SHOP)
+                            _appStore.value = AppStore.SIENE_SHOP
                         }
                     }
                 }
                 
                 when (currentMode) {
-                    "my_upload" ->  _currentCategoryId.postValue("-3") //currentCategoryId = "-3"
-                    "my_favourite" -> _currentCategoryId.postValue("-4")//currentCategoryId = "-4"
-                    "my_history" -> _currentCategoryId.postValue("-5") //currentCategoryId = "-5"
-                    else -> _currentCategoryId.postValue(null) //currentCategoryId = null
+                    "my_upload" ->  _currentCategoryId.value = "-3" //currentCategoryId = "-3"
+                    "my_favourite" -> _currentCategoryId.value = "-4"//currentCategoryId = "-4"
+                    "my_history" -> _currentCategoryId.value = "-5" //currentCategoryId = "-5"
+                    else -> _currentCategoryId.value = null //currentCategoryId = null
                 }
                 
                 if (currentMode in listOf("my_upload", "my_favourite", "my_history")) {
-                    _categories.postValue(emptyList())
-                    _isLoading.postValue(false)
+                    _categories.value = emptyList()
+                    _isLoading.value = false
                     withContext(Dispatchers.Main) {
                         loadPage(1, append = false)
                     }
@@ -251,27 +245,27 @@ class PlazaViewModel(
                     val categoriesResult = currentRepository.getCategories()
                     if (categoriesResult.isSuccess) {
                         val categoryList = categoriesResult.getOrThrow()
-                        _categories.postValue(categoryList)
+                        _categories.value = categoryList
                         
                         if (_currentCategoryId.value == null) {
                             // currentCategoryId = categoryList.firstOrNull()?.id // 移除
-                            _currentCategoryId.postValue(categoryList.firstOrNull()?.id) // 使用 LiveData 更新
+                            _currentCategoryId.value = categoryList.firstOrNull()?.id // 使用 LiveData 更新
                         }
                         
-                        _isLoading.postValue(false)
+                        _isLoading.value = false
                         withContext(Dispatchers.Main) {
                             loadPage(1, append = false)
                         }
                     } else {
                         handleFailure(categoriesResult.exceptionOrNull())
-                        _categories.postValue(emptyList())
-                        _isLoading.postValue(false)
+                        _categories.value = emptyList()
+                        _isLoading.value = false
                         // 加载失败，保持 _isInitialized = false，允许重试
                     }
                 }
             } catch (e: Exception) {
                 handleFailure(e)
-                _isLoading.postValue(false)
+                _isLoading.value = false
                  // 加载失败，保持 _isInitialized = false，允许重试
             }
         }
@@ -281,9 +275,9 @@ class PlazaViewModel(
     // --- 修改：loadPage ---
     private fun loadPage(page: Int, append: Boolean = false) {
         Log.d("PlazaViewModel", "loadPage called: page=$page, append=$append, _isInitialized=$_isInitialized, currentCategoryId=${_currentCategoryId.value}")
-        if (_isLoading.value == true && !append) return
+        if (_isLoading.value && !append) return
         
-        val total = _totalPages.value ?: 1
+        val total = _totalPages.value
         if (page < 1 || (page > total && total > 0 && !append)) return
 
         _isLoading.value = true 
@@ -306,16 +300,16 @@ class PlazaViewModel(
 
                 if (result.isSuccess) {
                     val (items, totalPages) = result.getOrThrow()
-                    _totalPages.postValue(if(totalPages > 0) totalPages else 1)
-                    _currentPage.postValue(page)
+                    _totalPages.value = if(totalPages > 0) totalPages else 1
+                    _currentPage.value = page
                     savedCurrentPage = page
 
                     if (isSearchMode) {
-                        val currentList = if (append) _searchResults.value ?: emptyList() else emptyList()
-                        _searchResults.postValue(currentList + items)
+                        val currentList = if (append) _searchResults.value else emptyList()
+                        _searchResults.value = currentList + items
                     } else {
-                        val currentList = if (append) _plazaData.value?.popularApps ?: emptyList() else emptyList()
-                        _plazaData.postValue(PlazaData(currentList + items))
+                        val currentList = if (append) _plazaData.value.popularApps else emptyList()
+                        _plazaData.value = PlazaData(currentList + items)
                     }
                     
                     // 关键修改：只有在成功加载第一页数据后，才将 _isInitialized 设为 true
@@ -330,7 +324,7 @@ class PlazaViewModel(
             } catch (e: Exception) {
                 handleFailure(e)
             } finally {
-                _isLoading.postValue(false)
+                _isLoading.value = false
             }
         }
     }
@@ -338,13 +332,15 @@ class PlazaViewModel(
     private fun handleFailure(exception: Throwable?) {
         val message = "操作失败: ${exception?.message ?: "未知错误"}"
         Log.e("PlazaViewModel", message, exception)
-        _errorMessage.postValue(message)
+        _errorMessage.value = message
     }
 
-    private suspend fun readAutoScrollMode(): Boolean {
-        return try {
-            app.applicationContext.dataStore.data.first()[AUTO_SCROLL_MODE_KEY] ?: false
-        } catch (e: Exception) { false }
+    private fun readAutoScrollMode(): Flow<Boolean> {
+        return app.applicationContext.dataStore.data
+            .map { preferences ->
+                preferences[AUTO_SCROLL_MODE_KEY] ?: false
+            }
+            .catch { emit(false) }
     }
 
     fun setAutoScrollMode(enabled: Boolean) {
@@ -352,7 +348,7 @@ class PlazaViewModel(
             app.applicationContext.dataStore.edit { preferences ->
                 preferences[AUTO_SCROLL_MODE_KEY] = enabled
             }
-            _autoScrollMode.postValue(enabled)
+            _autoScrollMode.value = enabled
         }
     }
 }
