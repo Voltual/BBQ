@@ -17,7 +17,7 @@ interface IAppStoreRepository {
     suspend fun getAppDownloadSources(appId: String, versionId: Long): Result<List<UnifiedDownloadSource>>
         // 新增：发布应用
     suspend fun releaseApp(params: UnifiedAppReleaseParams): Result<Unit>
-    
+    suspend fun getMyReviews(page: Int): Result<Pair<List<UnifiedComment>, Int>>
     // 新增：上传图片 (主要用于小趣空间图床)
     suspend fun uploadImage(file: File, type: String): Result<String>
     suspend fun getMyComments(page: Int): Result<Pair<List<UnifiedComment>, Int>>
