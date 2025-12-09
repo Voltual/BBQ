@@ -1,4 +1,3 @@
-// /app/src/main/java/cc/bbq/xq/ui/user/UserDetailScreen.kt
 //Copyright (C) 2025 Voltual
 // 本程序是自由软件：你可以根据自由软件基金会发布的 GNU 通用公共许可证第3版
 //（或任意更新的版本）的条款重新分发和/或修改它。
@@ -64,7 +63,6 @@ import cc.bbq.xq.ui.theme.BBQOutlinedButton
 import kotlinx.coroutines.flow.first
 import cc.bbq.xq.data.unified.UnifiedUserDetail  // 导入 UnifiedUserDetail
 import cc.bbq.xq.AppStore
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -180,9 +178,10 @@ private fun XiaoQuProfileContent( // 使用 UnifiedUserDetail
             }
         )
 
+        // 修复传递给 ActionButtonsRow 的 onResourcesClick
         ActionButtonsRow(
             userData = userData,
-            onResourcesClick = { onResourcesClick(userData.id, userData.store) }, // 传递 store
+            onResourcesClick = { userId -> onResourcesClick(userId, userData.store) }, // 传递完整的 lambda
             snackbarHostState = snackbarHostState
         )
 
@@ -395,7 +394,7 @@ private fun UserBasicInfo(userData: UnifiedUserDetail) { // 使用 UnifiedUserDe
 @Composable
 private fun ActionButtonsRow(
     userData: UnifiedUserDetail, // 使用 UnifiedUserDetail
-    onResourcesClick: (Long, AppStore) -> Unit,
+    onResourcesClick: (Long) -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
     val context = LocalContext.current
@@ -418,7 +417,7 @@ private fun ActionButtonsRow(
         }
 
         BBQOutlinedButton(
-            onClick = { onResourcesClick(userData.id, userData.store) },
+            onClick = { onResourcesClick(userData.id) },
             modifier = Modifier.weight(1f),
             text = { Text("${userData.displayName}的资源") }
         )
