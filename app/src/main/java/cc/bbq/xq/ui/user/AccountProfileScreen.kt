@@ -48,6 +48,9 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import androidx.compose.ui.res.stringResource
 import cc.bbq.xq.R
+import coil3.request.ImageRequest
+import coil3.request.CachePolicy
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun AccountProfileScreen(
@@ -286,30 +289,37 @@ fun AvatarUploadSection(
         modifier = Modifier.fillMaxWidth()
     ) {
         if (avatarUri != null) {
-            Image(
-                painter = rememberAsyncImagePainter(model = avatarUri),
-                contentDescription = "用户头像",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-        } else if (avatarUrl.isNotEmpty()) {
-            Image(
-                painter = rememberAsyncImagePainter(model = avatarUrl),
-                contentDescription = "用户头像",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-        } else {
-            Icon(
-                Icons.Filled.Person,
-                contentDescription = "选择头像",
-                modifier = Modifier.size(120.dp)
-            )
-        }
+    Image(
+        painter = rememberAsyncImagePainter(
+            model = avatarUri
+        ),
+        contentDescription = "用户头像",
+        modifier = Modifier
+            .size(120.dp)
+            .clip(CircleShape),
+        contentScale = ContentScale.Crop
+    )
+} else if (avatarUrl.isNotEmpty()) {
+    Image(
+        painter = rememberAsyncImagePainter(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(avatarUrl)
+                .diskCachePolicy(CachePolicy.DISABLED) // 禁用磁盘缓存
+                .build()
+        ),
+        contentDescription = "用户头像",
+        modifier = Modifier
+            .size(120.dp)
+            .clip(CircleShape),
+        contentScale = ContentScale.Crop
+    )
+} else {
+    Icon(
+        Icons.Filled.Person,
+        contentDescription = "选择头像",
+        modifier = Modifier.size(120.dp)
+    )
+}
 
         Spacer(modifier = Modifier.height(8.dp))
 
