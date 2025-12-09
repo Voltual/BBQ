@@ -223,7 +223,6 @@ private fun SieneShopProfileContent(
     model = ImageRequest.Builder(LocalContext.current)
         .data(userData.avatarUrl ?: "https://static.sineshop.xin/images/user_avatar/default_avatar.png")
         .diskCachePolicy(CachePolicy.DISABLED) // 禁用磁盘缓存
-        .placeholder(painterResource(R.drawable.ic_menu_profile)) // 保留原占位符
         .build(),
     contentDescription = "用户头像",
     contentScale = ContentScale.Crop,
