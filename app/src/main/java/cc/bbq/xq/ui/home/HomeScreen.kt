@@ -102,6 +102,7 @@ fun HomeScreen(
     onAccountProfileClick: () -> Unit,
     onNavigateToUpdate: () -> Unit, // 新增：导航到更新屏幕的回调
     onNavigateToMyComments: () -> Unit, // 新增：导航到我的评论的回调
+    onNavigateToMyReviews: () -> Unit, // 新增：导航到我的评价的回调
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
     snackbarHostState: SnackbarHostState,
