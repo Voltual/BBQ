@@ -100,9 +100,10 @@ fun HomeScreen(
     onRecalculateDays: () -> Unit,
     onAboutClick: () -> Unit,
     onAccountProfileClick: () -> Unit,
-    onNavigateToUpdate: () -> Unit, // 新增：导航到更新屏幕的回调
-    onNavigateToMyComments: () -> Unit, // 新增：导航到我的评论的回调
-    onNavigateToMyReviews: () -> Unit, // 新增：导航到我的评价的回调
+    onNavigateToUpdate: () -> Unit, 
+    onNavigateToMyComments: () -> Unit,
+    onNavigateToMyReviews: () -> Unit,
+    onNavigateToCreateAppRelease: () -> Unit, 
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel,
     snackbarHostState: SnackbarHostState,
@@ -176,7 +177,8 @@ fun HomeScreen(
                         },
                         onNavigateToUpdate = onNavigateToUpdate,
                         onNavigateToMyComments = onNavigateToMyComments,
-                        onNavigateToMyReviews = { navController.navigate(MyReviews.route) },
+                        onNavigateToMyReviews = onNavigateToMyReviews,
+                        onNavigateToCreateAppRelease = onNavigateToCreateAppRelease,                        
                         navController = navController
                     )
                 }

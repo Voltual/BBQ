@@ -141,6 +141,7 @@ fun HomeDestination(
             onNavigateToUpdate = { navController.navigate(Update.route) }, // 传递导航回调
             onNavigateToMyReviews = { navController.navigate(MyReviews.route) }, // 新增：传递导航回调
             onNavigateToMyComments = {navController.navigate(MyComments.route)},
+            onNavigateToCreateAppRelease = {navController.navigate(CreateAppRelease.route)},
             modifier = Modifier.fillMaxSize(), 
             viewModel = viewModel,
             snackbarHostState = snackbarHostState,

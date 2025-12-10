@@ -48,11 +48,12 @@ import androidx.navigation.NavController
 fun SineShopProfileScreen(
     userInfo: SineShopClient.SineShopUserInfo?,
     modifier: Modifier = Modifier,
-    onNavigateToResourcePlaza: (String) -> Unit = {}, // 添加导航回调参数
-    onNavigateToUpdate: () -> Unit = {}, // 新增：导航到更新屏幕的回调
-    onNavigateToMyComments: () -> Unit = {}, // 新增：导航到我的评论的回调
-    onNavigateToMyReviews: () -> Unit = {}, // 新增：导航到我的评价的回调
-    navController: NavController // 添加NavController
+    onNavigateToResourcePlaza: (String) -> Unit = {}, 
+    onNavigateToUpdate: () -> Unit = {},
+    onNavigateToMyComments: () -> Unit = {},
+    onNavigateToMyReviews: () -> Unit = {},
+    onNavigateToCreateAppRelease: () -> Unit = {},
+    navController: NavController 
 ) {
     Column(
         modifier = modifier
