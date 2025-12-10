@@ -108,7 +108,7 @@ fun SineShopProfileScreen(
         FunctionCard(
             icon = Icons.Filled.CloudUpload,
             label = "上传应用",
-            onClick = { /* TODO: Implement upload app */ }
+            onClick = { onNavigateToCreateAppRelease() }
         )
         FunctionCard(
             icon = Icons.AutoMirrored.Filled.List, // 使用自动镜像版本
